@@ -1,6 +1,6 @@
 import Network
 import SwiftUI
-import TwitchChat
+//import TwitchChat
 
 private func getEmotes(from message: ChatMessage) -> [ChatMessageEmote] {
     var emotes: [ChatMessageEmote] = []
@@ -202,9 +202,13 @@ final class TwitchChatMoblin {
     }
 
     private func handleMessage(message: String) throws {
-        guard let message = try ChatMessage(Message(string: message)) else {
+        // Extract the messageId
+        let messageId = extractMessageId(from: message)
+        
+        guard let message = try ChatMessage(TwitchMessage(string: message)) else {
             return
         }
+        
         let emotes = getEmotes(from: message)
         var badgeUrls: [URL] = []
         for badge in message.badges {
@@ -212,6 +216,9 @@ final class TwitchChatMoblin {
                 badgeUrls.append(badgeUrl)
             }
         }
+        
+        
+        
         let text: String
         let isAction = message.isAction()
         if isAction {
@@ -227,8 +234,9 @@ final class TwitchChatMoblin {
         )
         model.appendChatMessage(
             platform: .twitch,
-            user: message.sender,
-            userId: message.userId,
+            user: message.loginName,
+            userId: message.displayName,
+            platformId: messageId,
             userColor: RgbColor.fromHex(string: message.senderColor ?? ""),
             userBadges: badgeUrls,
             segments: segments,
@@ -238,7 +246,8 @@ final class TwitchChatMoblin {
             isSubscriber: message.subscriber,
             isModerator: message.moderator,
             bits: message.bits,
-            highlight: createHighlight(message: message)
+            highlight: createHighlight(message: message),
+            isDeleted: false
         )
     }
 
@@ -283,6 +292,42 @@ final class TwitchChatMoblin {
     private func handleOk(title: String) {
         DispatchQueue.main.async {
             self.model.makeToast(title: title)
+        }
+    }
+
+    private func handleClearMessage(message: String) {
+        // Parse the CLEARMSG command
+        let components = message.split(separator: ";")
+        var messageId: String? = nil
+        var deletionReason: String? = nil
+
+        for component in components {
+            if component.starts(with: "target-msg-id=") {
+                messageId = component.replacingOccurrences(of: "target-msg-id=", with: "")
+            }
+            if component.starts(with: "ban-reason=") {
+                deletionReason = component.replacingOccurrences(of: "ban-reason=", with: "")
+            }
+        }
+
+        guard let messageId else {
+            logger.warning("twitch: chat: Missing message ID in CLEARMSG")
+            return
+        }
+
+        // Remove or mark the deleted message in the model
+        DispatchQueue.main.async {
+            if let index = self.model.chatPosts.firstIndex(where: { $0.platformId == messageId }) {
+                // self.model.chatPosts.remove(at: index)
+                // Alternatively, you could mark the message as deleted:
+                //                self.model.chatPosts[index].message = "[Deleted by Moderator]"
+                self.model.chatPosts[index].isDeleted = true
+            }
+        }
+
+        // Optionally, log the deletion reason
+        if let reason = deletionReason {
+            logger.info("twitch: chat: Message \(messageId) deleted for reason: \(reason)")
         }
     }
 
@@ -392,6 +437,21 @@ final class TwitchChatMoblin {
     }
 }
 
+private func extractMessageId(from message: String) -> String? {
+    let tagsSection = message.split(separator: " ").first(where: { $0.hasPrefix("@") })
+    guard let tags = tagsSection else { return nil }
+
+    // Parse tags into a dictionary
+    let tagsDictionary = tags.dropFirst().split(separator: ";").reduce(into: [String: String]()) { dict, pair in
+        let parts = pair.split(separator: "=", maxSplits: 1).map(String.init)
+        if parts.count == 2 {
+            dict[parts[0]] = parts[1]
+        }
+    }
+
+    return tagsDictionary["id"] // Extract the message ID
+}
+
 extension ChatMessage {
     func isAction() -> Bool {
         return text.starts(with: "\u{01}ACTION")
@@ -415,7 +475,11 @@ extension TwitchChatMoblin: WebSocketClientDelegate {
 
     func webSocketClientReceiveMessage(string: String) {
         for line in string.split(whereSeparator: { $0.isNewline }) {
-            try? handleMessage(message: String(line))
+            if line.contains("CLEARMSG") {
+                handleClearMessage(message: String(line))
+            } else {
+                try? handleMessage(message: String(line))
+            }
         }
     }
 }

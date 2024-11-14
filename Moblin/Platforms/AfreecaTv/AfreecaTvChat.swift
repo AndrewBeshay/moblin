@@ -245,6 +245,7 @@ final class AfreecaTvChat: NSObject {
                 platform: .afreecaTv,
                 user: user,
                 userId: nil,
+                platformId: "",
                 userColor: nil,
                 userBadges: [],
                 segments: segments,
@@ -254,7 +255,8 @@ final class AfreecaTvChat: NSObject {
                 isSubscriber: false,
                 isModerator: false,
                 bits: nil,
-                highlight: nil
+                highlight: nil,
+                isDeleted: false
             )
         }
     }

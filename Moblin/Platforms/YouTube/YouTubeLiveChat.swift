@@ -90,8 +90,13 @@ private struct AddChatItemAction: Codable {
     let item: AddChatItemActionItem
 }
 
+private struct RemoveChatItemAction: Codable {
+    let targetId: String
+}
+
 private struct Action: Codable {
     let addChatItemAction: AddChatItemAction?
+    let removeChatItemAction: RemoveChatItemAction? // New field
 }
 
 private struct LiveChatContinuation: Codable {
@@ -214,6 +219,9 @@ final class YouTubeLiveChat: NSObject {
             let getLiveChat = try JSONDecoder().decode(GetLiveChat.self, from: data)
             if let actions = getLiveChat.continuationContents.liveChatContinuation.actions {
                 for action in actions {
+//                    if let removeAction = action.removeChatItemAction {
+//                        await handleRemoveChatItemAction(removeAction)
+//                    }
                     guard let item = action.addChatItemAction?.item else {
                         continue
                     }
@@ -249,6 +257,19 @@ final class YouTubeLiveChat: NSObject {
         }
     }
 
+//    private func handleRemoveChatItemAction(_ removeChatItemAction: RemoveChatItemAction) async {
+//        guard let targetMessageId = removeChatItemAction.targetId else { return }
+//        await MainActor.run {
+//            model.isde(messageId: targetMessageId)
+//        }
+//    }
+//    private func handleRemoveChatItemAction(_ removeChatItemAction: RemoveChatItemAction) async {
+//        guard let targetId = removeChatItemAction.targetId else { return }
+//        await MainActor.run {
+//            model.markChatMessageAsDeleted(platformId: targetId)
+//        }
+//    }
+    
     private func updateDelayMs(numberOfMessages: Int) {
         if numberOfMessages > 0 {
             delay = delay * 5 / numberOfMessages
@@ -300,6 +321,7 @@ final class YouTubeLiveChat: NSObject {
             model.appendChatMessage(platform: .youTube,
                                     user: chatDescription.authorName.simpleText,
                                     userId: nil,
+                                    platformId: "",
                                     userColor: nil,
                                     userBadges: [],
                                     segments: nonMutSegments,
@@ -309,7 +331,8 @@ final class YouTubeLiveChat: NSObject {
                                     isSubscriber: false,
                                     isModerator: false,
                                     bits: nil,
-                                    highlight: highlight)
+                                    highlight: highlight,
+                                    isDeleted: false)
         }
         return 1
     }

@@ -222,6 +222,7 @@ class OpenStreamingPlatformChat {
             model.appendChatMessage(platform: .openStreamingPlatform,
                                     user: message.user() ?? "unknown",
                                     userId: nil,
+                                    platformId: "",
                                     userColor: nil,
                                     userBadges: [],
                                     segments: segments,
@@ -231,7 +232,8 @@ class OpenStreamingPlatformChat {
                                     isSubscriber: false,
                                     isModerator: false,
                                     bits: nil,
-                                    highlight: nil)
+                                    highlight: nil,
+                                    isDeleted: false)
         }
     }
 

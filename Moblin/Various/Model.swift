@@ -16,7 +16,7 @@ import SDWebImageSwiftUI
 import SDWebImageWebPCoder
 import StoreKit
 import SwiftUI
-import TwitchChat
+//import TwitchChat
 import VideoToolbox
 import WatchConnectivity
 import WebKit
@@ -145,7 +145,7 @@ private let iconsProductIds = [
     "AppIconMillionaire",
     "AppIconBillionaire",
     "AppIconTrillionaire",
-    "AppIconIreland",
+    "AppIconIreland"
 ]
 
 struct ChatMessageEmote: Identifiable {
@@ -211,22 +211,59 @@ struct ChatPost: Identifiable, Equatable {
     static func == (lhs: ChatPost, rhs: ChatPost) -> Bool {
         return lhs.id == rhs.id
     }
-
+    
     func isRedemption() -> Bool {
         return highlight?.kind == .redemption || highlight?.kind == .newFollower
     }
-
-    var id: Int
+    
+    let id: UUID // Unique internal identifier for the app
+    let platform: Platform // Example: .twitch, .youtube
+    let platformId: String // Original platform-specific ID
     var user: String?
-    var userColor: RgbColor?
-    var userBadges: [URL]
     var segments: [ChatPostSegment]
+    var userColor: RgbColor?
     var timestamp: String
     var timestampTime: ContinuousClock.Instant
+    var userBadges: [URL]
     var isAction: Bool
     var isSubscriber: Bool
+    var isModerator: Bool
     var bits: String?
     var highlight: ChatHighlight?
+    var isDeleted: Bool = false // For marking deleted messages
+    
+    init(
+        platform: Platform,
+        platformId: String,
+        user: String? = nil,
+        segments: [ChatPostSegment] = [],
+        userColor: RgbColor? = nil,
+        timestamp: String? = nil,
+        timestampTime: ContinuousClock.Instant,
+        userBadges: [URL] = [],
+        isAction: Bool = false,
+        isSubscriber: Bool = false,
+        isModerator: Bool = false,
+        bits: String? = nil,
+        highlight: ChatHighlight? = nil,
+        isDeleted: Bool = false
+    ) {
+        self.id = UUID() // Generate internal ID
+        self.platform = platform
+        self.platformId = platformId
+        self.user = user
+        self.segments = segments
+        self.userColor = userColor
+        self.timestamp = timestamp ?? ""
+        self.timestampTime = timestampTime
+        self.userBadges = userBadges
+        self.isAction = isAction
+        self.isSubscriber = isSubscriber
+        self.isModerator = isModerator
+        self.bits = bits
+        self.highlight = highlight
+        self.isDeleted = isDeleted
+    }
 }
 
 class ButtonState {
@@ -2505,8 +2542,9 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         pausedInteractiveChatPostsCount = 0
         appendChatMessage(
             platform: .unknown,
-            user: nil,
+            user: "",
             userId: nil,
+            platformId: nil,
             userColor: nil,
             userBadges: [],
             segments: [],
@@ -2516,7 +2554,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             isSubscriber: false,
             isModerator: false,
             bits: nil,
-            highlight: nil
+            highlight: nil,
+            isDeleted: false
         )
     }
 
@@ -4568,6 +4607,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         platform: Platform,
         user: String?,
         userId: String?,
+        platformId: String?,
         userColor: RgbColor?,
         userBadges: [URL],
         segments: [ChatPostSegment],
@@ -4577,7 +4617,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         isSubscriber: Bool,
         isModerator: Bool,
         bits: String?,
-        highlight: ChatHighlight?
+        highlight: ChatHighlight?,
+        isDeleted: Bool
     ) {
         if database.chat.usernamesToIgnore!.contains(where: { user == $0.value }) {
             return
@@ -4595,21 +4636,27 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         if pollEnabled {
             handlePollVote(vote: segments.first?.text?.trim())
         }
+        
+        // Create a new chat post
         let post = ChatPost(
-            id: chatPostId,
+            platform: platform,
+            platformId: platformId ?? "",
             user: user,
-            userColor: userColor?.makeReadableOnDarkBackground(),
-            userBadges: userBadges,
             segments: segments,
+            userColor: userColor?.makeReadableOnDarkBackground(),
             timestamp: timestamp,
             timestampTime: timestampTime,
+            userBadges: userBadges,
             isAction: isAction,
             isSubscriber: isSubscriber,
+            isModerator: isModerator,
             bits: bits,
-            highlight: highlight
+            highlight: highlight,
+            isDeleted: isDeleted
         )
-        chatPostId += 1
+        
         newChatPosts.append(post)
+        
         if interactiveChatPaused {
             if pausedInteractiveChatPosts.count < 2 * maximumNumberOfInteractiveChatMessages {
                 pausedInteractiveChatPosts.append(post)
@@ -4629,21 +4676,21 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     func reloadChatMessages() {
-        chatPosts = newPostIds(posts: chatPosts)
-        interactiveChatPosts = newPostIds(posts: interactiveChatPosts)
-        interactiveChatAlertsPosts = newPostIds(posts: interactiveChatAlertsPosts)
+//        chatPosts = newPostIds(posts: chatPosts)
+//        interactiveChatPosts = newPostIds(posts: interactiveChatPosts)
+//        interactiveChatAlertsPosts = newPostIds(posts: interactiveChatAlertsPosts)
     }
 
-    private func newPostIds(posts: Deque<ChatPost>) -> Deque<ChatPost> {
-        var newPosts: Deque<ChatPost> = []
-        for post in posts {
-            var newPost = post
-            newPost.id = chatPostId
-            chatPostId += 1
-            newPosts.append(newPost)
-        }
-        return newPosts
-    }
+//    private func newPostIds(posts: Deque<ChatPost>) -> Deque<ChatPost> {
+//        var newPosts: Deque<ChatPost> = []
+//        for post in posts {
+//            var newPost = post
+//            newPost.id = chatPostId
+//            chatPostId += 1
+//            newPosts.append(newPost)
+//        }
+//        return newPosts
+//    }
 
     func toggleBlackScreen() {
         blackScreen.toggle()
@@ -8843,6 +8890,7 @@ extension Model: TwitchEventSubDelegate {
         appendChatMessage(platform: .twitch,
                           user: user,
                           userId: nil,
+                          platformId: nil,
                           userColor: nil,
                           userBadges: [],
                           segments: twitchChat.createSegmentsNoTwitchEmotes(text: text, bits: bits),
@@ -8857,7 +8905,8 @@ extension Model: TwitchEventSubDelegate {
                               color: color,
                               image: image ?? "medal",
                               title: title
-                          ))
+                          ),
+                          isDeleted: false)
     }
 
     func twitchEventSubUnauthorized() {

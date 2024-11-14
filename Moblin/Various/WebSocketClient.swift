@@ -1,7 +1,7 @@
 import Network
 import NWWebSocket
 import SwiftUI
-import TwitchChat
+//import TwitchChat
 
 private let shortestDelayMs = 500
 private let longestDelayMs = 10000

@@ -1,4 +1,5 @@
 {
+  "originHash" : "8942aa1d1340427c8e3311ee3ce1a02db3d58b5ba3aa6f3a424dfabbb45b7515",
   "pins" : [
     {
       "identity" : "alerttoast",
@@ -127,15 +128,6 @@
       }
     },
     {
-      "identity" : "twitch-chat",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/eerimoq/twitch-chat",
-      "state" : {
-        "branch" : "trunk",
-        "revision" : "520677f7a4fffbba5b43e281f25fe85136ad0da6"
-      }
-    },
-    {
       "identity" : "wrappinghstack",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/ksemianov/WrappingHStack",
@@ -154,5 +146,5 @@
       }
     }
   ],
-  "version" : 2
+  "version" : 3
 }
