@@ -192,7 +192,15 @@ struct StreamOverlayChatView: View {
                     VStack {
                         LazyVStack(alignment: .leading, spacing: 1) {
                             ForEach(model.chatPosts) { post in
-                                if post.user != nil {
+                                if post.isDeleted {
+                                    // Display placeholder for deleted message
+                                    Text("[Message deleted by moderator]")
+                                        .italic()
+                                        .foregroundColor(.gray)
+                                        .padding([.leading], 3)
+                                        .rotationEffect(Angle(degrees: 180))
+                                        .scaleEffect(x: -1.0, y: 1.0, anchor: .center)
+                                } else if let user = post.user {
                                     if let highlight = post.highlight {
                                         HStack(spacing: 0) {
                                             Rectangle()

@@ -37,18 +37,23 @@ private struct ChatOverlayView: View {
     @EnvironmentObject var model: Model
 
     var body: some View {
-        if model.showingPanel != .chat {
-            if model.stream.portrait! || model.database.portrait! {
-                VStack {
-                    StreamOverlayChatView()
-                    Rectangle()
-                        .foregroundColor(.clear)
-                        .frame(height: 85)
-                }
-            } else {
-                GeometryReader { metrics in
-                    StreamOverlayChatView()
-                        .frame(width: metrics.size.width * 0.95)
+        ZStack {
+            if model.showingPanel != .chat {
+                if model.stream.portrait! || model.database.portrait! {
+                    VStack {
+                        StreamOverlayChatView()
+                        Rectangle()
+                            .foregroundColor(.clear)
+                            .frame(height: 85)
+                    }
+                } else {
+                    GeometryReader { metrics in
+                        StreamOverlayChatView()
+                            .frame(width: metrics.size.width * 0.95)
+                            .contentShape(Rectangle()) // Confine gesture area
+                            .gesture(DragGesture())    // Allow scrolling within chat area
+                            .scrollIndicators(.hidden)
+                    }
                 }
             }
         }
@@ -123,6 +128,10 @@ struct StreamOverlayView: View {
                 FrontTorchView()
             }
             ZStack {
+                ChatOverlayView()
+                    .opacity(model.database.chat.enabled! ? 1 : 0)
+                    .scrollIndicators(.hidden)
+                    
                 HStack {
                     Spacer()
                     RightOverlayBottomView(width: width)

@@ -1,6 +1,6 @@
 import Network
 import SwiftUI
-import TwitchChat
+//import TwitchChat
 
 private func getEmotes(from message: ChatMessage) -> [ChatMessageEmote] {
     var emotes: [ChatMessageEmote] = []
@@ -17,14 +17,12 @@ private func getEmotes(from message: ChatMessage) -> [ChatMessageEmote] {
 private class Badges {
     private var channelId: String = ""
     private var accessToken: String = ""
-    private var urlSession = URLSession.shared
     private var badges: [String: TwitchApiChatBadgesVersion] = [:]
-    private var tryFetchAgainTimer = SimpleTimer(queue: .main)
+    private var tryFetchAgainTimer: DispatchSourceTimer?
 
-    func start(channelId: String, accessToken: String, urlSession: URLSession) {
+    func start(channelId: String, accessToken: String) {
         self.channelId = channelId
         self.accessToken = accessToken
-        self.urlSession = urlSession
         guard !accessToken.isEmpty else {
             return
         }
@@ -41,13 +39,13 @@ private class Badges {
 
     func tryFetch() {
         startTryFetchAgainTimer()
-        TwitchApi(accessToken, urlSession).getGlobalChatBadges { data in
+        TwitchApi(accessToken: accessToken).getGlobalChatBadges { data in
             guard let data else {
                 return
             }
             DispatchQueue.main.async {
                 self.addBadges(badges: data)
-                TwitchApi(self.accessToken, self.urlSession)
+                TwitchApi(accessToken: self.accessToken)
                     .getChannelChatBadges(broadcasterId: self.channelId) { data in
                         guard let data else {
                             return
@@ -62,13 +60,17 @@ private class Badges {
     }
 
     private func startTryFetchAgainTimer() {
-        tryFetchAgainTimer.startSingleShot(timeout: 30) { [weak self] in
+        tryFetchAgainTimer = DispatchSource.makeTimerSource(queue: DispatchQueue.main)
+        tryFetchAgainTimer!.schedule(deadline: .now() + 30)
+        tryFetchAgainTimer!.setEventHandler { [weak self] in
             self?.tryFetch()
         }
+        tryFetchAgainTimer!.activate()
     }
 
     private func stopTryFetchAgainTimer() {
-        tryFetchAgainTimer.stop()
+        tryFetchAgainTimer?.cancel()
+        tryFetchAgainTimer = nil
     }
 
     private func addBadges(badges: [TwitchApiChatBadgesData]) {
@@ -83,14 +85,12 @@ private class Badges {
 private class Cheermotes {
     private var channelId: String = ""
     private var accessToken: String = ""
-    private var urlSession: URLSession = .shared
     private var emotes: [String: [TwitchApiGetCheermotesDataTier]] = [:]
-    private var tryFetchAgainTimer = SimpleTimer(queue: .main)
+    private var tryFetchAgainTimer: DispatchSourceTimer?
 
-    func start(channelId: String, accessToken: String, urlSession: URLSession) {
+    func start(channelId: String, accessToken: String) {
         self.channelId = channelId
         self.accessToken = accessToken
-        self.urlSession = urlSession
         guard !accessToken.isEmpty else {
             return
         }
@@ -103,7 +103,7 @@ private class Cheermotes {
 
     func tryFetch() {
         startTryFetchAgainTimer()
-        TwitchApi(accessToken, urlSession).getCheermotes(broadcasterId: channelId) { datas in
+        TwitchApi(accessToken: accessToken).getCheermotes(broadcasterId: channelId) { datas in
             guard let datas else {
                 return
             }
@@ -117,13 +117,17 @@ private class Cheermotes {
     }
 
     private func startTryFetchAgainTimer() {
-        tryFetchAgainTimer.startSingleShot(timeout: 30) { [weak self] in
+        tryFetchAgainTimer = DispatchSource.makeTimerSource(queue: DispatchQueue.main)
+        tryFetchAgainTimer!.schedule(deadline: .now() + 30)
+        tryFetchAgainTimer!.setEventHandler { [weak self] in
             self?.tryFetch()
         }
+        tryFetchAgainTimer!.activate()
     }
 
     private func stopTryFetchAgainTimer() {
-        tryFetchAgainTimer.stop()
+        tryFetchAgainTimer?.cancel()
+        tryFetchAgainTimer = nil
     }
 
     func getUrlAndBits(word: String) -> (URL, Int)? {
@@ -183,14 +187,7 @@ final class TwitchChatMoblin {
         webSocket = .init(url: URL(string: "wss://irc-ws.chat.twitch.tv")!)
     }
 
-    func start(
-        channelName: String,
-        channelId: String,
-        settings: SettingsStreamChat,
-        accessToken: String,
-        httpProxy: HttpProxy?,
-        urlSession: URLSession
-    ) {
+    func start(channelName: String, channelId: String, settings: SettingsStreamChat, accessToken: String) {
         self.channelName = channelName
         logger.debug("twitch: chat: Start")
         stopInternal()
@@ -201,9 +198,9 @@ final class TwitchChatMoblin {
             onOk: handleOk,
             settings: settings
         )
-        badges.start(channelId: channelId, accessToken: accessToken, urlSession: urlSession)
-        cheermotes.start(channelId: channelId, accessToken: accessToken, urlSession: urlSession)
-        webSocket = .init(url: URL(string: "wss://irc-ws.chat.twitch.tv")!, httpProxy: httpProxy)
+        badges.start(channelId: channelId, accessToken: accessToken)
+        cheermotes.start(channelId: channelId, accessToken: accessToken)
+        webSocket = .init(url: URL(string: "wss://irc-ws.chat.twitch.tv")!)
         webSocket.delegate = self
         webSocket.start()
     }
@@ -221,15 +218,13 @@ final class TwitchChatMoblin {
     }
 
     private func handleMessage(message: String) throws {
-        let message = try Message(string: message)
-        if let chatMessage = ChatMessage(message) {
-            try handleChatMessage(message: chatMessage)
-        } else if message.command == .ping {
-            webSocket.send(string: "PONG \(message.parameters.joined(separator: " "))")
+        // Extract the messageId
+        let messageId = extractMessageId(from: message)
+        
+        guard let message = try ChatMessage(TwitchMessage(string: message)) else {
+            return
         }
-    }
-
-    private func handleChatMessage(message: ChatMessage) throws {
+        
         let emotes = getEmotes(from: message)
         var badgeUrls: [URL] = []
         for badge in message.badges {
@@ -237,6 +232,9 @@ final class TwitchChatMoblin {
                 badgeUrls.append(badgeUrl)
             }
         }
+        
+        
+        
         let text: String
         let isAction = message.isAction()
         if isAction {
@@ -251,8 +249,10 @@ final class TwitchChatMoblin {
             bits: message.bits
         )
         delegate?.twitchChatMoblinAppendMessage(
-            user: message.sender,
-            userId: message.userId,
+            platform: .twitch,
+            user: message.loginName,
+            userId: message.displayName,
+            platformId: messageId,
             userColor: RgbColor.fromHex(string: message.senderColor ?? ""),
             userBadges: badgeUrls,
             segments: segments,
@@ -260,7 +260,8 @@ final class TwitchChatMoblin {
             isSubscriber: message.subscriber,
             isModerator: message.moderator,
             bits: message.bits,
-            highlight: createHighlight(message: message)
+            highlight: createHighlight(message: message),
+            isDeleted: false
         )
     }
 
@@ -305,6 +306,42 @@ final class TwitchChatMoblin {
     private func handleOk(title: String) {
         DispatchQueue.main.async {
             self.delegate?.twitchChatMoblinMakeErrorToast(title: title, subTitle: nil)
+        }
+    }
+
+    private func handleClearMessage(message: String) {
+        // Parse the CLEARMSG command
+        let components = message.split(separator: ";")
+        var messageId: String? = nil
+        var deletionReason: String? = nil
+
+        for component in components {
+            if component.starts(with: "target-msg-id=") {
+                messageId = component.replacingOccurrences(of: "target-msg-id=", with: "")
+            }
+            if component.starts(with: "ban-reason=") {
+                deletionReason = component.replacingOccurrences(of: "ban-reason=", with: "")
+            }
+        }
+
+        guard let messageId else {
+            logger.warning("twitch: chat: Missing message ID in CLEARMSG")
+            return
+        }
+
+        // Remove or mark the deleted message in the model
+        DispatchQueue.main.async {
+            if let index = self.model.chatPosts.firstIndex(where: { $0.platformId == messageId }) {
+                // self.model.chatPosts.remove(at: index)
+                // Alternatively, you could mark the message as deleted:
+                //                self.model.chatPosts[index].message = "[Deleted by Moderator]"
+                self.model.chatPosts[index].isDeleted = true
+            }
+        }
+
+        // Optionally, log the deletion reason
+        if let reason = deletionReason {
+            logger.info("twitch: chat: Message \(messageId) deleted for reason: \(reason)")
         }
     }
 
@@ -414,6 +451,21 @@ final class TwitchChatMoblin {
     }
 }
 
+private func extractMessageId(from message: String) -> String? {
+    let tagsSection = message.split(separator: " ").first(where: { $0.hasPrefix("@") })
+    guard let tags = tagsSection else { return nil }
+
+    // Parse tags into a dictionary
+    let tagsDictionary = tags.dropFirst().split(separator: ";").reduce(into: [String: String]()) { dict, pair in
+        let parts = pair.split(separator: "=", maxSplits: 1).map(String.init)
+        if parts.count == 2 {
+            dict[parts[0]] = parts[1]
+        }
+    }
+
+    return tagsDictionary["id"] // Extract the message ID
+}
+
 extension ChatMessage {
     func isAction() -> Bool {
         return text.starts(with: "\u{01}ACTION")
@@ -421,7 +473,7 @@ extension ChatMessage {
 }
 
 extension TwitchChatMoblin: WebSocketClientDelegate {
-    func webSocketClientConnected(_ webSocket: WebSocketClient) {
+    func webSocketClientConnected() {
         logger.debug("twitch: chat: Connected")
         webSocket.send(string: "CAP REQ :twitch.tv/membership")
         webSocket.send(string: "CAP REQ :twitch.tv/tags")
@@ -431,13 +483,17 @@ extension TwitchChatMoblin: WebSocketClientDelegate {
         webSocket.send(string: "JOIN #\(channelName)")
     }
 
-    func webSocketClientDisconnected(_: WebSocketClient) {
+    func webSocketClientDisconnected() {
         logger.debug("twitch: chat: Disconnected")
     }
 
-    func webSocketClientReceiveMessage(_: WebSocketClient, string: String) {
+    func webSocketClientReceiveMessage(string: String) {
         for line in string.split(whereSeparator: { $0.isNewline }) {
-            try? handleMessage(message: String(line))
+            if line.contains("CLEARMSG") {
+                handleClearMessage(message: String(line))
+            } else {
+                try? handleMessage(message: String(line))
+            }
         }
     }
 }

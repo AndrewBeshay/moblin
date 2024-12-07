@@ -92,6 +92,12 @@ private struct AddChatItemAction: Codable {
 
 private struct Action: Codable {
     let addChatItemAction: AddChatItemAction?
+    let removeChatItemAction: RemoveChatItemAction? // New field
+
+}
+
+private struct RemoveChatItemAction: Codable {
+    let targetId: String
 }
 
 private struct LiveChatContinuation: Codable {
