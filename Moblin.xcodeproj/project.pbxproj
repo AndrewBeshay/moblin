@@ -98,7 +98,6 @@
 		032B4ED42C34910A00204547 /* MediaPlayerControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032B4ED32C34910A00204547 /* MediaPlayerControlsView.swift */; };
 		032B4ED72C34918E00204547 /* SceneSelectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032B4ED62C34918E00204547 /* SceneSelectorView.swift */; };
 		032B4EDA2C3491A100204547 /* ZoomPresetSelctorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032B4ED92C3491A100204547 /* ZoomPresetSelctorView.swift */; };
-		032B4EDC2C3491F200204547 /* CameraSettingsControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032B4EDB2C3491F200204547 /* CameraSettingsControlView.swift */; };
 		032B4EDE2C34927C00204547 /* SegmentedPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032B4EDD2C34927C00204547 /* SegmentedPicker.swift */; };
 		032BAEF12C0C78FF005D5DA7 /* DeepLinkCreatorSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032BAEF02C0C78FF005D5DA7 /* DeepLinkCreatorSettingsView.swift */; };
 		032F3B3C2C935385002FF97E /* QuickButtonLutsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032F3B3B2C935385002FF97E /* QuickButtonLutsView.swift */; };
@@ -462,6 +461,20 @@
 		03FBD1812B3B0DE500757CA9 /* RtmpServerClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03FBD1802B3B0DE500757CA9 /* RtmpServerClient.swift */; };
 		03FBD1852B3B0DF300757CA9 /* RtmpServerChunkStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03FBD1842B3B0DF300757CA9 /* RtmpServerChunkStream.swift */; };
 		45E3E780842910145791546F /* DjiDeviceScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45E3EAA92F1B2253BB2ED4FC /* DjiDeviceScanner.swift */; };
+		49EF5ECA2D05B5C100401CB1 /* StringProtocolExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EF5EC32D05B5C100401CB1 /* StringProtocolExtensions.swift */; };
+		49EF5ECB2D05B5C100401CB1 /* TwitchChatMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EF5EC12D05B5C100401CB1 /* TwitchChatMessage.swift */; };
+		49EF5ECC2D05B5C100401CB1 /* DownloadedEmote.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EF5EC62D05B5C100401CB1 /* DownloadedEmote.swift */; };
+		49EF5ECD2D05B5C100401CB1 /* APIDataReceiver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EF5EBE2D05B5C100401CB1 /* APIDataReceiver.swift */; };
+		49EF5ECE2D05B5C100401CB1 /* TwitchCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EF5EBC2D05B5C100401CB1 /* TwitchCommand.swift */; };
+		49EF5ECF2D05B5C100401CB1 /* TwitchMessageError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EF5EB92D05B5C100401CB1 /* TwitchMessageError.swift */; };
+		49EF5ED02D05B5C100401CB1 /* TwitchTagStringParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EF5EBA2D05B5C100401CB1 /* TwitchTagStringParser.swift */; };
+		49EF5ED12D05B5C100401CB1 /* TwitchMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EF5EB82D05B5C100401CB1 /* TwitchMessage.swift */; };
+		49EF5ED22D05B5C100401CB1 /* ChatMessageRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EF5EC52D05B5C100401CB1 /* ChatMessageRenderer.swift */; };
+		49EF5ED32D05B5C100401CB1 /* TwitchChat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EF5EC82D05B5C100401CB1 /* TwitchChat.swift */; };
+		49EF5ED42D05B5C100401CB1 /* TwitchEmote.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EF5EB72D05B5C100401CB1 /* TwitchEmote.swift */; };
+		49EF5ED52D05B5C100401CB1 /* APIDataSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EF5EBF2D05B5C100401CB1 /* APIDataSession.swift */; };
+		49EF5ED62D05B5C100401CB1 /* APIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EF5EC02D05B5C100401CB1 /* APIError.swift */; };
+		49EF5ED82D05BA7200401CB1 /* CameraSettingsControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49EF5ED72D05BA7200401CB1 /* CameraSettingsControlView.swift */; };
 		ABF045852C1CEAF800D07696 /* AdaptiveBitrateSrtBela.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABF045842C1CEAF800D07696 /* AdaptiveBitrateSrtBela.swift */; };
 		C7E682562BC2E3FE004EB747 /* ThermalStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03B373FE2A9FCA790028DDD5 /* ThermalStateView.swift */; };
 /* End PBXBuildFile section */
@@ -611,7 +624,6 @@
 		032B4ED32C34910A00204547 /* MediaPlayerControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaPlayerControlsView.swift; sourceTree = "<group>"; };
 		032B4ED62C34918E00204547 /* SceneSelectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneSelectorView.swift; sourceTree = "<group>"; };
 		032B4ED92C3491A100204547 /* ZoomPresetSelctorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomPresetSelctorView.swift; sourceTree = "<group>"; };
-		032B4EDB2C3491F200204547 /* CameraSettingsControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "\U0004CameraSettingsControlView.swift"; sourceTree = "<group>"; };
 		032B4EDD2C34927C00204547 /* SegmentedPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentedPicker.swift; sourceTree = "<group>"; };
 		032BAEF02C0C78FF005D5DA7 /* DeepLinkCreatorSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkCreatorSettingsView.swift; sourceTree = "<group>"; };
 		032BC5B22AD8E18000DEC883 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -1015,6 +1027,20 @@
 		03FBD1802B3B0DE500757CA9 /* RtmpServerClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RtmpServerClient.swift; sourceTree = "<group>"; };
 		03FBD1842B3B0DF300757CA9 /* RtmpServerChunkStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RtmpServerChunkStream.swift; sourceTree = "<group>"; };
 		45E3EAA92F1B2253BB2ED4FC /* DjiDeviceScanner.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DjiDeviceScanner.swift; sourceTree = "<group>"; };
+		49EF5EB72D05B5C100401CB1 /* TwitchEmote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwitchEmote.swift; sourceTree = "<group>"; };
+		49EF5EB82D05B5C100401CB1 /* TwitchMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwitchMessage.swift; sourceTree = "<group>"; };
+		49EF5EB92D05B5C100401CB1 /* TwitchMessageError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwitchMessageError.swift; sourceTree = "<group>"; };
+		49EF5EBA2D05B5C100401CB1 /* TwitchTagStringParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwitchTagStringParser.swift; sourceTree = "<group>"; };
+		49EF5EBC2D05B5C100401CB1 /* TwitchCommand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwitchCommand.swift; sourceTree = "<group>"; };
+		49EF5EBE2D05B5C100401CB1 /* APIDataReceiver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIDataReceiver.swift; sourceTree = "<group>"; };
+		49EF5EBF2D05B5C100401CB1 /* APIDataSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIDataSession.swift; sourceTree = "<group>"; };
+		49EF5EC02D05B5C100401CB1 /* APIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIError.swift; sourceTree = "<group>"; };
+		49EF5EC12D05B5C100401CB1 /* TwitchChatMessage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwitchChatMessage.swift; sourceTree = "<group>"; };
+		49EF5EC32D05B5C100401CB1 /* StringProtocolExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringProtocolExtensions.swift; sourceTree = "<group>"; };
+		49EF5EC52D05B5C100401CB1 /* ChatMessageRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatMessageRenderer.swift; sourceTree = "<group>"; };
+		49EF5EC62D05B5C100401CB1 /* DownloadedEmote.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadedEmote.swift; sourceTree = "<group>"; };
+		49EF5EC82D05B5C100401CB1 /* TwitchChat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwitchChat.swift; sourceTree = "<group>"; };
+		49EF5ED72D05BA7200401CB1 /* CameraSettingsControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSettingsControlView.swift; sourceTree = "<group>"; };
 		ABF045842C1CEAF800D07696 /* AdaptiveBitrateSrtBela.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveBitrateSrtBela.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -1120,10 +1146,10 @@
 		030D487F2B35E4AF003B2014 /* Platforms */ = {
 			isa = PBXGroup;
 			children = (
+				0379BB712AA4BFA500B718B6 /* Twitch */,
 				03EF34B22B1AFB7F00A19221 /* AfreecaTv */,
 				036BE2CD2ABD4C960048F9C5 /* Kick */,
 				03B7DAAF2BA63F4600CEFC1B /* OpenStreamingPlatform */,
-				0379BB712AA4BFA500B718B6 /* Twitch */,
 				0330F2AE2AFAD24F001262C3 /* YouTube */,
 				031BD2C42C2D11DC002D4E10 /* Platform.swift */,
 			);
@@ -1385,7 +1411,7 @@
 		032B4ED22C3490DF00204547 /* Right */ = {
 			isa = PBXGroup;
 			children = (
-				032B4EDB2C3491F200204547 /* CameraSettingsControlView.swift */,
+				49EF5ED72D05BA7200401CB1 /* CameraSettingsControlView.swift */,
 				032B4ED32C34910A00204547 /* MediaPlayerControlsView.swift */,
 				032B4ED62C34918E00204547 /* SceneSelectorView.swift */,
 				032B4EDD2C34927C00204547 /* SegmentedPicker.swift */,
@@ -1916,6 +1942,7 @@
 		0379BB712AA4BFA500B718B6 /* Twitch */ = {
 			isa = PBXGroup;
 			children = (
+				49EF5EC92D05B5C100401CB1 /* TwitchChatAPI */,
 				03C3572E2D041A1F00B8B29F /* TwitchMultiTrack.swift */,
 				035F24412CB76830008288C7 /* TwitchCommon.swift */,
 				031E9FC02C5B1D87009FF4D8 /* TwitchApi.swift */,
@@ -2711,6 +2738,66 @@
 			path = BitratePresets;
 			sourceTree = "<group>";
 		};
+		49EF5EBB2D05B5C100401CB1 /* Message */ = {
+			isa = PBXGroup;
+			children = (
+				49EF5EB72D05B5C100401CB1 /* TwitchEmote.swift */,
+				49EF5EB82D05B5C100401CB1 /* TwitchMessage.swift */,
+				49EF5EB92D05B5C100401CB1 /* TwitchMessageError.swift */,
+				49EF5EBA2D05B5C100401CB1 /* TwitchTagStringParser.swift */,
+			);
+			path = Message;
+			sourceTree = "<group>";
+		};
+		49EF5EBD2D05B5C100401CB1 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				49EF5EBB2D05B5C100401CB1 /* Message */,
+				49EF5EBC2D05B5C100401CB1 /* TwitchCommand.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		49EF5EC22D05B5C100401CB1 /* API */ = {
+			isa = PBXGroup;
+			children = (
+				49EF5EBD2D05B5C100401CB1 /* Models */,
+				49EF5EBE2D05B5C100401CB1 /* APIDataReceiver.swift */,
+				49EF5EBF2D05B5C100401CB1 /* APIDataSession.swift */,
+				49EF5EC02D05B5C100401CB1 /* APIError.swift */,
+				49EF5EC12D05B5C100401CB1 /* TwitchChatMessage.swift */,
+			);
+			path = API;
+			sourceTree = "<group>";
+		};
+		49EF5EC42D05B5C100401CB1 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				49EF5EC32D05B5C100401CB1 /* StringProtocolExtensions.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		49EF5EC72D05B5C100401CB1 /* TwitchChatAppKit */ = {
+			isa = PBXGroup;
+			children = (
+				49EF5EC52D05B5C100401CB1 /* ChatMessageRenderer.swift */,
+				49EF5EC62D05B5C100401CB1 /* DownloadedEmote.swift */,
+			);
+			path = TwitchChatAppKit;
+			sourceTree = "<group>";
+		};
+		49EF5EC92D05B5C100401CB1 /* TwitchChatAPI */ = {
+			isa = PBXGroup;
+			children = (
+				49EF5EC22D05B5C100401CB1 /* API */,
+				49EF5EC42D05B5C100401CB1 /* Extensions */,
+				49EF5EC72D05B5C100401CB1 /* TwitchChatAppKit */,
+				49EF5EC82D05B5C100401CB1 /* TwitchChat.swift */,
+			);
+			path = TwitchChatAPI;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -3188,6 +3275,7 @@
 				0339F9172CE1C78A00F8D6FC /* AVAudioPCMBuffer+Extension.swift in Sources */,
 				0359F8E22BD3DA61005BFDA8 /* MpegTsProgram.swift in Sources */,
 				034CE2EC2B4D2E7200E2C1BD /* StreamRealtimeIrlSettingsView.swift in Sources */,
+				49EF5ED82D05BA7200401CB1 /* CameraSettingsControlView.swift in Sources */,
 				03859D7E2C50183C000EFE43 /* SampleBufferCommon.swift in Sources */,
 				0379BBA52AAD945D00B718B6 /* LocalOverlaysSettingsView.swift in Sources */,
 				03FBD1852B3B0DF300757CA9 /* RtmpServerChunkStream.swift in Sources */,
@@ -3227,7 +3315,6 @@
 				038C76972CAC99E100564200 /* VideoSourceEffect.swift in Sources */,
 				03279CF22B4D2AEC006CEA5A /* RealtimeIrl.swift in Sources */,
 				031A2E112ADDDD7E005CE350 /* VideoStabilizationSettingsView.swift in Sources */,
-				032B4EDC2C3491F200204547 /* CameraSettingsControlView.swift in Sources */,
 				0359F8CE2BD3DA61005BFDA8 /* FLVVideoFourCC.swift in Sources */,
 				0359F8C82BD3DA61005BFDA8 /* FLVFrameType.swift in Sources */,
 				0379E66A2C88C9340021AB59 /* CatPrinterCommands.swift in Sources */,
@@ -3243,6 +3330,19 @@
 				03BA3B412C90124400DEFA3E /* FloydSteinbergDithering.swift in Sources */,
 				03B373FF2A9FCA790028DDD5 /* ThermalStateView.swift in Sources */,
 				0359F8DF2BD3DA61005BFDA8 /* MpegTsPacketizedElementaryStream.swift in Sources */,
+				49EF5ECA2D05B5C100401CB1 /* StringProtocolExtensions.swift in Sources */,
+				49EF5ECB2D05B5C100401CB1 /* TwitchChatMessage.swift in Sources */,
+				49EF5ECC2D05B5C100401CB1 /* DownloadedEmote.swift in Sources */,
+				49EF5ECD2D05B5C100401CB1 /* APIDataReceiver.swift in Sources */,
+				49EF5ECE2D05B5C100401CB1 /* TwitchCommand.swift in Sources */,
+				49EF5ECF2D05B5C100401CB1 /* TwitchMessageError.swift in Sources */,
+				49EF5ED02D05B5C100401CB1 /* TwitchTagStringParser.swift in Sources */,
+				49EF5ED12D05B5C100401CB1 /* TwitchMessage.swift in Sources */,
+				49EF5ED22D05B5C100401CB1 /* ChatMessageRenderer.swift in Sources */,
+				49EF5ED32D05B5C100401CB1 /* TwitchChat.swift in Sources */,
+				49EF5ED42D05B5C100401CB1 /* TwitchEmote.swift in Sources */,
+				49EF5ED52D05B5C100401CB1 /* APIDataSession.swift in Sources */,
+				49EF5ED62D05B5C100401CB1 /* APIError.swift in Sources */,
 				0359F8EE2BD3DA61005BFDA8 /* RTMPMessage.swift in Sources */,
 				0359F8CA2BD3DA61005BFDA8 /* FLVSoundSize.swift in Sources */,
 				032A49B82AC54DD000ED3916 /* ExportSettingsView.swift in Sources */,
@@ -3444,7 +3544,7 @@
 				CODE_SIGN_ENTITLEMENTS = "Moblin Screen Recording/Moblin Screen Recording.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = L82N7LD4N5;
+				DEVELOPMENT_TEAM = 88NC43T2FF;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -3463,7 +3563,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.eerimoq.Mobs.Moblin-Capture";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.abeshay.Mobs.Moblin-Capture";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -3482,7 +3582,7 @@
 				CODE_SIGN_ENTITLEMENTS = "Moblin Screen Recording/Moblin Screen Recording.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = L82N7LD4N5;
+				DEVELOPMENT_TEAM = 88NC43T2FF;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -3501,7 +3601,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.eerimoq.Mobs.Moblin-Capture";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.abeshay.Mobs.Moblin-Capture";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -3654,7 +3754,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = L82N7LD4N5;
+				DEVELOPMENT_TEAM = 88NC43T2FF;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Moblin/Info.plist;
@@ -3686,7 +3786,7 @@
 				);
 				MARKETING_VERSION = 0.389.0;
 				MTL_HEADER_SEARCH_PATHS = "$(HEADER_SEARCH_PATHS)";
-				PRODUCT_BUNDLE_IDENTIFIER = com.eerimoq.Mobs;
+				PRODUCT_BUNDLE_IDENTIFIER = com.abeshay.Mobs;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -3709,7 +3809,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "";
-				DEVELOPMENT_TEAM = L82N7LD4N5;
+				DEVELOPMENT_TEAM = 88NC43T2FF;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Moblin/Info.plist;
@@ -3741,7 +3841,7 @@
 				);
 				MARKETING_VERSION = 0.389.0;
 				MTL_HEADER_SEARCH_PATHS = "$(HEADER_SEARCH_PATHS)";
-				PRODUCT_BUNDLE_IDENTIFIER = com.eerimoq.Mobs;
+				PRODUCT_BUNDLE_IDENTIFIER = com.abeshay.Mobs;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
@@ -3760,7 +3860,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = L82N7LD4N5;
+				DEVELOPMENT_TEAM = 88NC43T2FF;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -3779,7 +3879,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.eerimoq.Mobs.Watch.Widget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.abeshay.Mobs.Watch.Widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -3798,7 +3898,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = L82N7LD4N5;
+				DEVELOPMENT_TEAM = 88NC43T2FF;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -3817,7 +3917,7 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.eerimoq.Mobs.Watch.Widget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.abeshay.Mobs.Watch.Widget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -3834,10 +3934,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "Moblin Watch/MoblinWatch.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Moblin Watch/Preview Content\"";
-				DEVELOPMENT_TEAM = L82N7LD4N5;
+				DEVELOPMENT_TEAM = 88NC43T2FF;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -3851,7 +3952,7 @@
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = Yes;
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = Yes;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.eerimoq.Mobs;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.abeshay.Mobs;
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -3859,8 +3960,9 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.eerimoq.Mobs.Watch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.abeshay.Mobs.Watch;
 				PRODUCT_NAME = Moblin;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
@@ -3877,10 +3979,11 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = "Moblin Watch/MoblinWatch.entitlements";
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"Moblin Watch/Preview Content\"";
-				DEVELOPMENT_TEAM = L82N7LD4N5;
+				DEVELOPMENT_TEAM = 88NC43T2FF;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
@@ -3894,7 +3997,7 @@
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = Yes;
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = Yes;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.eerimoq.Mobs;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.abeshay.Mobs;
 				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -3902,8 +4005,9 @@
 				);
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.eerimoq.Mobs.Watch;
+				PRODUCT_BUNDLE_IDENTIFIER = com.abeshay.Mobs.Watch;
 				PRODUCT_NAME = Moblin;
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;

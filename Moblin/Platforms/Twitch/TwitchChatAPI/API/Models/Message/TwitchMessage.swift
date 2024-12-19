@@ -1,6 +1,6 @@
 import Foundation
 
-public struct Message {
+public struct TwitchMessage {
     let tags: [String: String]
     let sourceString: String?
     public let command: Command

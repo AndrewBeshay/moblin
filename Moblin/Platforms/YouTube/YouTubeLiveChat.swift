@@ -306,6 +306,7 @@ final class YouTubeLiveChat: NSObject {
             model.appendChatMessage(platform: .youTube,
                                     user: chatDescription.authorName.simpleText,
                                     userId: nil,
+                                    platformId: nil,
                                     userColor: nil,
                                     userBadges: [],
                                     segments: nonMutSegments,
@@ -315,7 +316,8 @@ final class YouTubeLiveChat: NSObject {
                                     isSubscriber: false,
                                     isModerator: false,
                                     bits: nil,
-                                    highlight: highlight)
+                                    highlight: highlight,
+                                    isDeleted: false)
         }
         return 1
     }

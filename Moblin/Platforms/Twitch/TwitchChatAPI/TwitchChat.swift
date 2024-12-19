@@ -8,7 +8,7 @@ public final class TwitchChat {
             let task = Task.init {
                 do {
                     for try await line in session.lines {
-                        let message = try Message(string: line)
+                        let message = try TwitchMessage(string: line)
 
                         if let chatMessage = ChatMessage(message) {
                             continuation.yield(chatMessage)

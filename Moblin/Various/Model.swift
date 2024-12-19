@@ -164,6 +164,24 @@ struct ChatPostSegment: Identifiable {
     var id: Int
     var text: String?
     var url: URL?
+    
+    // MARK: - Debugging
+    var description: String {
+        return """
+        ChatPostSegment:
+        - ID: \(id)
+        - Text: \(text ?? "N/A")
+        """
+    }
+
+    // Optional: Add a method for detailed debugging
+    func debugDescription() -> String {
+        return """
+        Debugging ChatPostSegment:
+        - ID: \(id)
+        - Text Content: \(text ?? "No text")
+        """
+    }
 }
 
 func makeChatPostTextSegments(text: String, id: inout Int) -> [ChatPostSegment] {
@@ -213,14 +231,6 @@ struct ChatHighlight {
     }
 }
 
-enum Platform: String, Codable {
-    case twitch = "Twitch"
-    case youTube = "YouTube"
-    case kick = "Kick"
-    case facebook = "Facebook"
-    case custom = "Custom"
-}
-
 
 struct ChatPost: Identifiable, Equatable {
     static func == (lhs: ChatPost, rhs: ChatPost) -> Bool {
@@ -235,6 +245,7 @@ struct ChatPost: Identifiable, Equatable {
     let platform: Platform // Example: .twitch, .youtube
     let platformId: String // Original platform-specific ID
     var user: String?
+    let userId: String?
     var userColor: RgbColor?
     var userBadges: [URL]
     var segments: [ChatPostSegment]
@@ -251,6 +262,7 @@ struct ChatPost: Identifiable, Equatable {
         platform: Platform,
         platformId: String,
         user: String? = nil,
+        userId: String? = nil,
         segments: [ChatPostSegment] = [],
         userColor: RgbColor? = nil,
         timestamp: String? = nil,
@@ -267,6 +279,7 @@ struct ChatPost: Identifiable, Equatable {
         self.platform = platform
         self.platformId = platformId
         self.user = user
+        self.userId = userId
         self.segments = segments
         self.userColor = userColor
         self.timestamp = timestamp ?? ""
@@ -278,6 +291,33 @@ struct ChatPost: Identifiable, Equatable {
         self.bits = bits
         self.highlight = highlight
         self.isDeleted = isDeleted
+    }
+    
+    // MARK: Debugging
+    func debugDescription() -> String {
+        return """
+        ChatPost:
+        - ID: \(id)
+        - Platform: \(platform)
+        - Platform ID: \(platformId)
+        - User: \(user ?? "N/A")
+        - UserId: \(userId ?? "N/A")
+        - User Badges: \(userBadges)
+        - Segments: \(segments)
+        - Timestamp: \(timestamp)
+        - Timestamp Time: \(timestampTime)
+        - Is Action: \(isAction)
+        - Is Subscriber: \(isSubscriber)
+        - Is Moderator: \(isModerator)
+        - Bits: \(bits ?? "N/A")
+        - Highlight: \(highlight?.title ?? "N/A")
+        - Is Deleted: \(isDeleted)
+        """
+    }
+
+    // Optionally conform to CustomStringConvertible for direct print/logging
+    var description: String {
+        debugDescription()
     }
 }
 
@@ -4934,16 +4974,34 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         if pollEnabled {
             handlePollVote(vote: segments.first?.text?.trim())
         }
+//        
+//        init(
+//            platform: Platform,
+//            platformId: String,
+//            user: String? = nil,
+//            segments: [ChatPostSegment] = [],
+//            userColor: RgbColor? = nil,
+//            timestamp: String? = nil,
+//            timestampTime: ContinuousClock.Instant,
+//            userBadges: [URL] = [],
+//            isAction: Bool = false,
+//            isSubscriber: Bool = false,
+//            isModerator: Bool = false,
+//            bits: String? = nil,
+//            highlight: ChatHighlight? = nil,
+//            isDeleted: Bool = false
+//        ) {
+            
         let post = ChatPost(
             platform: platform,
             platformId: platformId ?? "",
-            id: chatPostId,
             user: user,
-            userColor: userColor?.makeReadableOnDarkBackground(),
-            userBadges: userBadges,
+            userId: userId,
             segments: segments,
+            userColor: userColor?.makeReadableOnDarkBackground(),
             timestamp: timestamp,
             timestampTime: timestampTime,
+            userBadges: userBadges,
             isAction: isAction,
             isSubscriber: isSubscriber,
             isModerator: isModerator,
@@ -4951,6 +5009,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             highlight: highlight,
             isDeleted: isDeleted
         )
+        
+        logger.debug(post.debugDescription())
 
         newChatPosts.append(post)
         if interactiveChatPaused {
