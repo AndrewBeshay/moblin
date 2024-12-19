@@ -1,8 +1,7 @@
-
-import TwitchChat
+import UIKit
 
 public enum ChatMessageRenderer {
-    public static func attributedString(for message: ChatMessage, font: NSFont) async -> NSAttributedString {
+    public static func attributedString(for message: ChatMessage, font: UIFont) async -> NSAttributedString {
         let attributedString = NSMutableAttributedString(string: message.text, attributes: [
             .font: font
         ])
@@ -28,7 +27,7 @@ public enum ChatMessageRenderer {
                 group.addTask {
                     do {
                         let (data, _) = try await URLSession.shared.data(from: emote.imageURL)
-                        guard let image = NSImage(data: data) else { throw ChatMessageRenderError.corruptImageData }
+                        guard let image = UIImage(data: data) else { throw ChatMessageRenderError.corruptImageData }
                         return DownloadedEmote(image: image, range: emote.range)
                     } catch {
                         return nil

@@ -14,7 +14,7 @@ private struct Sender: Decodable {
     var identity: Identity
 }
 
-private struct ChatMessage: Decodable {
+private struct KickChatMessage: Decodable {
     var content: String
     var sender: Sender
 
@@ -44,9 +44,9 @@ private func decodeEvent(message: String) throws -> (String, String) {
     throw "Failed to get message event type"
 }
 
-private func decodeChatMessage(data: String) throws -> ChatMessage {
+private func decodeChatMessage(data: String) throws -> KickChatMessage {
     return try JSONDecoder().decode(
-        ChatMessage.self,
+        KickChatMessage.self,
         from: data.data(using: String.Encoding.utf8)!
     )
 }
@@ -195,10 +195,15 @@ final class KickPusher: NSObject {
         }
         delegate?.kickPusherAppendMessage(
             user: message.sender.username,
+            userId: nil,
+            platformId: nil,
             userColor: RgbColor.fromHex(string: message.sender.identity.color),
             segments: segments,
             isSubscriber: message.isSubscriber(),
-            isModerator: message.isModerator()
+            isModerator: message.isModerator(),
+            bits: nil,
+            highlight: nil,
+            isDeleted: false
         )
     }
 

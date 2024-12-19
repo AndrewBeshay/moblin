@@ -1,6 +1,6 @@
 import Foundation
 
-public struct Emote {
+public struct TwitchEmote {
     private let identifier: String
     public let range: ClosedRange<Int>
 
@@ -13,12 +13,12 @@ public struct Emote {
         }
     }
 
-    static func emotes(from string: String) -> [Emote] {
+    static func emotes(from string: String) -> [TwitchEmote] {
         let emoteDefinitions = string.split(separator: "/")
         return emoteDefinitions.flatMap { emotes(fromDefinition: $0) }
     }
 
-    private static func emotes(fromDefinition definition: Substring) -> [Emote] {
+    private static func emotes(fromDefinition definition: Substring) -> [TwitchEmote] {
         let parts = definition.split(separator: ":")
         guard parts.count == 2, let emoteID = parts.first, let emoteRangesString = parts.last else { return [] }
         let emoteRanges = emoteRangesString.split(separator: ",").compactMap { emoteRangeString -> ClosedRange<Int>? in
@@ -31,7 +31,7 @@ public struct Emote {
             else { return nil }
             return rangeStartIndex...rangeEndIndex
         }
-        return emoteRanges.map { Emote(identifier: String(emoteID), range: $0) }
+        return emoteRanges.map { TwitchEmote(identifier: String(emoteID), range: $0) }
     }
 }
 

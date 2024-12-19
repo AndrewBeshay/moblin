@@ -3,13 +3,15 @@ import SwiftUI
 struct StreamButtonText: View {
     @EnvironmentObject var model: Model
     var text: String
-
+    var color: Color
+    
     var body: some View {
         Text(text)
             .foregroundColor(.white)
             .frame(minWidth: 60)
             .padding(5)
-            .background(model.database.streamButtonColor!.color())
+//            .background(model.database.streamButtonColor!.color())
+            .background(color)
             .cornerRadius(10)
     }
 }
@@ -24,7 +26,10 @@ struct StreamButton: View {
             Button(action: {
                 isPresentingStopConfirm = true
             }, label: {
-                StreamButtonText(text: String(localized: "End"))
+                StreamButtonText(
+                    text: String(localized: "End"),
+                    color: .green // Color for "End" button
+                )
                     .overlay(
                         RoundedRectangle(cornerRadius: 10)
                             .stroke(.white)
@@ -52,8 +57,10 @@ struct StreamButton: View {
             Button(action: {
                 isPresentingGoLiveConfirm = true
             }, label: {
-                StreamButtonText(text: String(localized: "Go Live"))
-            })
+                StreamButtonText(
+                    text: String(localized: "Go Live"),
+                    color: .red // Color for "Go Live" button
+                )            })
             .confirmationDialog("", isPresented: $isPresentingGoLiveConfirm) {
                 Button("Go Live") {
                     model.startStream()
@@ -64,7 +71,10 @@ struct StreamButton: View {
                 model.resetWizard()
                 model.isPresentingSetupWizard = true
             }, label: {
-                StreamButtonText(text: String(localized: "Setup"))
+                StreamButtonText(
+                                    text: String(localized: "Setup"),
+                                    color: .blue // Color for "Setup" button
+                                )
             })
             .sheet(isPresented: $model.isPresentingSetupWizard) {
                 NavigationStack {
