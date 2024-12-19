@@ -159,6 +159,7 @@ protocol TwitchChatMoblinDelegate: AnyObject {
     func twitchChatMoblinAppendMessage(
         user: String?,
         userId: String?,
+        platformId: String?,
         userColor: RgbColor?,
         userBadges: [URL],
         segments: [ChatPostSegment],
@@ -166,8 +167,12 @@ protocol TwitchChatMoblinDelegate: AnyObject {
         isSubscriber: Bool,
         isModerator: Bool,
         bits: String?,
-        highlight: ChatHighlight?
+        highlight: ChatHighlight?,
+        isDeleted: Bool
     )
+    
+    func twitchChatMoblinUpdateMessage(with username: String)
+    func twitchChatMoblinRemoveMessage(at index: Int)
 }
 
 final class TwitchChatMoblin {
@@ -256,9 +261,8 @@ final class TwitchChatMoblin {
             bits: message.bits
         )
         delegate?.twitchChatMoblinAppendMessage(
-            platform: .twitch,
-            user: message.displayName,
-            userId: message.userId,
+            user: message.loginName,
+            userId: message.displayName,
             platformId: messageId,
             userColor: RgbColor.fromHex(string: message.senderColor ?? ""),
             userBadges: badgeUrls,
@@ -338,12 +342,13 @@ final class TwitchChatMoblin {
 
         // Remove or mark the deleted message in the model
         DispatchQueue.main.async {
-            if let index = self.model.chatPosts.firstIndex(where: { $0.platformId == messageId }) {
-                // self.model.chatPosts.remove(at: index)
-                // Alternatively, you could mark the message as deleted:
-                //                self.model.chatPosts[index].message = "[Deleted by Moderator]"
-                self.model.chatPosts[index].isDeleted = true
-            }
+            self.delegate?.twitchChatMoblinRemoveMessage(at: Int(messageId) ?? 0)
+//            if let index = self.delegate?.firstIndex(where: { $0.platformId == messageId }) {
+//                // self.model.chatPosts.remove(at: index)
+//                // Alternatively, you could mark the message as deleted:
+//                //                self.model.chatPosts[index].message = "[Deleted by Moderator]"
+//                self.model.chatPosts[index].isDeleted = true
+//            }
         }
 
         // Optionally, log the deletion reason
@@ -366,11 +371,14 @@ final class TwitchChatMoblin {
         
         // Remove or mark the deleted message in the model
         DispatchQueue.main.async {
-            for index in self.model.chatPosts.indices {
-                if self.model.chatPosts[index].userId == username {
-                    self.model.chatPosts[index].isDeleted = true
-                }
-            }
+            
+            self.delegate?.twitchChatMoblinUpdateMessage(with: username)
+            
+//            for index in self.model.chatPosts.indices {
+//                if self.model.chatPosts[index].userId == username {
+//                    self.model.chatPosts[index].isDeleted = true
+//                }
+//            }
         }
         
 //        // Extract the metadata (tags) from the message

@@ -532,11 +532,17 @@ extension RemoteControlAssistant: TwitchEventSubDelegate {
 }
 
 extension RemoteControlAssistant: TwitchChatMoblinDelegate {
+    
+    func twitchChatMoblinUpdateMessage(with username: String) {}
+    
+    func twitchChatMoblinRemoveMessage(at index: Int) {}
+    
     func twitchChatMoblinMakeErrorToast(title _: String, subTitle _: String?) {}
 
     func twitchChatMoblinAppendMessage(
         user: String?,
         userId: String?,
+        platformId: String?,
         userColor: RgbColor?,
         userBadges: [URL],
         segments: [ChatPostSegment],
@@ -544,7 +550,8 @@ extension RemoteControlAssistant: TwitchChatMoblinDelegate {
         isSubscriber: Bool,
         isModerator: Bool,
         bits: String?,
-        highlight _: ChatHighlight?
+        highlight _: ChatHighlight?,
+        isDeleted _: Bool
     ) {
         let timestamp = digitalClockFormatter.string(from: Date())
         let message = RemoteControlChatMessage(id: getNextChatMessageId(),

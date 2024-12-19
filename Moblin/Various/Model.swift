@@ -228,6 +228,13 @@ struct ChatHighlight {
     }
 }
 
+//enum Platform: String, Codable {
+//    case twitch = "Twitch"
+//    case youTube = "YouTube"
+//    case kick = "Kick"
+//    case facebook = "Facebook"
+//    case custom = "Custom"
+//}
 
 struct ChatPost: Identifiable, Equatable {
     static func == (lhs: ChatPost, rhs: ChatPost) -> Bool {
@@ -7112,6 +7119,7 @@ extension Model: RemoteControlStreamerDelegate {
             appendChatMessage(platform: message.platform,
                               user: message.user,
                               userId: message.userId,
+                              platformId: "",
                               userColor: message.userColor,
                               userBadges: message.userBadges,
                               segments: message.segments,
@@ -7122,7 +7130,8 @@ extension Model: RemoteControlStreamerDelegate {
                               isModerator: message.isModerator,
                               bits: message.bits,
                               highlight: nil,
-                              live: live)
+                              live: live,
+                              isDeleted: false)
             remoteControlStreamerLatestReceivedChatMessageId = message.id
         }
     }
@@ -9993,6 +10002,27 @@ extension Model: MediaDelegate {
 }
 
 extension Model: TwitchChatMoblinDelegate {
+    func twitchChatMoblinUpdateMessage(with username: String) {
+        DispatchQueue.main.async {
+            for index in self.chatPosts.indices {
+                if self.chatPosts[index].user?.lowercased() == username.lowercased() {
+                    self.chatPosts[index].isDeleted = true
+                }
+            }
+            logger.debug("Marked all messages from username \(username) as deleted.")
+        }
+    }
+    
+    func twitchChatMoblinRemoveMessage(at index: Int) {
+        guard index >= 0 && index < self.chatPosts.count else {
+            logger.error("Invalid index: \(index). Unable to remove message.")
+            return
+        }
+        self.chatPosts[index].isDeleted = true
+//        self.chatPosts.remove(at: index)
+        logger.debug("Removed chat message at index \(index).")
+    }
+    
     func twitchChatMoblinMakeErrorToast(title: String, subTitle: String?) {
         makeErrorToast(title: title, subTitle: subTitle)
     }
@@ -10000,6 +10030,7 @@ extension Model: TwitchChatMoblinDelegate {
     func twitchChatMoblinAppendMessage(
         user: String?,
         userId: String?,
+        platformId: String?,
         userColor: RgbColor?,
         userBadges: [URL],
         segments: [ChatPostSegment],
@@ -10007,11 +10038,13 @@ extension Model: TwitchChatMoblinDelegate {
         isSubscriber: Bool,
         isModerator: Bool,
         bits: String?,
-        highlight: ChatHighlight?
+        highlight: ChatHighlight?,
+        isDeleted: Bool
     ) {
         appendChatMessage(platform: .twitch,
                           user: user,
                           userId: userId,
+                          platformId: platformId,
                           userColor: userColor,
                           userBadges: userBadges,
                           segments: segments,
@@ -10022,7 +10055,8 @@ extension Model: TwitchChatMoblinDelegate {
                           isModerator: isModerator,
                           bits: bits,
                           highlight: highlight,
-                          live: true)
+                          live: true,
+                          isDeleted: false)
     }
 }
 
@@ -10034,13 +10068,16 @@ extension Model: KickOusherDelegate {
     func kickPusherAppendMessage(
         user: String,
         userColor: RgbColor?,
+        platformId: String,
         segments: [ChatPostSegment],
         isSubscriber: Bool,
-        isModerator: Bool
+        isModerator: Bool,
+        isDeleted: Bool
     ) {
         appendChatMessage(platform: .kick,
                           user: user,
                           userId: nil,
+                          platformId: platformId,
                           userColor: userColor,
                           userBadges: [],
                           segments: segments,
@@ -10051,6 +10088,7 @@ extension Model: KickOusherDelegate {
                           isModerator: isModerator,
                           bits: nil,
                           highlight: nil,
-                          live: true)
+                          live: true,
+                          isDeleted: false)
     }
 }

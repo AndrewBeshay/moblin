@@ -61,9 +61,11 @@ protocol KickOusherDelegate: AnyObject {
     func kickPusherAppendMessage(
         user: String,
         userColor: RgbColor?,
+        platformId: String,
         segments: [ChatPostSegment],
         isSubscriber: Bool,
-        isModerator: Bool
+        isModerator: Bool,
+        isDeleted: Bool
     )
 }
 
@@ -193,16 +195,14 @@ final class KickPusher: NSObject {
                 segments.append(segment)
             }
         }
+        
         delegate?.kickPusherAppendMessage(
             user: message.sender.username,
-            userId: nil,
-            platformId: nil,
             userColor: RgbColor.fromHex(string: message.sender.identity.color),
+            platformId: "",
             segments: segments,
             isSubscriber: message.isSubscriber(),
             isModerator: message.isModerator(),
-            bits: nil,
-            highlight: nil,
             isDeleted: false
         )
     }
