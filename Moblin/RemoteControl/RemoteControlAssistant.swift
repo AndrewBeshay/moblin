@@ -535,12 +535,13 @@ extension RemoteControlAssistant: TwitchChatMoblinDelegate {
     
     func twitchChatMoblinUpdateMessage(with username: String) {}
     
-    func twitchChatMoblinRemoveMessage(at index: Int) {}
+    func twitchChatMoblinRemoveMessage(at msgId: String) {}
     
     func twitchChatMoblinMakeErrorToast(title _: String, subTitle _: String?) {}
 
     func twitchChatMoblinAppendMessage(
         user: String?,
+        displayName: String?,
         userId: String?,
         platformId: String?,
         userColor: RgbColor?,

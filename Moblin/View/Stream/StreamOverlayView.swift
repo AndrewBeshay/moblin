@@ -136,9 +136,7 @@ struct StreamOverlayView: View {
                     Spacer()
                     RightOverlayBottomView(width: width)
                 }
-                ChatOverlayView()
-                    .opacity(model.database.chat.enabled! ? 1 : 0)
-                    .allowsHitTesting(false)
+                
                 HStack {
                     LeftOverlayView()
                         .padding([.leading], leadingPadding())

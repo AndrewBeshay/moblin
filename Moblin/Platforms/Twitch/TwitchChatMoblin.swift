@@ -158,6 +158,7 @@ protocol TwitchChatMoblinDelegate: AnyObject {
     func twitchChatMoblinMakeErrorToast(title: String, subTitle: String?)
     func twitchChatMoblinAppendMessage(
         user: String?,
+        displayName: String?,
         userId: String?,
         platformId: String?,
         userColor: RgbColor?,
@@ -172,7 +173,7 @@ protocol TwitchChatMoblinDelegate: AnyObject {
     )
     
     func twitchChatMoblinUpdateMessage(with username: String)
-    func twitchChatMoblinRemoveMessage(at index: Int)
+    func twitchChatMoblinRemoveMessage(at msgId: String)
 }
 
 final class TwitchChatMoblin {
@@ -262,7 +263,8 @@ final class TwitchChatMoblin {
         )
         delegate?.twitchChatMoblinAppendMessage(
             user: message.loginName,
-            userId: message.displayName,
+            displayName: message.displayName,
+            userId: message.userId,
             platformId: messageId,
             userColor: RgbColor.fromHex(string: message.senderColor ?? ""),
             userBadges: badgeUrls,
@@ -339,10 +341,11 @@ final class TwitchChatMoblin {
             logger.warning("twitch: chat: Missing message ID in CLEARMSG")
             return
         }
-
+        logger.info(messageId)
         // Remove or mark the deleted message in the model
         DispatchQueue.main.async {
-            self.delegate?.twitchChatMoblinRemoveMessage(at: Int(messageId) ?? 0)
+            logger.debug(messageId)
+            self.delegate?.twitchChatMoblinRemoveMessage(at: messageId)
 //            if let index = self.delegate?.firstIndex(where: { $0.platformId == messageId }) {
 //                // self.model.chatPosts.remove(at: index)
 //                // Alternatively, you could mark the message as deleted:
@@ -367,7 +370,7 @@ final class TwitchChatMoblin {
 //        let banReason = tags["ban-reason"]?.removingPercentEncoding ?? "No reason provided"
 //        let duration = tags["ban-duration"] // Present if it's a timeout
 
-        logger.debug(username)
+        // logger.debug(username)
         
         // Remove or mark the deleted message in the model
         DispatchQueue.main.async {

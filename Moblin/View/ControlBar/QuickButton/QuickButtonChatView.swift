@@ -3,6 +3,7 @@ import SDWebImageSwiftUI
 import SwiftUI
 import WrappingHStack
 
+
 private struct HighlightMessageView: View {
     let image: String
     let name: String

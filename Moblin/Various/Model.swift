@@ -249,6 +249,7 @@ struct ChatPost: Identifiable, Equatable {
     let platform: Platform // Example: .twitch, .youtube
     let platformId: String // Original platform-specific ID
     var user: String?
+    let displayName: String?
     let userId: String?
     var userColor: RgbColor?
     var userBadges: [URL]
@@ -267,6 +268,7 @@ struct ChatPost: Identifiable, Equatable {
         platform: Platform,
         platformId: String,
         user: String? = nil,
+        displayName: String? = nil,
         userId: String? = nil,
         segments: [ChatPostSegment] = [],
         userColor: RgbColor? = nil,
@@ -285,6 +287,7 @@ struct ChatPost: Identifiable, Equatable {
         self.platform = platform
         self.platformId = platformId
         self.user = user
+        self.displayName = displayName
         self.userId = userId
         self.segments = segments
         self.userColor = userColor
@@ -308,6 +311,7 @@ struct ChatPost: Identifiable, Equatable {
         - Platform: \(platform)
         - Platform ID: \(platformId)
         - User: \(user ?? "N/A")
+        - Display Name: \(displayName ?? "N/A")
         - UserId: \(userId ?? "N/A")
         - User Badges: \(userBadges)
         - Segments: \(segments)
@@ -2805,6 +2809,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         appendChatMessage(
             platform: .unknown,
             user: "",
+            displayName: "",
             userId: nil,
             platformId: nil,
             userColor: nil,
@@ -5140,6 +5145,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     func appendChatMessage(
         platform: Platform,
         user: String?,
+        displayName: String?,
         userId: String?,
         platformId: String?,
         userColor: RgbColor?,
@@ -5173,28 +5179,12 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         if pollEnabled, live {
             handlePollVote(vote: segments.first?.text?.trim())
         }
-//        
-//        init(
-//            platform: Platform,
-//            platformId: String,
-//            user: String? = nil,
-//            segments: [ChatPostSegment] = [],
-//            userColor: RgbColor? = nil,
-//            timestamp: String? = nil,
-//            timestampTime: ContinuousClock.Instant,
-//            userBadges: [URL] = [],
-//            isAction: Bool = false,
-//            isSubscriber: Bool = false,
-//            isModerator: Bool = false,
-//            bits: String? = nil,
-//            highlight: ChatHighlight? = nil,
-//            isDeleted: Bool = false
-//        ) {
             
         let post = ChatPost(
             platform: platform,
             platformId: platformId ?? "",
             user: user,
+            displayName: displayName,
             userId: userId,
             segments: segments,
             userColor: userColor?.makeReadableOnDarkBackground(),
@@ -7118,6 +7108,7 @@ extension Model: RemoteControlStreamerDelegate {
         for message in messages where message.id > remoteControlStreamerLatestReceivedChatMessageId {
             appendChatMessage(platform: message.platform,
                               user: message.user,
+                              displayName: message.user,
                               userId: message.userId,
                               platformId: "",
                               userColor: message.userColor,
@@ -9738,6 +9729,7 @@ extension Model: TwitchEventSubDelegate {
     ) {
         appendChatMessage(platform: .twitch,
                           user: user,
+                          displayName: user,
                           userId: nil,
                           platformId: nil,
                           userColor: nil,
@@ -10003,24 +9995,35 @@ extension Model: MediaDelegate {
 
 extension Model: TwitchChatMoblinDelegate {
     func twitchChatMoblinUpdateMessage(with username: String) {
-        DispatchQueue.main.async {
-            for index in self.chatPosts.indices {
-                if self.chatPosts[index].user?.lowercased() == username.lowercased() {
-                    self.chatPosts[index].isDeleted = true
+//            for index in self.chatPosts.indices {
+//                if self.chatPosts[index].userId == username {
+//                    self.chatPosts[index].isDeleted = true
+//                }
+//            }
+        
+        DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                for index in self.chatPosts.indices {
+                    if self.chatPosts[index].userId == username {
+                        self.chatPosts[index].isDeleted = true
+                    }
                 }
             }
             logger.debug("Marked all messages from username \(username) as deleted.")
-        }
     }
     
-    func twitchChatMoblinRemoveMessage(at index: Int) {
-        guard index >= 0 && index < self.chatPosts.count else {
-            logger.error("Invalid index: \(index). Unable to remove message.")
+    func twitchChatMoblinRemoveMessage(at msgId: String) {
+        // Check if a chat post exists with a matching platformId
+        guard let index = self.chatPosts.firstIndex(where: { $0.platformId == msgId }) else {
+            logger.error("Message with platformId \(msgId) not found. Unable to remove message.")
             return
         }
+        
+        // Mark the message as deleted
         self.chatPosts[index].isDeleted = true
-//        self.chatPosts.remove(at: index)
-        logger.debug("Removed chat message at index \(index).")
+
+        // Optional: Log the action
+        logger.debug("Marked message with platformId \(msgId) as deleted at index \(index).")
     }
     
     func twitchChatMoblinMakeErrorToast(title: String, subTitle: String?) {
@@ -10029,6 +10032,7 @@ extension Model: TwitchChatMoblinDelegate {
 
     func twitchChatMoblinAppendMessage(
         user: String?,
+        displayName: String?,
         userId: String?,
         platformId: String?,
         userColor: RgbColor?,
@@ -10043,6 +10047,7 @@ extension Model: TwitchChatMoblinDelegate {
     ) {
         appendChatMessage(platform: .twitch,
                           user: user,
+                          displayName: displayName,
                           userId: userId,
                           platformId: platformId,
                           userColor: userColor,
@@ -10076,6 +10081,7 @@ extension Model: KickOusherDelegate {
     ) {
         appendChatMessage(platform: .kick,
                           user: user,
+                          displayName: nil,
                           userId: nil,
                           platformId: platformId,
                           userColor: userColor,
