@@ -346,13 +346,9 @@ final class TwitchChatMoblin {
         DispatchQueue.main.async {
             logger.debug(messageId)
             self.delegate?.twitchChatMoblinRemoveMessage(at: messageId)
-//            if let index = self.delegate?.firstIndex(where: { $0.platformId == messageId }) {
-//                // self.model.chatPosts.remove(at: index)
-//                // Alternatively, you could mark the message as deleted:
-//                //                self.model.chatPosts[index].message = "[Deleted by Moderator]"
-//                self.model.chatPosts[index].isDeleted = true
-//            }
         }
+
+
 
         // Optionally, log the deletion reason
         if let reason = deletionReason {
@@ -367,62 +363,13 @@ final class TwitchChatMoblin {
         guard let username = components.first(where: { $0.hasPrefix("target-user-id=") })?.replacingOccurrences(of: "target-user-id=", with: "") else {
             return
         }
-//        let banReason = tags["ban-reason"]?.removingPercentEncoding ?? "No reason provided"
-//        let duration = tags["ban-duration"] // Present if it's a timeout
-
-        // logger.debug(username)
         
         // Remove or mark the deleted message in the model
         DispatchQueue.main.async {
-            
-            self.delegate?.twitchChatMoblinUpdateMessage(with: username)
-            
-//            for index in self.model.chatPosts.indices {
-//                if self.model.chatPosts[index].userId == username {
-//                    self.model.chatPosts[index].isDeleted = true
-//                }
-//            }
+            self.delegate?.twitchChatMoblinUpdateMessage(with: username)           
         }
+        logger.debug(username)
         
-//        // Extract the metadata (tags) from the message
-//       let tagsSection = message.split(separator: " ").first(where: { $0.hasPrefix("@") })
-//       guard let tags = tagsSection else {
-//           logger.warning("No tags found in CLEARCHAT message")
-//           return
-//       }
-//
-//       // Parse the tags into a dictionary
-//       let tagsDictionary = tags.dropFirst().split(separator: ";").reduce(into: [String: String]()) { dict, tag in
-//           let parts = tag.split(separator: "=", maxSplits: 1).map(String.init)
-//           if parts.count == 2 {
-//               dict[parts[0]] = parts[1]
-//           }
-//       }
-//
-//       // Extract relevant fields
-//       guard let userId = tagsDictionary["target-user-id"] else {
-//           logger.warning("CLEARCHAT message missing target-user-id")
-//           return
-//       }
-//
-//       let banReason = tagsDictionary["ban-reason"]?.removingPercentEncoding ?? "No reason provided"
-//       let duration = tagsDictionary["ban-duration"] // Present if it's a timeout
-//
-//       // Log the extracted information
-//       if let duration = duration {
-//           logger.info("User \(userId) was timed out for \(duration) seconds. Reason: \(banReason)")
-//       } else {
-//           logger.info("User \(userId) was permanently banned. Reason: \(banReason)")
-//       }
-//
-//       // Remove or mark the user's messages as deleted in the chat model
-//       DispatchQueue.main.async {
-//           for index in self.model.chatPosts.indices {
-//               if self.model.chatPosts[index].userId == userId {
-//                   self.model.chatPosts[index].isDeleted = true
-//               }
-//           }
-//       }
     }
 
     
