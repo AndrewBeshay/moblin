@@ -117,7 +117,7 @@ private struct LineView: View {
                     .frame(height: CGFloat(chat.fontSize * 1.4))
                 }
             }
-            Text(post.user!)
+            Text(post.displayName!)
                 .foregroundColor(usernameColor)
                 .lineLimit(1)
                 .padding([.trailing], 0)

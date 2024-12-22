@@ -198,15 +198,11 @@ final class KickPusher: NSObject {
         
         delegate?.kickPusherAppendMessage(
             user: message.sender.username,
-            userId: nil,
-            platformId: nil,
             userColor: RgbColor.fromHex(string: message.sender.identity.color),
             platformId: "",
             segments: segments,
             isSubscriber: message.isSubscriber(),
             isModerator: message.isModerator(),
-            bits: nil,
-            highlight: nil,
             isDeleted: false
         )
     }
