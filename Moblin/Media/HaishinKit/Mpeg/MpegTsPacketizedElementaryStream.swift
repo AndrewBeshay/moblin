@@ -177,21 +177,27 @@ struct MpegTsPacketizedElementaryStream {
         presentationTimeStamp: CMTime,
         decodeTimeStamp: CMTime,
         config: MpegTsVideoConfigHevc?,
-        streamId: UInt8
+        streamId: UInt8,
+        timecode: Date? = nil
     ) {
         if let config {
             if let nal = config.array[.vps] {
                 data += nalUnitStartCode
-                data.append(nal[0])
+                data += nal[0]
             }
             if let nal = config.array[.sps] {
                 data += nalUnitStartCode
-                data.append(nal[0])
+                data += nal[0]
             }
             if let nal = config.array[.pps] {
                 data += nalUnitStartCode
-                data.append(nal[0])
+                data += nal[0]
             }
+        }
+        if let timecode {
+            data += nalUnitStartCode
+            let payload = HevcSei(payload: .timeCode(HevcSeiPayloadTimeCode(clock: timecode))).encode()
+            data += HevcNalUnit(type: .prefixSeiNut, temporalIdPlusOne: 1, payload: payload).encode()
         }
         var payload = Data(bytesNoCopy: bytes, count: count, deallocator: .none)
         addNalUnitStartCodes(&payload)

@@ -23,10 +23,12 @@ class SrtServerClient {
     private var videoCodecLockQueue = DispatchQueue(label: "com.eerimoq.Moblin.VideoCodec")
     private var targetLatenciesSynchronizer =
         TargetLatenciesSynchronizer(targetLatency: srtServerClientLatency)
+    private let timecodesEnabled: Bool
 
-    init(server: SrtServer, streamId: String) {
+    init(server: SrtServer, streamId: String, timecodesEnabled: Bool) {
         self.server = server
         self.streamId = streamId
+        self.timecodesEnabled = timecodesEnabled
     }
 
     func run(clientSocket: Int32) {
@@ -255,9 +257,7 @@ class SrtServerClient {
         videoDecoder?.startRunning()
     }
 
-    private func tryMakeSampleBuffer(packetId: UInt16,
-                                     forUpdate: Bool) -> (CMSampleBuffer, ElementaryStreamType)?
-    {
+    private func tryMakeSampleBuffer(packetId: UInt16, forUpdate: Bool) -> (CMSampleBuffer, ElementaryStreamType)? {
         guard let data = elementaryStreamSpecificData[packetId] else {
             return nil
         }
@@ -352,11 +352,27 @@ class SrtServerClient {
                                          packetizedElementaryStream: inout MpegTsPacketizedElementaryStream)
         -> (CMSampleBuffer, ElementaryStreamType)?
     {
-        let units = readH265NalUnits(packetizedElementaryStream.data, [.sps, .pps, .vps])
+        let units = readH265NalUnits(packetizedElementaryStream.data, [.sps, .pps, .vps, .prefixSeiNut])
         let formatDescription = units.makeFormatDescription()
         if let formatDescription, formatDescriptions[packetId] != formatDescription {
             formatDescriptions[packetId] = formatDescription
             handleVideoFormatDescription(formatDescription)
+        }
+        if timecodesEnabled {
+            for unit in units {
+                switch unit.type {
+                case .prefixSeiNut:
+                    switch HevcSei(data: unit.payload)?.payload {
+                    case let .timeCode(timeCode):
+                        let clock = timeCode.makeClock(vuiTimeScale: 1)
+                        logger.debug("Got H.265 SEI timecode \(clock) \(clock.timeIntervalSince1970)")
+                    default:
+                        break
+                    }
+                default:
+                    break
+                }
+            }
         }
         guard let (sampleBuffer,
                    firstReceivedPresentationTimeStamp,

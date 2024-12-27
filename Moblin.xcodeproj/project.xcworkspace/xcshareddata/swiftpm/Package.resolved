@@ -164,6 +164,15 @@
       }
     },
     {
+      "identity" : "truetime.swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Gisman4ik/TrueTime.swift",
+      "state" : {
+        "revision" : "78f7945469ad8dd6344987f8e62afc13b8c32bc2",
+        "version" : "5.2.0"
+      }
+    },
+    {
       "identity" : "twitch-chat",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/eerimoq/twitch-chat",

@@ -38,23 +38,24 @@ private struct ChatOverlayView: View {
 
     var body: some View {
         ZStack {
-            if model.showingPanel != .chat {
-                if model.stream.portrait! || model.database.portrait! {
-                    VStack {
-                        StreamOverlayChatView()
-                        Rectangle()
-                            .foregroundColor(.clear)
-                            .frame(height: 85)
-                    }
-                } else {
-                    GeometryReader { metrics in
-                        StreamOverlayChatView()
-                            .frame(width: metrics.size.width * 0.95)
-                            .contentShape(Rectangle()) // Confine gesture area
-                            .gesture(DragGesture())    // Allow scrolling within chat area
-                            .scrollIndicators(.hidden)
-                    }
+            if model.stream.portrait! || model.database.portrait! {
+                VStack {
+                    StreamOverlayChatView()
+                    Rectangle()
+                        .foregroundColor(.clear)
+                        .frame(height: 85)
                 }
+            } else {
+                GeometryReader { metrics in
+                    StreamOverlayChatView()
+                        .frame(width: metrics.size.width * 0.95)
+                }
+            }
+            if model.chatPaused {
+                ChatInfo(
+                    message: String(localized: "Chat paused: \(model.pausedChatPostsCount) new messages")
+                )
+                .padding(2)
             }
         }
     }
@@ -128,15 +129,20 @@ struct StreamOverlayView: View {
                 FrontTorchView()
             }
             ZStack {
-                ChatOverlayView()
-                    .opacity(model.database.chat.enabled! ? 1 : 0)
-                    .scrollIndicators(.hidden)
-                    
+                if model.showingPanel != .chat, model.interactiveChat {
+                    ChatOverlayView()
+                        .opacity(model.database.chat.enabled! ? 1 : 0)
+                        .allowsHitTesting(true)
+                }
                 HStack {
                     Spacer()
                     RightOverlayBottomView(width: width)
                 }
-                
+                if model.showingPanel != .chat, !model.interactiveChat {
+                    ChatOverlayView()
+                        .opacity(model.database.chat.enabled! ? 1 : 0)
+                        .allowsHitTesting(false)
+                }
                 HStack {
                     LeftOverlayView()
                         .padding([.leading], leadingPadding())

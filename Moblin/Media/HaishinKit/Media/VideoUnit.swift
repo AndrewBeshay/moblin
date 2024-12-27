@@ -173,6 +173,7 @@ final class VideoUnit: NSObject {
     weak var mixer: Mixer?
     private var effects: [VideoEffect] = []
     private var pendingAfterAttachEffects: [VideoEffect]?
+    private var pendingAfterAttachRotation: Double?
 
     var frameRate = VideoUnit.defaultFrameRate {
         didSet {
@@ -220,6 +221,7 @@ final class VideoUnit: NSObject {
     private var frameTimer = SimpleTimer(queue: lockQueue)
     private var firstFrameTime: ContinuousClock.Instant?
     private var isFirstAfterAttach = false
+    private var rotation: Double = 0.0
     private var latestSampleBufferAppendTime: CMTime = .zero
     private var lowFpsImageEnabled: Bool = false
     private var lowFpsImageInterval: Double = 1.0
@@ -337,9 +339,9 @@ final class VideoUnit: NSObject {
         }
     }
 
-    func setPendingAfterAttachEffects(effects: [VideoEffect]) {
+    func setPendingAfterAttachEffects(effects: [VideoEffect], rotation: Double) {
         lockQueue.sync {
-            self.setPendingAfterAttachEffectsInner(effects: effects)
+            self.setPendingAfterAttachEffectsInner(effects: effects, rotation: rotation)
         }
     }
 
@@ -637,6 +639,19 @@ final class VideoUnit: NSObject {
             ))
     }
 
+    private func rotateCoreImage(_ image: CIImage, _ rotation: Double) -> CIImage {
+        switch rotation {
+        case 90:
+            return image.oriented(.right)
+        case 180:
+            return image.oriented(.down)
+        case 270:
+            return image.oriented(.left)
+        default:
+            return image
+        }
+    }
+
     private func applyEffectsCoreImage(_ imageBuffer: CVImageBuffer,
                                        _ sampleBuffer: CMSampleBuffer,
                                        _ applyBlur: Bool,
@@ -646,6 +661,7 @@ final class VideoUnit: NSObject {
         if videoOrientation != .portrait && imageBuffer.isPortrait() {
             image = image.oriented(.left)
         }
+        image = rotateCoreImage(image, rotation)
         if image.extent.size != outputSize {
             image = scaleImage(image)
         }
@@ -708,13 +724,22 @@ final class VideoUnit: NSObject {
         return filter.outputImage
     }
 
+    private func calcBlurRadius() -> Double {
+        if let latestSampleBufferTime {
+            let offset = ContinuousClock.now - latestSampleBufferTime
+            return 15 + min(offset.seconds, 2) * 15
+        } else {
+            return 25
+        }
+    }
+
     private func blurImageMetalPetal(_ image: MTIImage?) -> MTIImage? {
         guard let image else {
             return nil
         }
         let filter = MTIMPSGaussianBlurFilter()
         filter.inputImage = image
-        filter.radius = Float(25 * (image.extent.size.maximum() / 1920))
+        filter.radius = Float(calcBlurRadius() * (image.extent.size.maximum() / 1920))
         return filter.outputImage
     }
 
@@ -774,7 +799,7 @@ final class VideoUnit: NSObject {
     private func blurImage(_ image: CIImage) -> CIImage {
         let filter = CIFilter.gaussianBlur()
         filter.inputImage = image
-        filter.radius = Float(25 * (image.extent.size.maximum() / 1920))
+        filter.radius = Float(calcBlurRadius() * (image.extent.size.maximum() / 1920))
         return filter.outputImage?.cropped(to: image.extent) ?? image
     }
 
@@ -791,8 +816,9 @@ final class VideoUnit: NSObject {
         }
     }
 
-    private func setPendingAfterAttachEffectsInner(effects: [VideoEffect]) {
+    private func setPendingAfterAttachEffectsInner(effects: [VideoEffect], rotation: Double) {
         pendingAfterAttachEffects = effects
+        pendingAfterAttachRotation = rotation
     }
 
     private func usePendingAfterAttachEffectsInner() {
@@ -802,6 +828,10 @@ final class VideoUnit: NSObject {
             }
             effects = pendingAfterAttachEffects
             self.pendingAfterAttachEffects = nil
+        }
+        if let pendingAfterAttachRotation {
+            rotation = pendingAfterAttachRotation
+            self.pendingAfterAttachRotation = nil
         }
     }
 
@@ -910,7 +940,14 @@ final class VideoUnit: NSObject {
                             self.faceDetectionsComplete(completion)
                             return
                         }
-                        completion.faceDetections = (request as? VNDetectFaceLandmarksRequest)?.results
+                        // Only use 5 biggest to limit processing.
+                        if let results = (request as? VNDetectFaceLandmarksRequest)?
+                            .results?
+                            .sorted(by: { a, b in a.boundingBox.height > b.boundingBox.height })
+                            .prefix(5)
+                        {
+                            completion.faceDetections = Array(results)
+                        }
                         self.faceDetectionsComplete(completion)
                     }
                 }
@@ -957,7 +994,7 @@ final class VideoUnit: NSObject {
         if isFirstAfterAttach {
             usePendingAfterAttachEffectsInner()
         }
-        if !effects.isEmpty || applyBlur || imageBuffer.size != outputSize {
+        if !effects.isEmpty || applyBlur || imageBuffer.size != outputSize || rotation != 0.0 {
             (newImageBuffer, newSampleBuffer) = applyEffects(
                 imageBuffer,
                 sampleBuffer,
@@ -1172,10 +1209,10 @@ final class VideoUnit: NSObject {
         colorSpace: AVCaptureColorSpace
     ) -> (AVCaptureDevice.Format?, String?) {
         var formats = device.formats
-            .filter { $0.isFrameRateSupported(frameRate) }
-            .filter { $0.formatDescription.dimensions.width == width }
-            .filter { $0.formatDescription.dimensions.height == height }
-            .filter { $0.supportedColorSpaces.contains(colorSpace) }
+        formats = formats.filter { $0.isFrameRateSupported(frameRate) }
+        formats = formats.filter { $0.formatDescription.dimensions.width == width }
+        formats = formats.filter { $0.formatDescription.dimensions.height == height }
+        formats = formats.filter { $0.supportedColorSpaces.contains(colorSpace) }
         if formats.isEmpty {
             return (nil, "No video format found matching \(height)p\(Int(frameRate)), \(colorSpace)")
         }
@@ -1185,8 +1222,8 @@ final class VideoUnit: NSObject {
         }
         // 420v does not work with OA4.
         formats = formats.filter {
-            $0.formatDescription.mediaSubType
-                .rawValue != kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange || allowVideoRangePixelFormat
+            $0.formatDescription.mediaSubType.rawValue != kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange
+                || allowVideoRangePixelFormat
         }
         if formats.isEmpty {
             return (nil, "Unsupported video pixel format")

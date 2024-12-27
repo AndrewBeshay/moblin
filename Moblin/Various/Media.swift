@@ -95,7 +95,7 @@ final class Media: NSObject {
         netStream = nil
     }
 
-    func setNetStream(proto: SettingsStreamProtocol, portrait: Bool) {
+    func setNetStream(proto: SettingsStreamProtocol, portrait: Bool, timecodesEnabled: Bool) {
         netStream?.stopMixer()
         srtStopStream()
         rtmpStopStream()
@@ -110,7 +110,7 @@ final class Media: NSObject {
             irlStream = nil
             netStream = rtmpStream
         case .srt:
-            srtStream = SrtStream(srtConnection)
+            srtStream = SrtStream(srtConnection, timecodesEnabled: timecodesEnabled)
             rtmpStream = nil
             ristStream = nil
             irlStream = nil
@@ -632,8 +632,8 @@ final class Media: NSObject {
         netStream?.unregisterVideoEffect(effect)
     }
 
-    func setPendingAfterAttachEffects(effects: [VideoEffect]) {
-        netStream?.setPendingAfterAttachEffects(effects: effects)
+    func setPendingAfterAttachEffects(effects: [VideoEffect], rotation: Double) {
+        netStream?.setPendingAfterAttachEffects(effects: effects, rotation: rotation)
     }
 
     func usePendingAfterAttachEffects() {

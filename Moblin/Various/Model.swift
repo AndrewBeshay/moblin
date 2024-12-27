@@ -17,7 +17,7 @@ import SDWebImageSwiftUI
 import SDWebImageWebPCoder
 import StoreKit
 import SwiftUI
-// import TwitchChat
+import TrueTime
 import VideoToolbox
 import WatchConnectivity
 import WebKit
@@ -474,8 +474,12 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     private var openStreamingPlatformChat: OpenStreamingPlatformChat!
     private var obsWebSocket: ObsWebSocket?
     private var chatPostId = 0
+    @Published var interactiveChat = false
     @Published var chatPosts: Deque<ChatPost> = []
+    @Published var pausedChatPostsCount: Int = 0
+    @Published var chatPaused = false
     private var newChatPosts: Deque<ChatPost> = []
+    private var pausedChatPosts: Deque<ChatPost> = []
     private var chatBotMessages: Deque<ChatBotMessage> = []
     private var numberOfChatPostsPerTick = 0
     private var chatPostsRatePerSecond = 0.0
@@ -525,6 +529,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     private var drawOnStreamEffect = DrawOnStreamEffect()
     private var lutEffect = LutEffect()
     private var padelScoreboardEffects: [UUID: PadelScoreboardEffect] = [:]
+    private var speechToTextAlertMatchOffset = 0
     @Published var browsers: [Browser] = []
     @Published var sceneIndex = 0
     @Published var isTorchOn = false
@@ -1334,16 +1339,18 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
 
     private func isSpeechToTextNeeded() -> Bool {
         for widget in database.widgets {
-            guard widget.type == .text else {
-                continue
+            switch widget.type {
+            case .text:
+                if widget.enabled!, widget.text.needsSubtitles! {
+                    return true
+                }
+            case .alerts:
+                if widget.enabled!, widget.alerts!.needsSubtitles! {
+                    return true
+                }
+            default:
+                break
             }
-            guard widget.enabled! else {
-                continue
-            }
-            guard widget.text.needsSubtitles! else {
-                continue
-            }
-            return true
         }
         return false
     }
@@ -1361,6 +1368,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         showNewFollowerMessage = database.chat.showNewFollowerMessage!
         verboseStatuses = database.verboseStatuses!
         supportsAppleLog = hasAppleLog()
+        interactiveChat = getGlobalButton(type: .interactiveChat)?.isOn ?? false
         ioVideoUnitIgnoreFramesAfterAttachSeconds = Double(database.debug.cameraSwitchRemoveBlackish!)
         let webPCoder = SDImageWebPCoder.shared
         SDImageCodersManager.shared.addCoder(webPCoder)
@@ -1489,6 +1497,20 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         reloadTeslaVehicle()
         updateFaceFilterButtonState()
         updateLutsButtonState()
+        reloadNtpClient()
+    }
+
+    func reloadNtpClient() {
+        stopNtpClient()
+        if isTimecodesEnabled() {
+            logger.info("Starting NTP client for pool \(stream.ntpPoolAddress!)")
+            TrueTimeClient.sharedInstance.start(pool: [stream.ntpPoolAddress!])
+        }
+    }
+
+    func stopNtpClient() {
+        logger.info("Stopping NTP client")
+        TrueTimeClient.sharedInstance.pause()
     }
 
     func reloadTeslaVehicle() {
@@ -1931,6 +1953,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             speechToText.stop()
             stopWorkout(showToast: false)
             stopTeslaVehicle()
+            stopNtpClient()
         }
     }
 
@@ -1997,7 +2020,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     func reloadSrtlaServer() {
         stopSrtlaServer()
         if database.srtlaServer!.enabled {
-            srtlaServer = SrtlaServer(settings: database.srtlaServer!)
+            srtlaServer = SrtlaServer(settings: database.srtlaServer!, timecodesEnabled: isTimecodesEnabled())
             srtlaServer!.delegate = self
             srtlaServer!.start()
         }
@@ -2580,7 +2603,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     func colorSpaceUpdated() {
-        setColorSpace()
+        storeAndReloadStreamIfEnabled(stream: stream)
     }
 
     func lutEnabledUpdated() {
@@ -2781,6 +2804,38 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         media.setConnectionPriorities(connectionPriorities: stream.srt.connectionPriorities!)
     }
 
+    func pauseChat() {
+        chatPaused = true
+        pausedChatPostsCount = 0
+        pausedChatPosts = [createRedLineChatPost()]
+    }
+
+    private func createRedLineChatPost() -> ChatPost {
+        defer {
+            chatPostId += 1
+        }
+        return ChatPost(
+            id: chatPostId,
+            user: nil,
+            userColor: nil,
+            userBadges: [],
+            segments: [],
+            timestamp: "",
+            timestampTime: .now,
+            isAction: false,
+            isSubscriber: false,
+            bits: nil,
+            highlight: nil,
+            live: true
+        )
+    }
+
+    func pauseInteractiveChat() {
+        interactiveChatPaused = true
+        pausedInteractiveChatPostsCount = 0
+        pausedInteractiveChatPosts = [createRedLineChatPost()]
+    }
+
     func endOfInteractiveChatReachedWhenPaused() {
         var numberOfPostsAppended = 0
         while numberOfPostsAppended < 5, let post = pausedInteractiveChatPosts.popFirst() {
@@ -2803,28 +2858,31 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         }
     }
 
-    func pauseInteractiveChat() {
-        interactiveChatPaused = true
-        pausedInteractiveChatPostsCount = 0
-        appendChatMessage(
-            platform: .unknown,
-            user: "",
-            displayName: "",
-            userId: nil,
-            platformId: nil,
-            userColor: nil,
-            userBadges: [],
-            segments: [],
-            timestamp: "",
-            timestampTime: .now,
-            isAction: false,
-            isSubscriber: false,
-            isModerator: false,
-            bits: nil,
-            highlight: nil,
-            live: true,
-            isDeleted: false
-        )
+    func endOfChatReachedWhenPaused() {
+        var numberOfPostsAppended = 0
+        while numberOfPostsAppended < 5, let post = pausedChatPosts.popFirst() {
+            if post.user == nil {
+                if let lastPost = chatPosts.first, lastPost.user == nil {
+                    continue
+                }
+                if pausedChatPosts.isEmpty {
+                    continue
+                }
+            }
+            if chatPosts.count > maximumNumberOfChatMessages - 1 {
+                chatPosts.removeLast()
+            }
+            chatPosts.prepend(post)
+            numberOfPostsAppended += 1
+        }
+        if numberOfPostsAppended == 0 {
+            chatPaused = false
+        }
+    }
+
+    func pauseInteractiveChatAlerts() {
+        interactiveChatAlertsPaused = true
+        pausedInteractiveChatAlertsPostsCount = 0
     }
 
     func endOfInteractiveChatAlertsReachedWhenPaused() {
@@ -2847,11 +2905,6 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         if numberOfPostsAppended == 0 {
             interactiveChatAlertsPaused = false
         }
-    }
-
-    func pauseInteractiveChatAlerts() {
-        interactiveChatAlertsPaused = true
-        pausedInteractiveChatAlertsPostsCount = 0
     }
 
     private func removeOldChatMessages(now: ContinuousClock.Instant) {
@@ -2890,6 +2943,16 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             }
             numberOfChatPostsPerTick += 1
             streamTotalChatMessages += 1
+        }
+        if chatPaused {
+            pausedChatPostsCount = max(pausedChatPosts.count - 1, 0)
+        } else {
+            while let post = newChatPosts.popFirst() {
+                if chatPosts.count > maximumNumberOfChatMessages - 1 {
+                    chatPosts.removeLast()
+                }
+                chatPosts.prepend(post)
+            }
         }
         if interactiveChatPaused {
             // The red line is one post.
@@ -3511,8 +3574,13 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
 
     func updateAlertsSettings() {
         for widget in database.widgets where widget.type == .alerts {
+            widget.alerts!.needsSubtitles = !widget.alerts!.speechToText!.strings.filter { $0.alert.enabled }.isEmpty
             getAlertsEffect(id: widget.id)?.setSettings(settings: widget.alerts!.clone())
         }
+        if isSpeechToTextNeeded() {
+            reloadSpeechToText()
+        }
+        sceneUpdated()
     }
 
     func updateOrientationLock() {
@@ -3985,6 +4053,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         reloadRemoteControlAssistant()
         reloadRemoteControlRelay()
         reloadKickViewers()
+        reloadNtpClient()
     }
 
     func createUrlSession() {
@@ -4000,11 +4069,19 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     private func setNetStream() {
-        media.setNetStream(proto: stream.getProtocol(), portrait: stream.portrait!)
+        media.setNetStream(
+            proto: stream.getProtocol(),
+            portrait: stream.portrait!,
+            timecodesEnabled: isTimecodesEnabled()
+        )
         updateTorch()
         updateMute()
         streamPreviewView.attachStream(media.getNetStream())
         setLowFpsImage()
+    }
+
+    private func isTimecodesEnabled() -> Bool {
+        return database.debug.timecodesEnabled! && stream.timecodesEnabled! && !stream.ntpPoolAddress!.isEmpty
     }
 
     private func showPreset(preset: SettingsZoomPreset) -> Bool {
@@ -4064,6 +4141,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             colorSpace = .sRGB
         case .p3D65:
             colorSpace = .P3_D65
+        case .hlgBt2020:
+            colorSpace = .HLG_BT2020
         case .appleLog:
             if #available(iOS 17.0, *) {
                 colorSpace = .appleLog
@@ -4126,7 +4205,11 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         case .h264avc:
             media.setVideoProfile(profile: kVTProfileLevel_H264_Main_AutoLevel)
         case .h265hevc:
-            media.setVideoProfile(profile: kVTProfileLevel_HEVC_Main_AutoLevel)
+            if database.color!.space == .hlgBt2020 {
+                media.setVideoProfile(profile: kVTProfileLevel_HEVC_Main10_AutoLevel)
+            } else {
+                media.setVideoProfile(profile: kVTProfileLevel_HEVC_Main_AutoLevel)
+            }
         }
         media.setAllowFrameReordering(value: stream.bFrames!)
     }
@@ -5202,7 +5285,15 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         
         logger.debug(post.debugDescription())
 
-        newChatPosts.append(post)
+        // newChatPosts.append(post)
+        chatPostId += 1
+        if chatPaused {
+            if pausedChatPosts.count < 2 * maximumNumberOfChatMessages {
+                pausedChatPosts.append(post)
+            }
+        } else {
+            newChatPosts.append(post)
+        }
         if interactiveChatPaused {
             if pausedInteractiveChatPosts.count < 2 * maximumNumberOfInteractiveChatMessages {
                 pausedInteractiveChatPosts.append(post)
@@ -5304,7 +5395,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             mediaPlayers[scene.mediaPlayerCameraId!]?.activate()
             attachReplaceCamera(cameraId: scene.mediaPlayerCameraId!)
         case .external:
-            attachExternalCamera(cameraId: scene.externalCameraId!)
+            attachExternalCamera()
         case .screenCapture:
             attachReplaceCamera(cameraId: screenCaptureCameraId)
         }
@@ -5540,7 +5631,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             effects.append(drawOnStreamEffect)
         }
         effects += registerGlobalVideoEffectsOnTop()
-        media.setPendingAfterAttachEffects(effects: effects)
+        media.setPendingAfterAttachEffects(effects: effects, rotation: scene.videoSourceRotation!)
         for browserEffect in browserEffects.values where !usedBrowserEffects.contains(browserEffect) {
             browserEffect.setSceneWidget(sceneWidget: nil, crops: [])
         }
@@ -5680,6 +5771,9 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
                     }
                     alertsEffect.setPosition(x: sceneWidget.x, y: sceneWidget.y)
                     enabledAlertsEffects.append(alertsEffect)
+                    if widget.alerts!.needsSubtitles! {
+                        needsSpeechToText = true
+                    }
                 }
             case .videoSource:
                 if let videoSourceEffect = videoSourceEffects[widget.id] {
@@ -5780,7 +5874,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         showMediaPlayerControls = enabledScenes.first(where: { $0.id == id })?.cameraPosition == .mediaPlayer
     }
 
-    private func getSelectedScene() -> SettingsScene? {
+    func getSelectedScene() -> SettingsScene? {
         return findEnabledScene(id: selectedSceneId)
     }
 
@@ -6222,7 +6316,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         media.usePendingAfterAttachEffects()
     }
 
-    private func attachExternalCamera(cameraId _: String) {
+    private func attachExternalCamera() {
         attachCamera(position: .unspecified)
     }
 
@@ -9846,8 +9940,39 @@ extension Model: TwitchApiDelegate {
 
 extension Model: SpeechToTextDelegate {
     func speechToTextPartialResult(position: Int, text: String) {
+        speechToTextPartialResultTextWidgets(position: position, text: text)
+        speechToTextPartialResultAlertsWidget(text: text)
+    }
+
+    private func speechToTextPartialResultTextWidgets(position: Int, text: String) {
         for textEffect in textEffects.values {
             textEffect.updateSubtitles(position: position, text: text)
+        }
+    }
+
+    private func speechToTextPartialResultAlertsWidget(text: String) {
+        guard text.count > speechToTextAlertMatchOffset else {
+            return
+        }
+        let startMatchIndex = text.index(text.startIndex, offsetBy: speechToTextAlertMatchOffset)
+        for alertEffect in enabledAlertsEffects {
+            let settings = alertEffect.getSettings().speechToText!
+            for string in settings.strings where string.alert.enabled {
+                guard let matchRange = text.range(
+                    of: string.string,
+                    options: .caseInsensitive,
+                    range: startMatchIndex ..< text.endIndex
+                ) else {
+                    continue
+                }
+                let offset = text.distance(from: text.startIndex, to: matchRange.upperBound)
+                if offset > speechToTextAlertMatchOffset {
+                    speechToTextAlertMatchOffset = offset
+                }
+                DispatchQueue.main.async {
+                    self.playAlert(alert: .speechToTextString(string.id))
+                }
+            }
         }
     }
 
@@ -9855,6 +9980,7 @@ extension Model: SpeechToTextDelegate {
         for textEffect in textEffects.values {
             textEffect.clearSubtitles()
         }
+        speechToTextAlertMatchOffset = 0
     }
 }
 

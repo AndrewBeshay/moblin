@@ -75,6 +75,7 @@ enum AlertsEffectAlert {
     case twitchRaid(TwitchEventSubChannelRaidEvent)
     case twitchCheer(TwitchEventSubChannelCheerEvent)
     case chatBotCommand(String, String)
+    case speechToTextString(UUID)
 }
 
 protocol AlertsEffectDelegate: AnyObject {
@@ -169,6 +170,7 @@ final class AlertsEffect: VideoEffect {
     private weak var delegate: (any AlertsEffectDelegate)?
     private var toBeRemoved: Bool = true
     private var isPlaying: Bool = false
+    private var delayAfterPlaying = 3.0
     private var settings: SettingsWidgetAlerts
     private var fps: Double
     private var x: Double = 0
@@ -179,6 +181,7 @@ final class AlertsEffect: VideoEffect {
     private var twitchRaid = Medias()
     private var twitchCheers: [Medias] = []
     private var chatBotCommands: [Medias] = []
+    private var speechToTextStrings: [Medias] = []
     private let bundledImages: [SettingsAlertsMediaGalleryItem]
     private let bundledSounds: [SettingsAlertsMediaGalleryItem]
     private var landmarkSettings: LandmarkSettings?
@@ -250,6 +253,15 @@ final class AlertsEffect: VideoEffect {
             medias.updateSoundUrl(sound: sound)
             chatBotCommands.append(medias)
         }
+        speechToTextStrings = []
+        for string in settings.speechToText!.strings {
+            (image, imageLoopCount, sound) = getMediaItems(alert: string.alert)
+            let medias = Medias()
+            medias.fps = fps
+            medias.updateImages(image: image, loopCount: imageLoopCount)
+            medias.updateSoundUrl(sound: sound)
+            speechToTextStrings.append(medias)
+        }
         self.settings = settings
     }
 
@@ -297,6 +309,8 @@ final class AlertsEffect: VideoEffect {
             playTwitchCheer(event: event)
         case let .chatBotCommand(command, name):
             playChatBotCommand(command: command, name: name)
+        case let .speechToTextString(id):
+            playSpeechToTextString(id: id)
         }
     }
 
@@ -416,13 +430,33 @@ final class AlertsEffect: VideoEffect {
     }
 
     @MainActor
+    private func playSpeechToTextString(id: UUID) {
+        guard let stringIndex = settings.speechToText!.strings.firstIndex(where: { $0.id == id && $0.alert.enabled })
+        else {
+            return
+        }
+        guard stringIndex < speechToTextStrings.count else {
+            return
+        }
+        play(
+            medias: speechToTextStrings[stringIndex],
+            username: "",
+            message: "",
+            settings: settings.speechToText!.strings[stringIndex].alert,
+            delayAfterPlaying: 0.0
+        )
+    }
+
+    @MainActor
     private func play(
         medias: Medias,
         username: String,
         message: String,
-        settings: SettingsWidgetAlertsAlert
+        settings: SettingsWidgetAlertsAlert,
+        delayAfterPlaying: Double = 3.0
     ) {
         isPlaying = true
+        self.delayAfterPlaying = delayAfterPlaying
         let messageImage = renderMessage(username: username, message: message, settings: settings)
         let landmarkSettings = calculateLandmarkSettings(settings: settings)
         lockQueue.sync {
@@ -555,9 +589,7 @@ final class AlertsEffect: VideoEffect {
         return landmarkSettings != nil
     }
 
-    private func getNext(image: CIImage)
-        -> (CIImage, CIImage?, Double, Double, LandmarkSettings?)
-    {
+    private func getNext(image: CIImage) -> (CIImage, CIImage?, Double, Double, LandmarkSettings?) {
         guard imageIndex < images.count else {
             toBeRemoved = true
             return (image, nil, x, y, landmarkSettings)
@@ -763,9 +795,11 @@ final class AlertsEffect: VideoEffect {
     }
 
     override func removed() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            self.isPlaying = false
-            self.tryPlayNextAlert()
+        DispatchQueue.main.async {
+            DispatchQueue.main.asyncAfter(deadline: .now() + self.delayAfterPlaying) {
+                self.isPlaying = false
+                self.tryPlayNextAlert()
+            }
         }
     }
 }

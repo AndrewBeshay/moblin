@@ -440,6 +440,8 @@ class SettingsStream: Codable, Identifiable, Equatable {
     var backgroundStreaming: Bool? = false
     var estimatedViewerDelay: Float? = 8.0
     var twitchMultiTrackEnabled: Bool? = false
+    var ntpPoolAddress: String? = "time.apple.com"
+    var timecodesEnabled: Bool? = false
 
     init(name: String) {
         self.name = name
@@ -492,6 +494,9 @@ class SettingsStream: Codable, Identifiable, Equatable {
         new.portrait = portrait
         new.backgroundStreaming = backgroundStreaming
         new.estimatedViewerDelay = estimatedViewerDelay
+        new.twitchMultiTrackEnabled = twitchMultiTrackEnabled
+        new.ntpPoolAddress = ntpPoolAddress
+        new.timecodesEnabled = timecodesEnabled
         return new
     }
 
@@ -644,6 +649,7 @@ class SettingsScene: Codable, Identifiable, Equatable {
     var externalCameraId: String? = ""
     var externalCameraName: String? = ""
     var widgets: [SettingsSceneWidget] = []
+    var videoSourceRotation: Double? = 0.0
 
     init(name: String) {
         self.name = name
@@ -668,6 +674,7 @@ class SettingsScene: Codable, Identifiable, Equatable {
         for widget in widgets {
             new.widgets.append(widget.clone())
         }
+        new.videoSourceRotation = videoSourceRotation
         return new
     }
 
@@ -1061,6 +1068,32 @@ class SettingsWidgetAlertsChatBot: Codable {
     }
 }
 
+class SettingsWidgetAlertsSpeechToTextString: Codable, Identifiable {
+    var id: UUID = .init()
+    var string: String = ""
+    var alert: SettingsWidgetAlertsAlert = .init()
+
+    func clone() -> SettingsWidgetAlertsSpeechToTextString {
+        let new = SettingsWidgetAlertsSpeechToTextString()
+        new.id = id
+        new.string = string
+        new.alert = alert.clone()
+        return new
+    }
+}
+
+class SettingsWidgetAlertsSpeechToText: Codable {
+    var strings: [SettingsWidgetAlertsSpeechToTextString] = []
+
+    func clone() -> SettingsWidgetAlertsSpeechToText {
+        let new = SettingsWidgetAlertsSpeechToText()
+        for string in strings {
+            new.strings.append(string.clone())
+        }
+        return new
+    }
+}
+
 class SettingsWidgetAlerts: Codable {
     // To be removed
     // periphery:ignore
@@ -1087,11 +1120,15 @@ class SettingsWidgetAlerts: Codable {
     var fontWeight: SettingsFontWeight? = .regular
     var twitch: SettingsWidgetAlertsTwitch? = .init()
     var chatBot: SettingsWidgetAlertsChatBot? = .init()
+    var speechToText: SettingsWidgetAlertsSpeechToText? = .init()
+    var needsSubtitles: Bool? = false
 
     func clone() -> SettingsWidgetAlerts {
         let new = SettingsWidgetAlerts()
         new.twitch = twitch!.clone()
         new.chatBot = chatBot!.clone()
+        new.speechToText = speechToText!.clone()
+        new.needsSubtitles = needsSubtitles
         return new
     }
 }
@@ -1410,6 +1447,7 @@ enum SettingsButtonType: String, Codable, CaseIterable {
     case skipCurrentTts = "Skip current TTS"
     case streamMarker = "Stream marker"
     case reloadBrowserWidgets = "Reload browser widgets"
+    case interactiveChat = "Interactive chat"
 
     public init(from decoder: Decoder) throws {
         var value = try decoder.singleValueContainer().decode(RawValue.self)
@@ -1476,7 +1514,7 @@ class SettingsColorLut: Codable, Identifiable {
 enum SettingsColorSpace: String, Codable, CaseIterable {
     case srgb = "Standard RGB"
     case p3D65 = "P3 D65"
-    // case hlgBt2020 = "HLG BT2020"
+    case hlgBt2020 = "HLG BT2020"
     case appleLog = "Apple Log"
 
     public init(from decoder: Decoder) throws {
@@ -1771,6 +1809,7 @@ class SettingsDebug: Codable {
     var tesla: SettingsTesla? = .init()
     var prettySnapshot: Bool? = false
     var reliableChat: Bool? = false
+    var timecodesEnabled: Bool? = false
 }
 
 class SettingsRtmpServerStream: Codable, Identifiable {
@@ -1968,9 +2007,9 @@ enum SettingsDjiDeviceImageStabilization: String, CaseIterable, Codable {
 var djiDeviceImageStabilizations = SettingsDjiDeviceImageStabilization.allCases.map { $0.toString() }
 
 enum SettingsDjiDeviceResolution: String, CaseIterable, Codable {
-    case r480p = "480p"
-    case r720p = "720p"
     case r1080p = "1080p"
+    case r720p = "720p"
+    case r480p = "480p"
 
     public init(from decoder: Decoder) throws {
         self = try SettingsDjiDeviceResolution(rawValue: decoder.singleValueContainer()
@@ -2538,7 +2577,7 @@ class Database: Codable {
             addDefaultBitratePresets(database: database)
         }
         addMissingGlobalButtons(database: database)
-        for button in database.globalButtons! where button.type != .lut {
+        for button in database.globalButtons! where button.type != .interactiveChat {
             button.isOn = false
         }
         addMissingDeepLinkQuickButtons(database: database)
@@ -2686,6 +2725,14 @@ private func addMissingGlobalButtons(database: Database) {
     button.imageType = "System name"
     button.systemImageNameOn = "message.fill"
     button.systemImageNameOff = "message"
+    updateGlobalButton(database: database, button: button)
+
+    button = SettingsButton(name: String(localized: "Interactive chat"))
+    button.id = UUID()
+    button.type = .interactiveChat
+    button.imageType = "System name"
+    button.systemImageNameOn = "arrow.up.message.fill"
+    button.systemImageNameOff = "arrow.up.message"
     updateGlobalButton(database: database, button: button)
 
     button = SettingsButton(name: String(localized: "Black screen"))
@@ -4309,6 +4356,30 @@ final class Settings {
         }
         if realDatabase.debug.reliableChat == nil {
             realDatabase.debug.reliableChat = false
+            store()
+        }
+        for scene in realDatabase.scenes where scene.videoSourceRotation == nil {
+            scene.videoSourceRotation = 0.0
+            store()
+        }
+        for widget in realDatabase.widgets where widget.alerts!.speechToText == nil {
+            widget.alerts!.speechToText = .init()
+            store()
+        }
+        for widget in realDatabase.widgets where widget.alerts!.needsSubtitles == nil {
+            widget.alerts!.needsSubtitles = false
+            store()
+        }
+        for stream in realDatabase.streams where stream.ntpPoolAddress == nil {
+            stream.ntpPoolAddress = "time.apple.com"
+            store()
+        }
+        for stream in realDatabase.streams where stream.timecodesEnabled == nil {
+            stream.timecodesEnabled = false
+            store()
+        }
+        if realDatabase.debug.timecodesEnabled == nil {
+            realDatabase.debug.timecodesEnabled = false
             store()
         }
     }

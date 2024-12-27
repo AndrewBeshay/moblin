@@ -1,5 +1,33 @@
 import SwiftUI
 
+private struct StreamTimecodesSettingsView: View {
+    @EnvironmentObject var model: Model
+    var stream: SettingsStream
+
+    var body: some View {
+        Form {
+            Section {
+                NavigationLink {
+                    TextEditView(title: String(localized: "NTP pool address"), value: stream.ntpPoolAddress!) {
+                        stream.ntpPoolAddress = $0
+                        if stream.enabled {
+                            model.reloadNtpClient()
+                            model.reloadSrtlaServer()
+                        }
+                    }
+                } label: {
+                    TextItemView(
+                        name: String(localized: "NTP pool address"),
+                        value: stream.ntpPoolAddress!
+                    )
+                }
+                .disabled(stream.codec != .h265hevc || (stream.enabled && model.isLive))
+            }
+        }
+        .navigationTitle("Timecodes")
+    }
+}
+
 struct StreamVideoSettingsView: View {
     @EnvironmentObject var model: Model
     var stream: SettingsStream
@@ -155,6 +183,29 @@ struct StreamVideoSettingsView: View {
                     Automatically lower resolution when the available bandwidth is \
                     low. Generally gives better image quality at low (<750 Kbps) bitrates.
                     """)
+                }
+                if model.database.debug.timecodesEnabled! {
+                    Section {
+                        NavigationLink {
+                            StreamTimecodesSettingsView(stream: stream)
+                        } label: {
+                            Toggle("Timecodes", isOn: Binding(get: {
+                                stream.timecodesEnabled!
+                            }, set: { value in
+                                stream.timecodesEnabled = value
+                                if stream.enabled {
+                                    model.reloadNtpClient()
+                                    model.reloadSrtlaServer()
+                                }
+                            }))
+                            .disabled(stream.codec != .h265hevc || (stream.enabled && model.isLive))
+                        }
+                    } footer: {
+                        Text("""
+                        Synchronize multiple streams on your server using timecodes. \
+                        Timecodes are in UTC and requires H.265/HEVC codec.
+                        """)
+                    }
                 }
             }
         }
