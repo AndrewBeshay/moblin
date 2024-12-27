@@ -2807,33 +2807,33 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     func pauseChat() {
         chatPaused = true
         pausedChatPostsCount = 0
-        pausedChatPosts = [createRedLineChatPost()]
+//        pausedChatPosts = [createRedLineChatPost()]
     }
 
-    private func createRedLineChatPost() -> ChatPost {
-        defer {
-            chatPostId += 1
-        }
-        return ChatPost(
-            id: chatPostId,
-            user: nil,
-            userColor: nil,
-            userBadges: [],
-            segments: [],
-            timestamp: "",
-            timestampTime: .now,
-            isAction: false,
-            isSubscriber: false,
-            bits: nil,
-            highlight: nil,
-            live: true
-        )
-    }
+//    private func createRedLineChatPost() -> ChatPost {
+//        defer {
+//            chatPostId += 1
+//        }
+//        return ChatPost(
+//            platformId: chatPostId,
+//            user: nil,
+//            userColor: nil,
+//            userBadges: [],
+//            segments: [],
+//            timestamp: "",
+//            timestampTime: .now,
+//            isAction: false,
+//            isSubscriber: false,
+//            bits: nil,
+//            highlight: nil,
+//            live: true
+//        )
+//    }
 
     func pauseInteractiveChat() {
         interactiveChatPaused = true
         pausedInteractiveChatPostsCount = 0
-        pausedInteractiveChatPosts = [createRedLineChatPost()]
+//        pausedInteractiveChatPosts = [createRedLineChatPost()]
     }
 
     func endOfInteractiveChatReachedWhenPaused() {
