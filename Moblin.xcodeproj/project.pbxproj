@@ -105,7 +105,6 @@
 		032B4ED42C34910A00204547 /* MediaPlayerControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032B4ED32C34910A00204547 /* MediaPlayerControlsView.swift */; };
 		032B4ED72C34918E00204547 /* SceneSelectorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032B4ED62C34918E00204547 /* SceneSelectorView.swift */; };
 		032B4EDA2C3491A100204547 /* ZoomPresetSelctorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032B4ED92C3491A100204547 /* ZoomPresetSelctorView.swift */; };
-		032B4EDC2C3491F200204547 /* CameraSettingsControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032B4EDB2C3491F200204547 /* CameraSettingsControlView.swift */; };
 		032B4EDE2C34927C00204547 /* SegmentedPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032B4EDD2C34927C00204547 /* SegmentedPicker.swift */; };
 		032BAEF12C0C78FF005D5DA7 /* DeepLinkCreatorSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032BAEF02C0C78FF005D5DA7 /* DeepLinkCreatorSettingsView.swift */; };
 		032F3B3C2C935385002FF97E /* QuickButtonLutsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032F3B3B2C935385002FF97E /* QuickButtonLutsView.swift */; };
@@ -479,6 +478,7 @@
 		03FBD1812B3B0DE500757CA9 /* RtmpServerClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03FBD1802B3B0DE500757CA9 /* RtmpServerClient.swift */; };
 		03FBD1852B3B0DF300757CA9 /* RtmpServerChunkStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03FBD1842B3B0DF300757CA9 /* RtmpServerChunkStream.swift */; };
 		45E3E780842910145791546F /* DjiDeviceScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45E3EAA92F1B2253BB2ED4FC /* DjiDeviceScanner.swift */; };
+		498DB28D2D576C2C00EFBDBC /* CameraSettingsControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498DB28C2D576C2C00EFBDBC /* CameraSettingsControlView.swift */; };
 		ABF045852C1CEAF800D07696 /* AdaptiveBitrateSrtBela.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABF045842C1CEAF800D07696 /* AdaptiveBitrateSrtBela.swift */; };
 		C7E682562BC2E3FE004EB747 /* ThermalStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03B373FE2A9FCA790028DDD5 /* ThermalStateView.swift */; };
 /* End PBXBuildFile section */
@@ -635,7 +635,6 @@
 		032B4ED32C34910A00204547 /* MediaPlayerControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaPlayerControlsView.swift; sourceTree = "<group>"; };
 		032B4ED62C34918E00204547 /* SceneSelectorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneSelectorView.swift; sourceTree = "<group>"; };
 		032B4ED92C3491A100204547 /* ZoomPresetSelctorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomPresetSelctorView.swift; sourceTree = "<group>"; };
-		032B4EDB2C3491F200204547 /* CameraSettingsControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "\U0004CameraSettingsControlView.swift"; sourceTree = "<group>"; };
 		032B4EDD2C34927C00204547 /* SegmentedPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SegmentedPicker.swift; sourceTree = "<group>"; };
 		032BAEF02C0C78FF005D5DA7 /* DeepLinkCreatorSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepLinkCreatorSettingsView.swift; sourceTree = "<group>"; };
 		032BC5B22AD8E18000DEC883 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -1040,6 +1039,7 @@
 		03FBD1802B3B0DE500757CA9 /* RtmpServerClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RtmpServerClient.swift; sourceTree = "<group>"; };
 		03FBD1842B3B0DF300757CA9 /* RtmpServerChunkStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RtmpServerChunkStream.swift; sourceTree = "<group>"; };
 		45E3EAA92F1B2253BB2ED4FC /* DjiDeviceScanner.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DjiDeviceScanner.swift; sourceTree = "<group>"; };
+		498DB28C2D576C2C00EFBDBC /* CameraSettingsControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraSettingsControlView.swift; sourceTree = "<group>"; };
 		ABF045842C1CEAF800D07696 /* AdaptiveBitrateSrtBela.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveBitrateSrtBela.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -1432,8 +1432,8 @@
 		032B4ED22C3490DF00204547 /* Right */ = {
 			isa = PBXGroup;
 			children = (
+				498DB28C2D576C2C00EFBDBC /* CameraSettingsControlView.swift */,
 				03A3B0A82D376F7D00BD4787 /* StreamOverlayRightPixellateView.swift */,
-				032B4EDB2C3491F200204547 /* CameraSettingsControlView.swift */,
 				032B4ED32C34910A00204547 /* MediaPlayerControlsView.swift */,
 				032B4ED62C34918E00204547 /* SceneSelectorView.swift */,
 				032B4EDD2C34927C00204547 /* SegmentedPicker.swift */,
@@ -3343,7 +3343,6 @@
 				038C76972CAC99E100564200 /* VideoSourceEffect.swift in Sources */,
 				03279CF22B4D2AEC006CEA5A /* RealtimeIrl.swift in Sources */,
 				031A2E112ADDDD7E005CE350 /* VideoStabilizationSettingsView.swift in Sources */,
-				032B4EDC2C3491F200204547 /* CameraSettingsControlView.swift in Sources */,
 				0379E66A2C88C9340021AB59 /* CatPrinterCommands.swift in Sources */,
 				03C3560D2CFC90D200B8B29F /* KeyboardSettingsView.swift in Sources */,
 				035F24422CB76835008288C7 /* TwitchCommon.swift in Sources */,
@@ -3399,6 +3398,7 @@
 				036BE2D22ABD518E0048F9C5 /* StreamKickSettingsView.swift in Sources */,
 				0359F9002BD3DA61005BFDA8 /* AnyUtil.swift in Sources */,
 				03FB4B312AD8D046005AA183 /* BitratePresetsPresetSettingsView.swift in Sources */,
+				498DB28D2D576C2C00EFBDBC /* CameraSettingsControlView.swift in Sources */,
 				031BD2C52C2D11DC002D4E10 /* Platform.swift in Sources */,
 				03A5991A2B66A94B002E7EE8 /* DrawOnStreamEffect.swift in Sources */,
 				0359F8D72BD3DA61005BFDA8 /* MpegTsAudioConfig.swift in Sources */,
