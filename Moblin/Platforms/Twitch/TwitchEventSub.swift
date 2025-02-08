@@ -219,33 +219,166 @@ private struct NotificationChannelAdBreakBeginMessage: Decodable {
 // MARK: - New: Channel Moderate Data Models (v2)
 // This event is triggered when a moderator performs a moderation action (for example, a timeout or ban) via the moderator interface.
 
-struct TargetUser: Decodable {
-    var userID: String
-    var userLogin: String
-    var userName: String
+// This struct represents the target of the moderation action.
+// When the action is "delete", the payload provides the target details under the "delete" key.
+// In that case, "message_body" is used as the reason and a "message_id" is provided.
+struct TargetUser: Decodable, CustomStringConvertible {
+    var user_id: String
+    var user_login: String
+    var user_name: String
+    /// For some events (for example, timeouts), Twitch provides a "reason" key.
     var reason: String?
-    var expiresAt: String?
+    /// For other events (for example, delete events), Twitch provides a "message_body" key.
+    var messageBody: String?
+    var expires_at: String?
+    var message_id: String?
+    
+    var description: String {
+        var output = "TargetUser:\n"
+        output += "  ID: \(user_id)\n"
+        output += "  Login: \(user_login)\n"
+        output += "  Name: \(user_name)"
+        if let message_id = message_id {
+            output += "\n  Message ID: \(message_id)"
+        }
+        if let reason = reason {
+            output += "\n  Reason: \(reason)"
+        }
+        if let messageBody = messageBody {
+            output += "\n  Message Body: \(messageBody)"
+        }
+        if let expires_at = expires_at {
+            output += "\n  Expires At: \(expires_at)"
+        }
+        return output
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case user_id
+        case user_login
+        case user_name
+        case reason
+        case messageBody = "message_body"
+        case expires_at
+        case message_id
+    }
 }
 
-
-struct TwitchEventSubChannelModerateEvent: Decodable {
-    var broadcasterUserID: String
-    var broadcasterUserLogin: String
-    var broadcasterUserName: String
-    var moderatorUserID: String
-    var moderatorUserLogin: String
-    var moderatorUserName: String
-    var action: String  
-    var moderatedAt: String       
-    var targetUser: TargetUser?
+// This struct represents the moderation event.
+// It decodes the target user data from the "delete" key if the action is "delete",
+// or from a "target_user" key if present for other actions.
+struct TwitchEventSubChannelModerateEvent: Decodable, CustomStringConvertible {
+    var broadcaster_user_id: String
+    var broadcaster_user_login: String
+    var broadcaster_user_name: String
+    var moderator_user_id: String
+    var moderator_user_login: String
+    var moderator_user_name: String
+    var action: String
+    var moderated_at: String?
+    var target_user: TargetUser?
+    
+    var description: String {
+        var output = "ChannelModerateEvent:\n"
+        output += "  Action: \(action)\n"
+        if let moderated_at = moderated_at {
+            output += "  Moderated At: \(moderated_at)\n"
+        } else {
+            output += "  Moderated At: n/a\n"
+        }
+        output += "  Broadcaster: \(broadcaster_user_name) (\(broadcaster_user_login), \(broadcaster_user_id))\n"
+        output += "  Moderator: \(moderator_user_name) (\(moderator_user_login), \(moderator_user_id))\n"
+        if let target = target_user {
+            output += "\n" + target.description
+        }
+        return output
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case broadcaster_user_id
+        case broadcaster_user_login
+        case broadcaster_user_name
+        case moderator_user_id
+        case moderator_user_login
+        case moderator_user_name
+        case action
+        case moderated_at
+        // The keys that may contain target info.
+        case target_user
+        
+        case ban
+        case timeout
+        case unban
+        case untimeout
+        case clear
+        case emoteonly
+        case emoteonlyoff
+        case followers
+        case followersoff
+        case uniquechat
+        case uniquechatoff
+        case slow
+        case slowoff
+        case subscribers
+        case subscribersoff
+        case unraid
+        case delete
+        case unvip
+        case vip
+        case raid
+        case addBlockedTerm
+        case addPermittedTerm
+        case removeBlockedTerm
+        case removePermittedTerm
+        case mod
+        case unmod
+        case approveUnbanRequest
+        case denyUnbanRequest
+        case warn
+        case sharedChatBan
+        case sharedChatTimeout
+        case sharedChatUnban
+        case sharedChatUntimeout
+        case sharedChatDelete
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        broadcaster_user_id = try container.decode(String.self, forKey: .broadcaster_user_id)
+        broadcaster_user_login = try container.decode(String.self, forKey: .broadcaster_user_login)
+        broadcaster_user_name = try container.decode(String.self, forKey: .broadcaster_user_name)
+        moderator_user_id = try container.decode(String.self, forKey: .moderator_user_id)
+        moderator_user_login = try container.decode(String.self, forKey: .moderator_user_login)
+        moderator_user_name = try container.decode(String.self, forKey: .moderator_user_name)
+        action = try container.decode(String.self, forKey: .action)
+        // Use decodeIfPresent for keys that might be missing.
+        moderated_at = try container.decodeIfPresent(String.self, forKey: .moderated_at)
+        
+        // Use the raw action string to try to create a dynamic key.
+        if let key = CodingKeys(rawValue: action) {
+            target_user = try? container.decode(TargetUser.self, forKey: key)
+        } else {
+            target_user = try? container.decode(TargetUser.self, forKey: .target_user)
+        }
+    }
 }
 
-private struct NotificationChannelModeratePayload: Decodable {
+// Wrap the event in a payload struct.
+private struct NotificationChannelModeratePayload: Decodable, CustomStringConvertible {
     var event: TwitchEventSubChannelModerateEvent
+    
+    var description: String {
+        return event.description
+    }
 }
 
-private struct NotificationChannelModerateMessage: Decodable {
+// Wrap the payload in a message struct.
+private struct NotificationChannelModerateMessage: Decodable, CustomStringConvertible {
     var payload: NotificationChannelModeratePayload
+    
+    var description: String {
+        return payload.description
+    }
 }
 
 private var url = URL(string: "wss://eventsub.wss.twitch.tv/ws")!
@@ -652,11 +785,16 @@ final class TwitchEventSub: NSObject {
     
     // New handler for channel moderate events
     private func handleChannelModerate(messageData: Data) throws {
-        let message = try JSONDecoder().decode(
-            NotificationChannelModerateMessage.self,
-            from: messageData
-        )
-        delegate.twitchEventSubChannelModerate(event: message.payload.event)
+        do {
+            let message = try JSONDecoder().decode(NotificationChannelModerateMessage.self, from: messageData)
+            delegate.twitchEventSubChannelModerate(event: message.payload.event)
+        } catch {
+            print("Decoding failed: \(error)")
+            if let rawPayload = String(data: messageData, encoding: .utf8) {
+                print("Raw Payload: \(rawPayload)")
+            }
+            throw error  // or handle the error as needed
+        }
     }
 }
 

@@ -16,6 +16,15 @@ private let scopes = [
     "channel:manage:broadcast",
     "channel:edit:commercial",
     "bits:read",
+    
+    "moderator:manage:blocked_terms",
+    "moderator:manage:chat_settings",
+    "moderator:manage:unban_requests",
+    "moderator:manage:banned_users",
+    "moderator:manage:chat_messages",
+    "moderator:manage:warnings",
+    "moderator:read:moderators",
+    "moderator:read:vips"
 ]
 private let redirectHost = "localhost"
 private let redirectUri = "https://\(redirectHost)"

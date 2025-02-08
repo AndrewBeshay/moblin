@@ -222,6 +222,7 @@ struct ChatPost: Identifiable, Equatable {
 
     var id: Int
     var user: String?
+    var userId: String?
     var userColor: RgbColor?
     var userBadges: [URL]
     var segments: [ChatPostSegment]
@@ -5373,6 +5374,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         let post = ChatPost(
             id: chatPostId,
             user: user,
+            userId: userId,
             userColor: userColor?.makeReadableOnDarkBackground(),
             userBadges: userBadges,
             segments: segments,
@@ -9852,6 +9854,48 @@ extension Model {
 
 extension Model: TwitchEventSubDelegate {
     func twitchEventSubChannelModerate(event: TwitchEventSubChannelModerateEvent) {
+        logger.debug(event.description)
+        switch event.action {
+        case "delete":
+            // For delete actions, we expect the target user to have a message_id.
+            if let messageId = event.target_user?.message_id {
+                // Assume chatPosts is an array storing your chat post objects.
+                // Each chat post object has a property messageId.
+                if let index = chatPosts.firstIndex(where: { $0.messageId == messageId }) {
+                    chatPosts.remove(at: index)
+//                    let text = "\(event.target_user?.user_name ?? "Unknown")'s message has been deleted by \(event.moderator_user_name)"
+//                    chatPosts[index]
+                    // Optionally, update your UI on the main thread.
+                    DispatchQueue.main.async {}
+                } else {
+                    logger.debug("No chat post found with messageId \(messageId)")
+                }
+            } else {
+                logger.error("Delete action received, but no message_id in target_user")
+            }
+        case "ban":
+            break
+        case "timeout":
+            // For a timeout, remove all previous messages from that user.
+            if let targetUser = event.target_user {
+                let targetUserId = targetUser.user_id
+                logger.debug(targetUserId)
+                // Remove all chat posts from the timed-out user.
+                chatPosts.removeAll {
+                    logger.debug($0.userId ?? "")
+                    return $0.userId == targetUserId }
+                DispatchQueue.main.async {
+                }
+            } else {
+                logger.error("Timeout action received, but no target user information")
+            }
+        case "unban":
+            break
+        case "untimeout":
+            break
+        default:
+            break
+        }
     }
     
     func twitchEventSubMakeErrorToast(title: String) {

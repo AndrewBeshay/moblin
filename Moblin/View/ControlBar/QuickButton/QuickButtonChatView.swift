@@ -3,7 +3,7 @@ import SDWebImageSwiftUI
 import SwiftUI
 import WrappingHStack
 
-private struct HighlightMessageView: View {
+private struct QBHighlightMessageView: View {
     let image: String
     let name: String
 
@@ -22,7 +22,7 @@ private struct HighlightMessageView: View {
     }
 }
 
-private struct LineView: View {
+private struct QBLineView: View {
     var post: ChatPost
     var chat: SettingsChat
 
@@ -181,11 +181,11 @@ private struct MessagesView: View {
                                                     .frame(width: 3)
                                                     .foregroundColor(highlight.color)
                                                 VStack(alignment: .leading, spacing: 1) {
-                                                    HighlightMessageView(
+                                                    QBHighlightMessageView(
                                                         image: highlight.image,
                                                         name: highlight.title
                                                     )
-                                                    LineView(
+                                                    QBLineView(
                                                         post: post,
                                                         chat: model.database.chat
                                                     )
@@ -194,7 +194,7 @@ private struct MessagesView: View {
                                             .rotationEffect(Angle(degrees: rotation))
                                             .scaleEffect(x: scaleX, y: 1.0, anchor: .center)
                                         } else {
-                                            LineView(post: post, chat: model.database.chat)
+                                            QBLineView(post: post, chat: model.database.chat)
                                                 .padding([.leading], 3)
                                                 .rotationEffect(Angle(degrees: rotation))
                                                 .scaleEffect(x: scaleX, y: 1.0, anchor: .center)
@@ -390,7 +390,7 @@ private struct AlertsMessagesView: View {
                                                         .frame(width: 3)
                                                         .foregroundColor(highlight.color)
                                                     VStack(alignment: .leading, spacing: 1) {
-                                                        HighlightMessageView(
+                                                        QBHighlightMessageView(
                                                             image: highlight.image,
                                                             name: highlight.title
                                                         )
