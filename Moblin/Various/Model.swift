@@ -18,7 +18,6 @@ import SDWebImageWebPCoder
 import StoreKit
 import SwiftUI
 import TrueTime
-import TwitchChat
 import VideoToolbox
 import WatchConnectivity
 import WebKit

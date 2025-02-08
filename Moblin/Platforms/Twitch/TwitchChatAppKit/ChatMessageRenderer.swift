@@ -1,17 +1,13 @@
-//  Created by Geoff Pado on 4/18/22.
-//  Copyright © 2022 Cocoatype, LLC. All rights reserved.
-
-import Cocoa
-import TwitchChat
+import UIKit
 
 public enum ChatMessageRenderer {
-    public static func attributedString(for message: ChatMessage, font: NSFont) async -> NSAttributedString {
+    public static func attributedString(for message: ChatMessage, font: UIFont) async -> NSAttributedString {
         let attributedString = NSMutableAttributedString(string: message.text, attributes: [
             .font: font
         ])
 
         let downloadedEmotes = await downloadedEmotes(from: message).sorted(by: { lhs, rhs in
-            lhs.range.startIndex > rhs.range.startIndex
+            lhs.range.lowerBound > rhs.range.lowerBound
         })
 
         downloadedEmotes.forEach { emote in
@@ -30,8 +26,8 @@ public enum ChatMessageRenderer {
             for emote in message.emotes {
                 group.addTask {
                     do {
-                        let (data, _) = try await URLSession.shared.data(from: emote.imageURL)
-                        guard let image = NSImage(data: data) else { throw ChatMessageRenderError.corruptImageData }
+                        let (data, _) = try await URLSession.shared.data(from: emote.imageURL())
+                        guard let image = UIImage(data: data) else { throw ChatMessageRenderError.corruptImageData }
                         return DownloadedEmote(image: image, range: emote.range)
                     } catch {
                         return nil

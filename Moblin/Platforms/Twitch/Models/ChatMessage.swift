@@ -1,10 +1,12 @@
+import Foundation
+
 public struct ChatMessage {
     public let channel: String
 
     // New for primary message data
     public let uniqueId: String?        // "id" tag for PRIVMSG
     public let login: String?           // "login" tag for the sender's login
-    public let emotes: [Emote]
+    public let emotes: [TwitchEmote]
     public let emoteSets: [String]      // "emote-sets" tag
     public let badges: [String]
     public let badgeInfo: [String: String]  // Parsed from "badge-info"
@@ -112,9 +114,9 @@ private extension Message {
         return tags["color"]
     }
     
-    var emotes: [Emote] {
+    var emotes: [TwitchEmote] {
         guard let emoteString = tags["emotes"] else { return [] }
-        return Emote.emotes(from: emoteString)
+        return TwitchEmote.emotes(from: emoteString)
     }
     
     var badges: [String] {

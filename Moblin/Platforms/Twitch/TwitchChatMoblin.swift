@@ -1,12 +1,11 @@
 import Network
 import SwiftUI
-import TwitchChat
 
 private func getEmotes(from message: ChatMessage) -> [ChatMessageEmote] {
     var emotes: [ChatMessageEmote] = []
     for emote in message.emotes {
         do {
-            try emotes.append(ChatMessageEmote(url: emote.imageURL, range: emote.range))
+            try emotes.append(ChatMessageEmote(url: emote.imageURL(), range: emote.range))
         } catch {
             logger.warning("twitch: chat: Failed to get emote URL")
         }

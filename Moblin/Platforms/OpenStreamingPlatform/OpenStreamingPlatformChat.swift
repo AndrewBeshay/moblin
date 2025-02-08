@@ -1,7 +1,7 @@
 import Foundation
 import XMLCoder
 
-private struct Message: Codable {
+private struct OSMessage: Codable {
     let from: String
     let body: String
 
@@ -14,7 +14,7 @@ private struct Message: Codable {
 }
 
 private struct MessageContainer: Codable {
-    let message: Message
+    let message: OSMessage
 }
 
 // periphery:ignore
@@ -216,7 +216,7 @@ class OpenStreamingPlatformChat {
         logger.debug("open-streaming-platform: handle open")
     }
 
-    private func handleMessageMessage(message: Message) async throws {
+    private func handleMessageMessage(message: OSMessage) async throws {
         let segments = createSegments(message: message.body)
         await MainActor.run {
             model.appendChatMessage(platform: .openStreamingPlatform,

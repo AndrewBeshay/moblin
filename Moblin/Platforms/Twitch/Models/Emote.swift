@@ -13,7 +13,7 @@ public enum EmoteError: Error {
 }
 
 /// Represents a Twitch emote with an identifier and the range in the chat message where it appears.
-public struct Emote {
+public struct TwitchEmote {
     /// The unique identifier for the emote.
     private let identifier: String
     
@@ -48,9 +48,9 @@ public struct Emote {
     ///
     /// - Parameter string: The raw string containing emote definitions.
     /// - Returns: An array of `Emote` objects parsed from the string.
-    public static func emotes(from string: String) -> [Emote] {
+    public static func emotes(from string: String) -> [TwitchEmote] {
         let emoteDefinitions = string.split(separator: "/")
-        return emoteDefinitions.flatMap { Emote.emotes(fromDefinition: $0) }
+        return emoteDefinitions.flatMap { TwitchEmote.emotes(fromDefinition: $0) }
     }
     
     /// Parses an individual emote definition into an array of `Emote` instances.
@@ -59,7 +59,7 @@ public struct Emote {
     ///
     /// - Parameter definition: A substring representing a single emote definition.
     /// - Returns: An array of `Emote` instances, one for each valid range found.
-    private static func emotes(fromDefinition definition: Substring) -> [Emote] {
+    private static func emotes(fromDefinition definition: Substring) -> [TwitchEmote] {
         // Split the definition into the emote ID and the ranges string.
         let parts = definition.split(separator: ":")
         guard parts.count == 2,
@@ -86,6 +86,6 @@ public struct Emote {
         }
         
         // Create an Emote for each valid range.
-        return emoteRanges.map { Emote(identifier: emoteIDString, range: $0) }
+        return emoteRanges.map { TwitchEmote(identifier: emoteIDString, range: $0) }
     }
 }

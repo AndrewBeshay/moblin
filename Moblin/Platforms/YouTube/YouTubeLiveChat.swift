@@ -59,7 +59,7 @@ private struct Run: Codable {
     let emoji: Emoji?
 }
 
-private struct Message: Codable {
+private struct YoutubeMessage: Codable {
     let runs: [Run]
 }
 
@@ -73,9 +73,9 @@ private struct Amount: Codable {
 
 private struct ChatDescription: Codable {
     let authorName: Author
-    let message: Message?
+    let message: YoutubeMessage?
     let purchaseAmountText: Amount?
-    let headerSubtext: Message?
+    let headerSubtext: YoutubeMessage?
 }
 
 private struct AddChatItemActionItem: Codable {
