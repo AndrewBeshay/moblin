@@ -161,7 +161,8 @@ protocol TwitchChatMoblinDelegate: AnyObject {
         isSubscriber: Bool,
         isModerator: Bool,
         bits: String?,
-        highlight: ChatHighlight?
+        highlight: ChatHighlight?,
+        messageId: String?
     )
 }
 
@@ -259,7 +260,8 @@ final class TwitchChatMoblin {
             isSubscriber: message.subscriber,
             isModerator: message.moderator,
             bits: message.bits,
-            highlight: createHighlight(message: message)
+            highlight: createHighlight(message: message),
+            messageId: message.uniqueId
         )
     }
 
@@ -435,6 +437,7 @@ extension TwitchChatMoblin: WebSocketClientDelegate {
     }
 
     func webSocketClientReceiveMessage(_: WebSocketClient, string: String) {
+        logger.debug(string)
         for line in string.split(whereSeparator: { $0.isNewline }) {
             try? handleMessage(message: String(line))
         }

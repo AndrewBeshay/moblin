@@ -255,7 +255,8 @@ final class AfreecaTvChat: NSObject {
                 isModerator: false,
                 bits: nil,
                 highlight: nil,
-                live: true
+                live: true,
+                messageId: ""
             )
         }
     }

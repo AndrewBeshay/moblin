@@ -232,6 +232,7 @@ struct ChatPost: Identifiable, Equatable {
     var bits: String?
     var highlight: ChatHighlight?
     var live: Bool
+    var messageId: String?
 }
 
 class ButtonState {
@@ -5348,7 +5349,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         isModerator: Bool,
         bits: String?,
         highlight: ChatHighlight?,
-        live: Bool
+        live: Bool,
+        messageId: String?
     ) {
         if database.chat.usernamesToIgnore!.contains(where: { user == $0.value }) {
             return
@@ -5380,7 +5382,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             isSubscriber: isSubscriber,
             bits: bits,
             highlight: highlight,
-            live: live
+            live: live,
+            messageId: messageId
         )
         chatPostId += 1
         if chatPaused {
@@ -7403,7 +7406,8 @@ extension Model: RemoteControlStreamerDelegate {
                               isModerator: message.isModerator,
                               bits: message.bits,
                               highlight: nil,
-                              live: live)
+                              live: live,
+                              messageId: "")
             remoteControlStreamerLatestReceivedChatMessageId = message.id
         }
     }
@@ -9847,6 +9851,9 @@ extension Model {
 }
 
 extension Model: TwitchEventSubDelegate {
+    func twitchEventSubChannelModerate(event: TwitchEventSubChannelModerateEvent) {
+    }
+    
     func twitchEventSubMakeErrorToast(title: String) {
         makeErrorToast(
             title: title,
@@ -10051,7 +10058,8 @@ extension Model: TwitchEventSubDelegate {
                               color: color,
                               image: image ?? "medal",
                               title: title
-                          ), live: true)
+                          ), live: true,
+                          messageId: "")
     }
 
     func twitchEventSubUnauthorized() {
@@ -10366,7 +10374,8 @@ extension Model: TwitchChatMoblinDelegate {
         isSubscriber: Bool,
         isModerator: Bool,
         bits: String?,
-        highlight: ChatHighlight?
+        highlight: ChatHighlight?,
+        messageId: String?
     ) {
         appendChatMessage(platform: .twitch,
                           user: user,
@@ -10381,7 +10390,8 @@ extension Model: TwitchChatMoblinDelegate {
                           isModerator: isModerator,
                           bits: bits,
                           highlight: highlight,
-                          live: true)
+                          live: true,
+                          messageId: messageId)
     }
 }
 
@@ -10410,7 +10420,8 @@ extension Model: KickOusherDelegate {
                           isModerator: isModerator,
                           bits: nil,
                           highlight: nil,
-                          live: true)
+                          live: true,
+                          messageId: "")
     }
 }
 

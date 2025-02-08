@@ -216,6 +216,38 @@ private struct NotificationChannelAdBreakBeginMessage: Decodable {
     var payload: NotificationChannelAdBreakBeginPayload
 }
 
+// MARK: - New: Channel Moderate Data Models (v2)
+// This event is triggered when a moderator performs a moderation action (for example, a timeout or ban) via the moderator interface.
+
+struct TargetUser: Decodable {
+    var user_id: String
+    var user_login: String
+    var user_name: String
+    var reason: String?
+    var expires_at: String?
+}
+
+
+struct TwitchEventSubChannelModerateEvent: Decodable {
+    var broadcaster_user_id: String
+    var broadcaster_user_login: String
+    var broadcaster_user_name: String
+    var moderator_user_id: String
+    var moderator_user_login: String
+    var moderator_user_name: String
+    var moderation_action: String  // e.g., "timeout", "ban", etc.
+    var moderated_at: String       // Timestamp when the action occurred
+    var target_user: TargetUser?
+}
+
+private struct NotificationChannelModeratePayload: Decodable {
+    var event: TwitchEventSubChannelModerateEvent
+}
+
+private struct NotificationChannelModerateMessage: Decodable {
+    var payload: NotificationChannelModeratePayload
+}
+
 private var url = URL(string: "wss://eventsub.wss.twitch.tv/ws")!
 
 protocol TwitchEventSubDelegate: AnyObject {
@@ -237,6 +269,7 @@ protocol TwitchEventSubDelegate: AnyObject {
     func twitchEventSubChannelAdBreakBegin(event: TwitchEventSubChannelAdBreakBeginEvent)
     func twitchEventSubUnauthorized()
     func twitchEventSubNotification(message: String)
+    func twitchEventSubChannelModerate(event: TwitchEventSubChannelModerateEvent) // New delegate method
 }
 
 private let subTypeChannelFollow = "channel.follow"
@@ -251,6 +284,7 @@ private let subTypeChannelHypeTrainBegin = "channel.hype_train.begin"
 private let subTypeChannelHypeTrainProgress = "channel.hype_train.progress"
 private let subTypeChannelHypeTrainEnd = "channel.hype_train.end"
 private let subTypeChannelAdBreakBegin = "channel.ad_break.begin"
+private let CHANNEL_MODERATE = "channel.moderate"
 
 final class TwitchEventSub: NSObject {
     private var webSocket: WebSocketClient
@@ -436,9 +470,21 @@ final class TwitchEventSub: NSObject {
 
     private func subscribeTochannelAdBreakBegin() {
         subscribeBroadcasterUserId(type: subTypeChannelAdBreakBegin, eventType: "ad break begin") {
-            self.connected = true
+            self.subscribeToChannelModerate()
         }
     }
+    
+    private func subscribeToChannelModerate() {
+            let condition = "{\"broadcaster_user_id\":\"\(userId)\",\"moderator_user_id\":\"\(userId)\"}"
+            let body = createBody(type: CHANNEL_MODERATE, version: 2, condition: condition)
+            twitchApi.createEventSubSubscription(body: body) { ok in
+                self.makeSubscribeErrorToastIfNotOk(ok: ok, eventType: CHANNEL_MODERATE)
+                guard ok else {
+                    return
+                }
+                self.connected = true
+            }
+        }
 
     private func subscribeBroadcasterUserId(
         type: String,
@@ -500,6 +546,8 @@ final class TwitchEventSub: NSObject {
                 try handleChannelHypeTrainEnd(messageData: messageData)
             case subTypeChannelAdBreakBegin:
                 try handleChannelAdBreakBegin(messageData: messageData)
+            case CHANNEL_MODERATE: // New case for moderation events
+                try handleChannelModerate(messageData: messageData)
             default:
                 if let type = message.metadata.subscription_type {
                     logger.info("twitch: event-sub: Unknown notification type \(type)")
@@ -600,6 +648,15 @@ final class TwitchEventSub: NSObject {
             from: messageData
         )
         delegate.twitchEventSubChannelAdBreakBegin(event: message.payload.event)
+    }
+    
+    // New handler for channel moderate events
+    private func handleChannelModerate(messageData: Data) throws {
+        let message = try JSONDecoder().decode(
+            NotificationChannelModerateMessage.self,
+            from: messageData
+        )
+        delegate.twitchEventSubChannelModerate(event: message.payload.event)
     }
 }
 

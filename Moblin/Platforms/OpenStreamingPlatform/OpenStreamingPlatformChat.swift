@@ -232,7 +232,8 @@ class OpenStreamingPlatformChat {
                                     isModerator: false,
                                     bits: nil,
                                     highlight: nil,
-                                    live: true)
+                                    live: true,
+                                    messageId: "")
         }
     }
 
