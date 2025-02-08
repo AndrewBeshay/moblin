@@ -220,24 +220,24 @@ private struct NotificationChannelAdBreakBeginMessage: Decodable {
 // This event is triggered when a moderator performs a moderation action (for example, a timeout or ban) via the moderator interface.
 
 struct TargetUser: Decodable {
-    var user_id: String
-    var user_login: String
-    var user_name: String
+    var userID: String
+    var userLogin: String
+    var userName: String
     var reason: String?
-    var expires_at: String?
+    var expiresAt: String?
 }
 
 
 struct TwitchEventSubChannelModerateEvent: Decodable {
-    var broadcaster_user_id: String
-    var broadcaster_user_login: String
-    var broadcaster_user_name: String
-    var moderator_user_id: String
-    var moderator_user_login: String
-    var moderator_user_name: String
-    var moderation_action: String  // e.g., "timeout", "ban", etc.
-    var moderated_at: String       // Timestamp when the action occurred
-    var target_user: TargetUser?
+    var broadcasterUserID: String
+    var broadcasterUserLogin: String
+    var broadcasterUserName: String
+    var moderatorUserID: String
+    var moderatorUserLogin: String
+    var moderatorUserName: String
+    var action: String  
+    var moderatedAt: String       
+    var targetUser: TargetUser?
 }
 
 private struct NotificationChannelModeratePayload: Decodable {
