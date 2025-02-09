@@ -1069,6 +1069,7 @@
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		498DB2B12D57A6AD00EFBDBC /* Chat */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Chat; sourceTree = "<group>"; };
+		498DB2B82D58CFD300EFBDBC /* Models */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Models; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1864,6 +1865,7 @@
 		035E9E352A9A02D6009D4F5A /* Moblin */ = {
 			isa = PBXGroup;
 			children = (
+				498DB2B82D58CFD300EFBDBC /* Models */,
 				498DB2AC2D57798C00EFBDBC /* MoblinDebug.entitlements */,
 				03CDEAA02C0AB8BB006121D0 /* Integrations */,
 				0391D2012CB2FFFC008AB44B /* Intents */,
@@ -2918,6 +2920,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				498DB2B12D57A6AD00EFBDBC /* Chat */,
+				498DB2B82D58CFD300EFBDBC /* Models */,
 			);
 			name = Moblin;
 			packageProductDependencies = (

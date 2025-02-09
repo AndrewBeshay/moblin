@@ -152,89 +152,7 @@ private let iconsProductIds = [
     "AppIconIreland",
 ]
 
-struct ChatMessageEmote: Identifiable {
-    var id = UUID()
-    var url: URL
-    var range: ClosedRange<Int>
-}
 
-struct ChatPostSegment: Identifiable, Codable {
-    var id: Int
-    var text: String?
-    var url: URL?
-}
-
-func makeChatPostTextSegments(text: String, id: inout Int) -> [ChatPostSegment] {
-    var segments: [ChatPostSegment] = []
-    for word in text.split(separator: " ") {
-        segments.append(ChatPostSegment(
-            id: id,
-            text: "\(word) "
-        ))
-        id += 1
-    }
-    return segments
-}
-
-enum ChatHighlightKind: Codable {
-    case redemption
-    case other
-    case firstMessage
-    case newFollower
-}
-
-struct ChatHighlight {
-    let kind: ChatHighlightKind
-    let color: Color
-    let image: String
-    let title: String
-
-    func toWatchProtocol() -> WatchProtocolChatHighlight {
-        let watchProtocolKind: WatchProtocolChatHighlightKind
-        switch kind {
-        case .redemption:
-            watchProtocolKind = .redemption
-        case .other:
-            watchProtocolKind = .other
-        case .newFollower:
-            watchProtocolKind = .redemption
-        case .firstMessage:
-            watchProtocolKind = .other
-        }
-        let color = color.toRgb() ?? .init(red: 0, green: 255, blue: 0)
-        return WatchProtocolChatHighlight(
-            kind: watchProtocolKind,
-            color: .init(red: color.red, green: color.green, blue: color.blue),
-            image: image,
-            title: title
-        )
-    }
-}
-
-struct ChatPost: Identifiable, Equatable {
-    static func == (lhs: ChatPost, rhs: ChatPost) -> Bool {
-        return lhs.id == rhs.id
-    }
-
-    func isRedemption() -> Bool {
-        return highlight?.kind == .redemption || highlight?.kind == .newFollower
-    }
-
-    var id: Int
-    var user: String?
-    var userId: String?
-    var userColor: RgbColor?
-    var userBadges: [URL]
-    var segments: [ChatPostSegment]
-    var timestamp: String
-    var timestampTime: ContinuousClock.Instant
-    var isAction: Bool
-    var isSubscriber: Bool
-    var bits: String?
-    var highlight: ChatHighlight?
-    var live: Bool
-    var messageId: String?
-}
 
 class ButtonState {
     var isOn: Bool
@@ -2920,11 +2838,11 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     private func createRedLineChatPost() -> ChatPost {
-        defer {
-            chatPostId += 1
-        }
+//        defer {
+//            chatPostId += 1
+//        }
         return ChatPost(
-            id: chatPostId,
+            id: UUID(),
             user: nil,
             userColor: nil,
             userBadges: [],
@@ -5372,7 +5290,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             handlePollVote(vote: segments.first?.text?.trim())
         }
         let post = ChatPost(
-            id: chatPostId,
+            id: UUID(),
             user: user,
             userId: userId,
             userColor: userColor?.makeReadableOnDarkBackground(),
@@ -5387,7 +5305,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             live: live,
             messageId: messageId
         )
-        chatPostId += 1
+//        chatPostId += 1
         if chatPaused {
             if pausedChatPosts.count < 2 * maximumNumberOfChatMessages {
                 pausedChatPosts.append(post)
@@ -5423,7 +5341,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         var newPosts: Deque<ChatPost> = []
         for post in posts {
             var newPost = post
-            newPost.id = chatPostId
+            newPost.id = UUID()//chatPostId
             chatPostId += 1
             newPosts.append(newPost)
         }
@@ -9852,6 +9770,7 @@ extension Model {
     }
 }
 
+
 extension Model: TwitchEventSubDelegate {
     func twitchEventSubChannelModerate(event: TwitchEventSubChannelModerateEvent) {
         logger.debug(event.description)
@@ -9862,11 +9781,13 @@ extension Model: TwitchEventSubDelegate {
                 // Assume chatPosts is an array storing your chat post objects.
                 // Each chat post object has a property messageId.
                 if let index = chatPosts.firstIndex(where: { $0.messageId == messageId }) {
-                    chatPosts.remove(at: index)
-//                    let text = "\(event.target_user?.user_name ?? "Unknown")'s message has been deleted by \(event.moderator_user_name)"
-//                    chatPosts[index]
+                    chatPosts[index].isDeleted = true
+                    chatPosts[index].originalSegments = chatPosts[index].segments
                     // Optionally, update your UI on the main thread.
-                    DispatchQueue.main.async {}
+                    DispatchQueue.main.async {
+                        let text = "\(event.moderator_user_name) deleted \(event.target_user?.user_name ?? "")'s message"
+                        self.postSystemMessage(text: text)
+                    }
                 } else {
                     logger.debug("No chat post found with messageId \(messageId)")
                 }
@@ -10500,5 +10421,64 @@ extension Model: MoblinkClientDelegate {
 extension Model: MoblinkScannerDelegate {
     func moblinkScannerDiscoveredServers(servers: [MoblinkScannerServer]) {
         moblinkScannerDiscoveredStreamers = servers
+    }
+}
+
+extension Model {
+    /// Reveals the original content of a deleted chat post by setting its `isRevealed` property to true.
+    func revealChatPost(_ post: ChatPost) {
+        // Find the index of the chat post by matching its id.
+        logger.debug("this was called?")
+        if let index = chatPosts.firstIndex(where: { $0.messageId == post.messageId }) {
+            // Update the state to reveal the original message.
+            var updatedPost = chatPosts[index]
+            updatedPost.isRevealed = true
+            chatPosts[index] = updatedPost
+        } else {
+            print("Error: Chat post with id \(post.id) not found.")
+        }
+    }
+}
+
+
+extension Model {
+    func postSystemMessage(text: String) {
+        let systemPost = ChatPost(
+            id: UUID(),//(chatPosts.last?.id ?? 0) + 1,
+            type: .system,
+            user: "System",         // This could be "System" or the username if you wish.
+            userId: nil,
+            userColor: nil,
+            userBadges: [],
+            segments: [],           // Regular segments are not needed.
+            timestamp: digitalClock,
+            timestampTime: .now,
+            isAction: false,
+            isSubscriber: false,
+            bits: nil,
+            highlight: nil,
+            live: true,
+            messageId: nil,
+            isDeleted: false,
+            originalSegments: nil,
+            isRevealed: false,
+            systemText: text
+        )
+        logger.debug("posting system post")
+        // Append the system post to your chat collection.
+        if chatPaused {
+            if pausedChatPosts.count < 2 * maximumNumberOfChatMessages {
+                pausedChatPosts.append(systemPost)
+            }
+        } else {
+            newChatPosts.append(systemPost)
+        }
+        if interactiveChatPaused {
+            if pausedInteractiveChatPosts.count < 2 * maximumNumberOfInteractiveChatMessages {
+                pausedInteractiveChatPosts.append(systemPost)
+            }
+        } else {
+            newInteractiveChatPosts.append(systemPost)
+        }
     }
 }

@@ -102,29 +102,53 @@ struct StreamOverlayChatView: View {
     // Returns a view for a single chat post.
     private func postView(for post: ChatPost) -> some View {
         Group {
-            if post.user != nil {
-                if let highlight = post.highlight {
-                    HStack(spacing: 0) {
-                        Rectangle()
-                            .frame(width: 3)
-                            .foregroundColor(highlight.color)
-                        VStack(alignment: .leading, spacing: 1) {
-                            HighlightMessageView(
-                                chat: model.database.chat,
-                                image: highlight.image,
-                                name: highlight.title
-                            )
-                            LineView(
-                                post: post,
-                                chat: model.database.chat
-                            )
-                        }
-                    }
-                    .modifier(RotationAndScaleModifier(rotation: rotation, scaleX: scaleX))
-                } else {
+            if let _ = post.user {
+                if post.isDeleted {
+                    // Show a placeholder for deleted messages.
+                    //                    Text("<message deleted>")
+                    //                        .foregroundColor(.gray)
+                    //                        .italic()
+                    //                        .onTapGesture {
+                    //                            // Toggle the reveal state.
+                    //                            // This method should update the model such that the ChatPost's
+                    //                            // isRevealed property is set to true (or toggled).
+                    //                            model.revealChatPost(post)
+                    //                        }
+                    //                        .modifier(RotationAndScaleModifier(rotation: rotation, scaleX: scaleX))
                     LineView(post: post, chat: model.database.chat)
                         .padding(.leading, 3)
+                        .foregroundColor(.gray)
+                        .onTapGesture {
+                            // Toggle the reveal state.
+                            // This method should update the model such that the ChatPost's
+                            // isRevealed property is set to true (or toggled).
+                            model.revealChatPost(post)
+                        }
                         .modifier(RotationAndScaleModifier(rotation: rotation, scaleX: scaleX))
+                } else if post.type == .system {
+                    SystemView(chat: model.database.chat, text: post.systemText?.localizedCapitalized ?? "")
+                        .modifier(RotationAndScaleModifier(rotation: rotation, scaleX: scaleX))
+                } else {
+                    if let highlight = post.highlight {
+                        HStack(spacing: 0) {
+                            Rectangle()
+                                .frame(width: 3)
+                                .foregroundColor(highlight.color)
+                            VStack(alignment: .leading, spacing: 1) {
+                                HighlightMessageView(
+                                    chat: model.database.chat,
+                                    image: highlight.image,
+                                    name: highlight.title
+                                )
+                                LineView(post: post, chat: model.database.chat)
+                            }
+                        }
+                        .modifier(RotationAndScaleModifier(rotation: rotation, scaleX: scaleX))
+                    } else {
+                        LineView(post: post, chat: model.database.chat)
+                            .padding(.leading, 3)
+                            .modifier(RotationAndScaleModifier(rotation: rotation, scaleX: scaleX))
+                    }
                 }
             } else {
                 // When there is no user, display a red divider.

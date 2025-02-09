@@ -84,7 +84,7 @@ struct LineView: View {
             } else {
                 Text(": ")
             }
-            ForEach(post.segments, id: \.id) { segment in
+            ForEach(post.displaySegments, id: \.id) { segment in
                 if let text = segment.text {
                     Text(text)
                         .foregroundColor(messageColor)
