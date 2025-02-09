@@ -128,6 +128,7 @@ struct StreamOverlayChatView: View {
                         .modifier(RotationAndScaleModifier(rotation: rotation, scaleX: scaleX))
                 } else if post.type == .system {
                     SystemView(chat: model.database.chat, text: post.systemText ?? "")
+                        .padding(.leading, 3)
                         .modifier(RotationAndScaleModifier(rotation: rotation, scaleX: scaleX))
                 } else {
                     if let highlight = post.highlight {
