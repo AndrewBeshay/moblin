@@ -525,7 +525,7 @@ extension Telegraph.WebSocket {
 }
 
 extension RemoteControlAssistant: TwitchEventSubDelegate {
-    func twitchEventSubChannelModerate(event: TwitchEventSubChannelModerateEvent) {
+    func twitchEventSubChannelModerate(event: NotificationChannelModerateMessage) {
     }
     
     func twitchEventSubChannelAdBreakBegin(event _: TwitchEventSubChannelAdBreakBeginEvent) {}

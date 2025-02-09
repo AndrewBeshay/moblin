@@ -364,7 +364,7 @@ struct TwitchEventSubChannelModerateEvent: Decodable, CustomStringConvertible {
 }
 
 // Wrap the event in a payload struct.
-private struct NotificationChannelModeratePayload: Decodable, CustomStringConvertible {
+struct NotificationChannelModeratePayload: Decodable, CustomStringConvertible {
     var event: TwitchEventSubChannelModerateEvent
     
     var description: String {
@@ -372,13 +372,43 @@ private struct NotificationChannelModeratePayload: Decodable, CustomStringConver
     }
 }
 
+private func parseRFC3339NanoTimestamp(_ timestamp: String) -> Date? {
+    let dateFormatter = DateFormatter()
+    dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSSX"
+    dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+    dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+
+    return dateFormatter.date(from: timestamp)
+}
+
 // Wrap the payload in a message struct.
-private struct NotificationChannelModerateMessage: Decodable, CustomStringConvertible {
+struct NotificationChannelModerateMessage: Decodable, CustomStringConvertible {
+    var metadata: BasicMetadataTimestamp
     var payload: NotificationChannelModeratePayload
+    
+    var timeoutDuration: String? {
+        guard let expiresAt = payload.event.target_user?.expires_at,
+              let rawExpiresDate = parseRFC3339NanoTimestamp(expiresAt),
+              let messageTimestamp = parseRFC3339NanoTimestamp(metadata.message_timestamp) else {
+            return nil
+        }
+
+        // Round the expiration date to whole seconds
+        let roundedExpiresDate = Date(timeIntervalSinceReferenceDate: ceil(rawExpiresDate.timeIntervalSinceReferenceDate))
+        // Compute duration and convert to an integer (removes decimals)
+        let duration = Int(roundedExpiresDate.timeIntervalSince(messageTimestamp))
+
+        return "\(duration)s"
+    }
+    
     
     var description: String {
         return payload.description
     }
+}
+
+struct BasicMetadataTimestamp: Decodable {
+    var message_timestamp: String
 }
 
 private var url = URL(string: "wss://eventsub.wss.twitch.tv/ws")!
@@ -402,7 +432,7 @@ protocol TwitchEventSubDelegate: AnyObject {
     func twitchEventSubChannelAdBreakBegin(event: TwitchEventSubChannelAdBreakBeginEvent)
     func twitchEventSubUnauthorized()
     func twitchEventSubNotification(message: String)
-    func twitchEventSubChannelModerate(event: TwitchEventSubChannelModerateEvent) // New delegate method
+    func twitchEventSubChannelModerate(event: NotificationChannelModerateMessage) // New delegate method
 }
 
 private let subTypeChannelFollow = "channel.follow"
@@ -787,7 +817,7 @@ final class TwitchEventSub: NSObject {
     private func handleChannelModerate(messageData: Data) throws {
         do {
             let message = try JSONDecoder().decode(NotificationChannelModerateMessage.self, from: messageData)
-            delegate.twitchEventSubChannelModerate(event: message.payload.event)
+            delegate.twitchEventSubChannelModerate(event: message)
         } catch {
             print("Decoding failed: \(error)")
             if let rawPayload = String(data: messageData, encoding: .utf8) {
@@ -806,6 +836,7 @@ extension TwitchEventSub: WebSocketClientDelegate {
     }
 
     func webSocketClientReceiveMessage(_: WebSocketClient, string: String) {
+        logger.debug(string)
         handleMessage(messageText: string)
     }
 }

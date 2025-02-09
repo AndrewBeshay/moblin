@@ -9772,21 +9772,22 @@ extension Model {
 
 
 extension Model: TwitchEventSubDelegate {
-    func twitchEventSubChannelModerate(event: TwitchEventSubChannelModerateEvent) {
+    func twitchEventSubChannelModerate(event: NotificationChannelModerateMessage) {
         logger.debug(event.description)
-        switch event.action {
+        switch event.payload.event.action {
         case "delete":
             // For delete actions, we expect the target user to have a message_id.
-            if let messageId = event.target_user?.message_id {
+            if let messageId = event.payload.event.target_user?.message_id {
                 // Assume chatPosts is an array storing your chat post objects.
                 // Each chat post object has a property messageId.
                 if let index = chatPosts.firstIndex(where: { $0.messageId == messageId }) {
                     chatPosts[index].isDeleted = true
                     chatPosts[index].originalSegments = chatPosts[index].segments
                     // Optionally, update your UI on the main thread.
+                    let text = "\(event.payload.event.moderator_user_name) deleted \(event.payload.event.target_user?.user_name ?? "")'s message"
+                    self.postSystemMessage(text: text)
                     DispatchQueue.main.async {
-                        let text = "\(event.moderator_user_name) deleted \(event.target_user?.user_name ?? "")'s message"
-                        self.postSystemMessage(text: text)
+
                     }
                 } else {
                     logger.debug("No chat post found with messageId \(messageId)")
@@ -9798,13 +9799,18 @@ extension Model: TwitchEventSubDelegate {
             break
         case "timeout":
             // For a timeout, remove all previous messages from that user.
-            if let targetUser = event.target_user {
+            if let targetUser = event.payload.event.target_user {
                 let targetUserId = targetUser.user_id
-                logger.debug(targetUserId)
+                for index in chatPosts.indices where chatPosts[index].userId == targetUserId {
+                    chatPosts[index].isDeleted = true
+                    chatPosts[index].originalSegments = chatPosts[index].segments
+                }
                 // Remove all chat posts from the timed-out user.
-                chatPosts.removeAll {
-                    logger.debug($0.userId ?? "")
-                    return $0.userId == targetUserId }
+//                chatPosts.removeAll {
+//                    logger.debug($0.userId ?? "")
+//                    return $0.userId == targetUserId }
+                let text = "\(event.payload.event.moderator_user_name) timed out \(event.payload.event.target_user?.user_name ?? "") for \(event.timeoutDuration?.description ?? "an unknown duration")"
+                self.postSystemMessage(text: text)
                 DispatchQueue.main.async {
                 }
             } else {

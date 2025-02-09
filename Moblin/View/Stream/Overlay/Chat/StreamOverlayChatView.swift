@@ -118,6 +118,7 @@ struct StreamOverlayChatView: View {
                     LineView(post: post, chat: model.database.chat)
                         .padding(.leading, 3)
                         .foregroundColor(.gray)
+                        .opacity(0.5) // Makes the whole message washed out
                         .onTapGesture {
                             // Toggle the reveal state.
                             // This method should update the model such that the ChatPost's
@@ -126,7 +127,7 @@ struct StreamOverlayChatView: View {
                         }
                         .modifier(RotationAndScaleModifier(rotation: rotation, scaleX: scaleX))
                 } else if post.type == .system {
-                    SystemView(chat: model.database.chat, text: post.systemText?.localizedCapitalized ?? "")
+                    SystemView(chat: model.database.chat, text: post.systemText ?? "")
                         .modifier(RotationAndScaleModifier(rotation: rotation, scaleX: scaleX))
                 } else {
                     if let highlight = post.highlight {
