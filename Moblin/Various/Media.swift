@@ -2,8 +2,6 @@ import AVFoundation
 import Network
 import SwiftUI
 
-private let mediaDispatchQueue = DispatchQueue(label: "com.eerimoq.stream")
-
 private func isMuted(level: Float) -> Bool {
     return level.isNaN
 }
@@ -38,7 +36,6 @@ protocol MediaDelegate: AnyObject {
 
 final class Media: NSObject {
     private var rtmpConnection = RtmpConnection()
-    private var srtConnection = SrtConnection()
     private var rtmpStream: RtmpStream?
     private var srtStream: SrtStream?
     private var ristStream: RistStream?
@@ -48,7 +45,6 @@ final class Media: NSObject {
     private var srtTotalByteCount: Int64 = 0
     private var srtPreviousTotalByteCount: Int64 = 0
     private var srtSpeed: Int64 = 0
-    private var srtConnectedObservation: NSKeyValueObservation?
     private var currentAudioLevel: Float = defaultAudioLevel
     private var numberOfAudioChannels: Int = 0
     private var srtUrl: String = ""
@@ -114,7 +110,7 @@ final class Media: NSObject {
             irlStream = nil
             netStream = rtmpStream
         case .srt:
-            srtStream = SrtStream(srtConnection, timecodesEnabled: timecodesEnabled)
+            srtStream = SrtStream(timecodesEnabled: timecodesEnabled, delegate: self)
             rtmpStream = nil
             ristStream = nil
             irlStream = nil
@@ -207,10 +203,9 @@ final class Media: NSObject {
     }
 
     func srtStopStream() {
-        srtConnection.close()
+        srtStream?.close()
         srtlaClient?.stop()
         srtlaClient = nil
-        srtConnectedObservation = nil
         adaptiveBitrate = nil
     }
 
@@ -270,15 +265,19 @@ final class Media: NSObject {
         guard srtConnected else {
             return nil
         }
-        let stats = srtConnection.performanceData
+        guard let stats = srtStream?.getPerformanceData() else {
+            return nil
+        }
         srtDroppedPacketsTotal = stats.pktSndDropTotal
         guard let adaptiveBitrate else {
             return nil
         }
         // This one blocks if srt_connect() has not returned.
-        let sndData = srtConnection.socket?.sndData() ?? 0
+        guard let sndData = srtStream?.getSndData() else {
+            return nil
+        }
         adaptiveBitrate.update(stats: StreamStats(
-            rttMs: stats.msRTT,
+            rttMs: stats.msRtt,
             packetsInFlight: Double(sndData),
             transportBitrate: streamSpeed(),
             latency: latency,
@@ -289,10 +288,10 @@ final class Media: NSObject {
             if is200MsTick() {
                 belaLinesAndActions = ([
                     """
-                    R: \(stats.pktRetransTotal) N: \(stats.pktRecvNAKTotal) \
+                    R: \(stats.pktRetransTotal) N: \(stats.pktRecvNakTotal) \
                     D: \(stats.pktSndDropTotal) E: \(numberOfFailedEncodings)
                     """,
-                    "msRTT: \(stats.msRTT)",
+                    "msRTT: \(stats.msRtt)",
                     "sndData: \(sndData)",
                     "B: \(adaptiveBitrate.getCurrentBitrateInKbps())",
                 ], adaptiveBitrate.getActionsTaken())
@@ -307,10 +306,12 @@ final class Media: NSObject {
         guard is200MsTick() else {
             return nil
         }
-        let stats = srtConnection.performanceData
+        guard let stats = srtStream?.getPerformanceData() else {
+            return nil
+        }
         srtDroppedPacketsTotal = stats.pktSndDropTotal
         adaptiveBitrate?.update(stats: StreamStats(
-            rttMs: stats.msRTT,
+            rttMs: stats.msRtt,
             packetsInFlight: Double(stats.pktFlightSize),
             transportBitrate: streamSpeed(),
             latency: latency,
@@ -323,10 +324,10 @@ final class Media: NSObject {
         if let adaptiveBitrate {
             return ([
                 """
-                R: \(stats.pktRetransTotal) N: \(stats.pktRecvNAKTotal) \
+                R: \(stats.pktRetransTotal) N: \(stats.pktRecvNakTotal) \
                 D: \(stats.pktSndDropTotal) E: \(numberOfFailedEncodings)
                 """,
-                "msRTT: \(stats.msRTT)",
+                "msRTT: \(stats.msRtt)",
                 """
                 pktFlightSize: \(stats.pktFlightSize)   \
                 \(adaptiveBitrate.getFastPif())   \
@@ -340,9 +341,9 @@ final class Media: NSObject {
         } else {
             return ([
                 "pktRetransTotal: \(stats.pktRetransTotal)",
-                "pktRecvNAKTotal: \(stats.pktRecvNAKTotal)",
+                "pktRecvNAKTotal: \(stats.pktRecvNakTotal)",
                 "pktSndDropTotal: \(stats.pktSndDropTotal)",
-                "msRTT: \(stats.msRTT)",
+                "msRTT: \(stats.msRtt)",
                 "pktFlightSize: \(stats.pktFlightSize)",
                 "pktSndBuf: \(stats.pktSndBuf)",
             ], [])
@@ -454,26 +455,6 @@ final class Media: NSObject {
             return 0
         } else {
             return 0
-        }
-    }
-
-    func setupSrtConnectionStateListener() {
-        srtConnectedObservation = srtConnection.observe(\.connected, options: [
-            .new,
-            .old,
-        ]) { [weak self] _, connected in
-            guard let self else {
-                return
-            }
-            DispatchQueue.main.async {
-                if connected.newValue! {
-                    self.srtConnected = true
-                    self.delegate?.mediaOnSrtConnected()
-                } else {
-                    self.srtConnected = false
-                    self.delegate?.mediaOnSrtDisconnected(String(localized: "SRT disconnected"))
-                }
-            }
         }
     }
 
@@ -1001,31 +982,34 @@ extension Media: NetStreamDelegate {
 
 extension Media: SrtlaDelegate {
     func srtlaReady(port: UInt16) {
-        DispatchQueue.main.async {
-            self.setupSrtConnectionStateListener()
-            mediaDispatchQueue.async {
-                do {
-                    try self.srtConnection.open(self.makeLocalhostSrtUrl(
-                        url: self.srtUrl,
-                        port: port,
-                        latency: self.latency,
-                        overheadBandwidth: self.overheadBandwidth,
-                        maximumBandwidthFollowInput: self.maximumBandwidthFollowInput
-                    )) { data in
-                        if let srtla = self.srtlaClient {
-                            srtlaClientQueue.async {
-                                srtla.handleLocalPacket(packet: data)
-                            }
+        netStreamLockQueue.async {
+            do {
+                try self.srtStream?.open(self.makeLocalhostSrtUrl(
+                    url: self.srtUrl,
+                    port: port,
+                    latency: self.latency,
+                    overheadBandwidth: self.overheadBandwidth,
+                    maximumBandwidthFollowInput: self.maximumBandwidthFollowInput
+                )) { [weak self] data in
+                    guard let self else {
+                        return false
+                    }
+                    if let srtla = self.srtlaClient {
+                        srtlaClientQueue.async {
+                            srtla.handleLocalPacket(packet: data)
                         }
-                        return true
                     }
-                    self.srtStream?.publish()
-                } catch {
-                    DispatchQueue.main.async {
-                        self.delegate?.mediaOnSrtDisconnected(
-                            String(localized: "SRT connect failed with \(error.localizedDescription)")
-                        )
-                    }
+                    return true
+                }
+                DispatchQueue.main.async {
+                    self.srtConnected = true
+                    self.delegate?.mediaOnSrtConnected()
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.delegate?.mediaOnSrtDisconnected(
+                        String(localized: "SRT connect failed with \(error.localizedDescription)")
+                    )
                 }
             }
         }
@@ -1065,5 +1049,14 @@ extension Media: RistStreamDelegate {
         DispatchQueue.main.async {
             self.delegate?.mediaStrlaRelayDestinationAddress(address: address, port: port)
         }
+    }
+}
+
+extension Media: SrtStreamDelegate {
+    func srtStreamError() {
+        DispatchQueue.main.async {
+            self.srtConnected = false
+        }
+        srtlaError(message: String(localized: "SRT disconnected"))
     }
 }
