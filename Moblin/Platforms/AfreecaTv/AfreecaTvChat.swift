@@ -256,7 +256,8 @@ final class AfreecaTvChat: NSObject {
                 bits: nil,
                 highlight: nil,
                 live: true,
-                messageId: ""
+                messageId: "",
+                sourceRoomId: ""
             )
         }
     }

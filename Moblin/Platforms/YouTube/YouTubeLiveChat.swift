@@ -311,7 +311,8 @@ final class YouTubeLiveChat: NSObject {
                                     bits: nil,
                                     highlight: highlight,
                                     live: true,
-                                    messageId: "")
+                                    messageId: "",
+                                    sourceRoomId: "")
         }
         return 1
     }

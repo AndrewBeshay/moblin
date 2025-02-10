@@ -411,13 +411,18 @@ struct BasicMetadataTimestamp: Decodable {
     var message_timestamp: String
 }
 
-struct SharedChatParticipants: Decodable {
+/// MARK - Shared Chat Payload
+/// ok
+
+/// Represents a participant in the shared chat
+struct TwitchEventSubSharedChatParticipant: Decodable {
     var broadcaster_user_id: String
-    var broadcaster_user_name: String
     var broadcaster_user_login: String
+    var broadcaster_user_name: String
 }
 
-struct SharedChannelEvent: Decodable {
+/// Represents the shared chat begin event
+struct TwitchEventSubSharedChatEvent: Decodable {
     var session_id: String
     var broadcaster_user_id: String
     var broadcaster_user_login: String
@@ -425,9 +430,49 @@ struct SharedChannelEvent: Decodable {
     var host_broadcaster_user_id: String
     var host_broadcaster_user_login: String
     var host_broadcaster_user_name: String
-    var participants: SharedChatParticipants?
+    var participants: [TwitchEventSubSharedChatParticipant]?
 }
 
+/// Wrapper for decoding the payload
+private struct NotificationSharedChatBeginPayload: Decodable {
+    var event: TwitchEventSubSharedChatEvent
+}
+
+/// Wrapper for the full WebSocket message
+private struct NotificationSharedChatBeginMessage: Decodable {
+    var payload: NotificationSharedChatBeginPayload
+}
+
+/// Wrapper for decoding `channel.shared_chat.update` payload
+private struct NotificationSharedChatUpdatePayload: Decodable {
+    var event: TwitchEventSubSharedChatEvent
+}
+
+/// Wrapper for the full WebSocket message
+private struct NotificationSharedChatUpdateMessage: Decodable {
+    var payload: NotificationSharedChatUpdatePayload
+}
+
+/// Represents the shared chat end event
+struct TwitchEventSubSharedChatEndEvent: Decodable {
+    var session_id: String
+    var broadcaster_user_id: String
+    var broadcaster_user_login: String
+    var broadcaster_user_name: String
+    var host_broadcaster_user_id: String
+    var host_broadcaster_user_login: String
+    var host_broadcaster_user_name: String
+}
+
+/// Wrapper for decoding `channel.shared_chat.end` payload
+private struct NotificationSharedChatEndPayload: Decodable {
+    var event: TwitchEventSubSharedChatEndEvent
+}
+
+/// Wrapper for the full WebSocket message
+private struct NotificationSharedChatEndMessage: Decodable {
+    var payload: NotificationSharedChatEndPayload
+}
 
 private var url = URL(string: "wss://eventsub.wss.twitch.tv/ws")!
 
@@ -451,9 +496,9 @@ protocol TwitchEventSubDelegate: AnyObject {
     func twitchEventSubUnauthorized()
     func twitchEventSubNotification(message: String)
     func twitchEventSubChannelModerate(event: NotificationChannelModerateMessage) // New delegate method
-    func twitchEventSharedChannelBegin(event: SharedChannelEvent)
-    func twitchEventSharedChannelUpdate(event: SharedChannelEvent)
-    func twitchEventSharedChannelEnd(event: SharedChannelEvent)
+    func twitchEventSubSharedChatBegin(event: TwitchEventSubSharedChatEvent)
+    func twitchEventSubSharedChatUpdate(event: TwitchEventSubSharedChatEvent)
+    func twitchEventSubSharedChatEnd(event: TwitchEventSubSharedChatEndEvent)
 }
 
 private let subTypeChannelFollow = "channel.follow"
@@ -669,24 +714,25 @@ final class TwitchEventSub: NSObject {
             guard ok else {
                 return
             }
-            self.subcribeToChannelSharedChatBegin()
+            self.subscribeToChannelSharedChatBegin()
         }
     }
-
-    private func subcribeToChannelSharedChatBegin() {
+    
+    private func subscribeToChannelSharedChatBegin() {
         subscribeBroadcasterUserId(type: channelSharedChatBegin, eventType: "Shared Chat Begins") {
-            self.subcribeToChannelSharedChatUpdate()
+            self.subscribeToChannelSharedChatUpdate()
         }
     }
-
-    private func subcribeToChannelSharedChatUpdate() {
+    
+    private func subscribeToChannelSharedChatUpdate() {
         subscribeBroadcasterUserId(type: channelSharedChatUpdate, eventType: "Shared Chat Update") {
-            self.subcribeToChannelSharedChatEnd()
+            self.subscribeToChannelSharedChatEnd()
         }
     }
-
-    private func subcribeToChannelSharedChatEnd() {
+    
+    private func subscribeToChannelSharedChatEnd() {
         subscribeBroadcasterUserId(type: channelSharedChatEnd, eventType: "Shared Chat Ends") {
+            logger.info("Event Subscription is connnected")
             self.connected = true
         }
     }
@@ -873,44 +919,20 @@ final class TwitchEventSub: NSObject {
             }
         }
     }
-
-    // New handler for channel moderate events
+    
     private func handleSharedChatBegin(messageData: Data) throws {
-        do {
-            let message = try JSONDecoder().decode(SharedChannelEvent.self, from: messageData)
-            delegate.twitchEventSharedChannelBegin(event: message)
-        } catch {
-            print("Decoding failed: \(error)")
-            if let rawPayload = String(data: messageData, encoding: .utf8) {
-                print("Raw Payload: \(rawPayload)")
-            }
-        }
+        let message = try JSONDecoder().decode(NotificationSharedChatBeginMessage.self, from: messageData)
+        delegate.twitchEventSubSharedChatBegin(event: message.payload.event)
     }
 
-        // New handler for channel moderate events
     private func handleSharedChatUpdate(messageData: Data) throws {
-        do {
-            let message = try JSONDecoder().decode(SharedChannelEvent.self, from: messageData)
-            delegate.twitchEventSharedChannelUpdate(event: message)
-        } catch {
-            print("Decoding failed: \(error)")
-            if let rawPayload = String(data: messageData, encoding: .utf8) {
-                print("Raw Payload: \(rawPayload)")
-            }
-        }
+        let message = try JSONDecoder().decode(NotificationSharedChatUpdateMessage.self, from: messageData)
+        delegate.twitchEventSubSharedChatUpdate(event: message.payload.event)
     }
-
-        // New handler for channel moderate events
+    
     private func handleSharedChatEnd(messageData: Data) throws {
-        do {
-            let message = try JSONDecoder().decode(SharedChannelEvent.self, from: messageData)
-            delegate.twitchEventSharedChannelEnd(event: message)
-        } catch {
-            print("Decoding failed: \(error)")
-            if let rawPayload = String(data: messageData, encoding: .utf8) {
-                print("Raw Payload: \(rawPayload)")
-            }
-        }
+        let message = try JSONDecoder().decode(NotificationSharedChatEndMessage.self, from: messageData)
+        delegate.twitchEventSubSharedChatEnd(event: message.payload.event)
     }
 }
 

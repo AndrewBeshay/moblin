@@ -106,6 +106,8 @@ struct ChatPost: Identifiable, Equatable {
     /// For example, this might be "<message deleted>".
     var systemText: String?
     
+    var sourceRoomId: String?
+    
     /// Returns the segments to display.
     /// If the message is deleted and not revealed, returns a placeholder segment.
     /// Otherwise, returns the original segments (if available) or the current segments.

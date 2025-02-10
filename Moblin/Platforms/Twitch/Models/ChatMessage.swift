@@ -15,6 +15,7 @@ public struct ChatMessage {
     public let senderColor: String?
     public let text: String
     public let timestamp: Date?         // from "tmi-sent-ts"
+    public let roomId: String?
     
     // Flags for message type/status
     public let announcement: Bool
@@ -30,7 +31,47 @@ public struct ChatMessage {
     public let sourceDisplayName: String?  // "source-display-name" tag
     public let sourceLogin: String?        // "source-login" tag
     public let sourceColor: String?        // "source-color" tag
+    public let sourceRoomId: String?
 
+    public var description: String {
+        var components: [String] = []
+        components.append("ChatMessage:")
+        components.append("  Channel: \(channel)")
+        if let uniqueId = uniqueId { components.append("  Unique ID: \(uniqueId)") }
+        if let login = login { components.append("  Login: \(login)") }
+        if !emotes.isEmpty { components.append("  Emotes: \(emotes)") }
+        if !emoteSets.isEmpty { components.append("  Emote Sets: \(emoteSets.joined(separator: ", "))") }
+        if !badges.isEmpty { components.append("  Badges: \(badges.joined(separator: ", "))") }
+        if !badgeInfo.isEmpty { components.append("  Badge Info: \(badgeInfo)") }
+        components.append("  Sender: \(sender)")
+        if let userId = userId { components.append("  User ID: \(userId)") }
+        if let senderColor = senderColor { components.append("  Sender Color: \(senderColor)") }
+        components.append("  Text: \(text)")
+        if let timestamp = timestamp {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+            components.append("  Timestamp: \(formatter.string(from: timestamp))")
+        }
+        if let roomId = roomId { components.append("  Room ID: \(roomId)") }
+
+        components.append("  Flags:")
+        components.append("    Announcement: \(announcement)")
+        components.append("    First Message: \(firstMessage)")
+        components.append("    Subscriber: \(subscriber)")
+        components.append("    Moderator: \(moderator)")
+        components.append("    Turbo: \(turbo)")
+        if let bits = bits { components.append("    Bits: \(bits)") }
+
+        if !sourceBadges.isEmpty { components.append("  Source Badges: \(sourceBadges.joined(separator: ", "))") }
+        if let sourceUserId = sourceUserId { components.append("  Source User ID: \(sourceUserId)") }
+        if let sourceDisplayName = sourceDisplayName { components.append("  Source Display Name: \(sourceDisplayName)") }
+        if let sourceLogin = sourceLogin { components.append("  Source Login: \(sourceLogin)") }
+        if let sourceColor = sourceColor { components.append("  Source Color: \(sourceColor)") }
+        if let sourceRoomId = sourceRoomId { components.append("  Source Room ID: \(sourceRoomId)") }
+
+        return components.joined(separator: "\n")
+    }
+    
     public init?(_ message: Message) {
         // Ensure we have a channel, text, and valid sender.
         guard message.parameters.count >= 2,
@@ -83,6 +124,7 @@ public struct ChatMessage {
         self.moderator = moderator
         self.turbo = turbo
         self.bits = message.bits
+        self.roomId = message.roomId
 
         // Populate shared chat fields. These tags will be empty if not applicable.
         self.sourceBadges = message.sourceBadges
@@ -90,6 +132,7 @@ public struct ChatMessage {
         self.sourceDisplayName = message.sourceDisplayName
         self.sourceLogin = message.sourceLogin
         self.sourceColor = message.sourceColor
+        self.sourceRoomId = message.sourceRoomId
     }
 }
 
@@ -192,6 +235,10 @@ private extension Message {
         return sets.split(separator: ",").map(String.init)
     }
     
+    var roomId: String? {
+        return tags["room-id"]
+    }
+    
     // === Shared Chat Tags ===
     
     // New: Parse source badges ("source-badges" tag).
@@ -218,5 +265,9 @@ private extension Message {
     // New: Source color ("source-color" tag).
     var sourceColor: String? {
         return tags["source-color"]
+    }
+    
+    var sourceRoomId: String? {
+        return tags["source-room-id"]
     }
 }

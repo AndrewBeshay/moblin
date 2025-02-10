@@ -607,6 +607,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
 
     @Published var cameraControlEnabled = false
     private var twitchStreamUpdateTime = ContinuousClock.now
+    @Published var twitchSharedChatEnabled: Bool = false
+    var sharedChatProfileCache: [String: String] = [:]
 
     override init() {
         super.init()
@@ -5269,7 +5271,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         bits: String?,
         highlight: ChatHighlight?,
         live: Bool,
-        messageId: String?
+        messageId: String?,
+        sourceRoomId: String?
     ) {
         if database.chat.usernamesToIgnore!.contains(where: { user == $0.value }) {
             return
@@ -5303,7 +5306,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             bits: bits,
             highlight: highlight,
             live: live,
-            messageId: messageId
+            messageId: messageId,
+            sourceRoomId: sourceRoomId
         )
 //        chatPostId += 1
         if chatPaused {
@@ -7327,7 +7331,8 @@ extension Model: RemoteControlStreamerDelegate {
                               bits: message.bits,
                               highlight: nil,
                               live: live,
-                              messageId: "")
+                              messageId: "",
+                              sourceRoomId: "")
             remoteControlStreamerLatestReceivedChatMessageId = message.id
         }
     }
@@ -9736,18 +9741,30 @@ extension Model {
 extension Model {
     func twitchLogin(stream: SettingsStream, onComplete: (() -> Void)? = nil) {
         twitchAuthOnComplete = { accessToken in
+            logger.info("✅ Received Twitch Access Token: \(accessToken)")
+            
+            // Store token in Keychain
             storeTwitchAccessTokenInKeychain(streamId: stream.id, accessToken: accessToken)
+            logger.info("✅ Stored Twitch Token in Keychain")
+            
+            // Update stream properties
             stream.twitchLoggedIn = true
             stream.twitchAccessToken = accessToken
             self.showTwitchAuth = false
             self.wizardShowTwitchAuth = false
+            
+            // Fetch user info
             TwitchApi(accessToken, self.urlSession).getUserInfo { info in
                 guard let info else {
+                    logger.error("❌ Failed to fetch Twitch user info")
                     return
                 }
+                logger.info("✅ Twitch User Info Retrieved: \(info.login), ID: \(info.id)")
                 stream.twitchChannelName = info.login
                 stream.twitchChannelId = info.id
+                
                 if stream.enabled {
+                    logger.info("✅ Stream is enabled, updating Twitch Channel ID")
                     self.twitchChannelIdUpdated()
                 }
                 onComplete?()
@@ -9772,6 +9789,47 @@ extension Model {
 
 
 extension Model: TwitchEventSubDelegate {
+    func twitchEventSubSharedChatBegin(event: TwitchEventSubSharedChatEvent) {
+        logger.info("✅ Shared Chat Begin - Session ID: \(event.session_id)")
+
+        // Ensure we have participants
+        guard let participants = event.participants, !participants.isEmpty else {
+            logger.warning("⚠️ No participants found in shared chat")
+            return
+        }
+        
+        // 🔹 Print all participants
+        logger.info("📢 Participants in Shared Chat:")
+        for participant in participants {
+            logger.info("🔹 Broadcaster ID: \(participant.broadcaster_user_id), Name: \(participant.broadcaster_user_name), Login: \(participant.broadcaster_user_login)")
+        }
+        
+        // Extract unique user IDs
+        let userIds = Set(participants.map { $0.broadcaster_user_id })
+
+        TwitchApi(stream.twitchAccessToken!, urlSession)
+            .getUsers(broadcasterIds: Array(userIds)) { users in
+                guard let users = users?.data, !users.isEmpty else {
+                    logger.error("❌ Failed to fetch user information from Twitch API")
+                    return
+                }
+
+                DispatchQueue.main.async {
+                    for user in users {
+                        self.sharedChatProfileCache[user.id] = user.profile_image_url
+                        logger.info("✅ Cached Profile Image: \(user.login) -> \(user.profile_image_url)")
+                    }
+                }
+        }
+    }
+    
+    func twitchEventSubSharedChatUpdate(event: TwitchEventSubSharedChatEvent) {
+    }
+    
+    func twitchEventSubSharedChatEnd(event: TwitchEventSubSharedChatEndEvent) {
+    }
+    
+    
     func twitchEventSubChannelModerate(event: NotificationChannelModerateMessage) {
         logger.debug(event.description)
         switch event.payload.event.action {
@@ -10030,7 +10088,8 @@ extension Model: TwitchEventSubDelegate {
                               image: image ?? "medal",
                               title: title
                           ), live: true,
-                          messageId: "")
+                          messageId: "",
+                          sourceRoomId: "")
     }
 
     func twitchEventSubUnauthorized() {
@@ -10346,7 +10405,8 @@ extension Model: TwitchChatMoblinDelegate {
         isModerator: Bool,
         bits: String?,
         highlight: ChatHighlight?,
-        messageId: String?
+        messageId: String?,
+        sourceRoomId: String?
     ) {
         appendChatMessage(platform: .twitch,
                           user: user,
@@ -10362,7 +10422,12 @@ extension Model: TwitchChatMoblinDelegate {
                           bits: bits,
                           highlight: highlight,
                           live: true,
-                          messageId: messageId)
+                          messageId: messageId,
+                          sourceRoomId: sourceRoomId)
+    }
+    
+    func twitchChatMoblinUpdateSharedChatStatus(isActive: Bool) {
+        twitchSharedChatEnabled = isActive
     }
 }
 
@@ -10392,7 +10457,8 @@ extension Model: KickOusherDelegate {
                           bits: nil,
                           highlight: nil,
                           live: true,
-                          messageId: "")
+                          messageId: "",
+                          sourceRoomId: "")
     }
 }
 

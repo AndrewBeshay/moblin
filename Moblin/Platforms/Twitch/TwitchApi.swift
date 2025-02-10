@@ -3,6 +3,19 @@ import Foundation
 struct TwitchApiUser: Decodable {
     let id: String
     let login: String
+    let display_name: String
+    let type: String
+    let broadcaster_type: String
+    let description: String
+    let profile_image_url: String
+    let offline_image_url: String
+    let view_count: Int
+    let created_at: String // Or `Date` if you want to parse it
+
+    private enum CodingKeys: String, CodingKey {
+        case id, login, display_name, type, broadcaster_type, description
+        case profile_image_url, offline_image_url, view_count, created_at
+    }
 }
 
 struct TwitchApiUsers: Decodable {
@@ -181,12 +194,65 @@ class TwitchApi {
         })
     }
 
-    func getUsers(onComplete: @escaping (TwitchApiUsers?) -> Void) {
-        doGet(subPath: "users", onComplete: { data in
-            onComplete(try? JSONDecoder().decode(TwitchApiUsers.self, from: data ?? Data()))
+    func getUsers(broadcasterIds: [String] = [], onComplete: @escaping (TwitchApiUsers?) -> Void) {
+        var query = "users"
+        var queryParams: [String] = []
+        
+        // ✅ Append multiple user IDs
+        if !broadcasterIds.isEmpty {
+            queryParams.append(contentsOf: broadcasterIds.map { "id=\($0)" })
+        }
+        
+        // ✅ Construct the final query string
+        if !queryParams.isEmpty {
+            query += "?\(queryParams.joined(separator: "&"))"
+        }
+
+        logger.info("📡 Sending request to Twitch API: \(query)")
+
+        doGet(subPath: query, onComplete: { data in
+            guard let data = data else {
+                logger.error("❌ Failed to fetch users from Twitch API")
+                onComplete(nil)
+                return
+            }
+
+            // Log raw JSON response
+            if let jsonString = String(data: data, encoding: .utf8) {
+                logger.info("📥 Twitch API Response: \(jsonString)")
+            }
+
+            do {
+                let users = try JSONDecoder().decode(TwitchApiUsers.self, from: data)
+                logger.info("✅ Successfully decoded \(users.data.count) users from Twitch API")
+                
+                for user in users.data {
+                    logger.info("👤 User: \(user.login), ID: \(user.id), Profile Image: \(user.profile_image_url)")
+                }
+
+                onComplete(users)
+            } catch let decodingError as DecodingError {
+                // ✅ Log detailed JSON decoding error
+                switch decodingError {
+                case .keyNotFound(let key, let context):
+                    logger.error("❌ JSON Key Not Found: \(key.stringValue) in \(context)")
+                case .typeMismatch(let type, let context):
+                    logger.error("❌ Type Mismatch: \(type) in \(context)")
+                case .valueNotFound(let type, let context):
+                    logger.error("❌ Value Not Found: \(type) in \(context)")
+                case .dataCorrupted(let context):
+                    logger.error("❌ Data Corrupted: \(context)")
+                default:
+                    logger.error("❌ JSON Decoding Error: \(decodingError.localizedDescription)")
+                }
+                onComplete(nil)
+            } catch {
+                logger.error("❌ Unexpected JSON decoding error: \(error)")
+                onComplete(nil)
+            }
         })
     }
-
+    
     func getUserInfo(onComplete: @escaping (TwitchApiUser?) -> Void) {
         getUsers(onComplete: { users in
             onComplete(users?.data.first)

@@ -98,31 +98,46 @@ struct StreamOverlayChatView: View {
             )
         }
     }
-    
+
     // Returns a view for a single chat post.
     private func postView(for post: ChatPost) -> some View {
         Group {
             if let _ = post.user {
-                if post.isDeleted {
-                    // Show a placeholder for deleted messages.
-                    //                    Text("<message deleted>")
-                    //                        .foregroundColor(.gray)
-                    //                        .italic()
-                    //                        .onTapGesture {
-                    //                            // Toggle the reveal state.
-                    //                            // This method should update the model such that the ChatPost's
-                    //                            // isRevealed property is set to true (or toggled).
-                    //                            model.revealChatPost(post)
-                    //                        }
-                    //                        .modifier(RotationAndScaleModifier(rotation: rotation, scaleX: scaleX))
+                if let sourceRoomId = post.sourceRoomId {
+                    let profileUrl = model.sharedChatProfileCache[sourceRoomId] // Look up cached profile image
+
+                    HStack(spacing: 0) {
+                        // Display profile picture if found in cache
+                        if let profileUrl, let url = URL(string: profileUrl) {
+                            AsyncImage(url: url) { image in
+                                image.resizable()
+                                    .aspectRatio(contentMode: .fit)
+                            } placeholder: {
+                                EmptyView()
+                            }
+                            .frame(height: CGFloat(model.database.chat.fontSize * 1.4))
+                            .clipShape(Circle()) // Circular profile image
+                            .modifier(RotationAndScaleModifier(rotation: rotation, scaleX: scaleX))
+                            .padding(2)
+                            
+                        } else {
+                            // Default placeholder when no image is cached
+                            Circle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(width: 32, height: 32)
+                        }
+
+                        // Chat Message
+                        LineView(post: post, chat: model.database.chat)
+                            .padding(.leading, 3)
+                            .modifier(RotationAndScaleModifier(rotation: rotation, scaleX: scaleX))
+                    }
+                 } else if post.isDeleted {
                     LineView(post: post, chat: model.database.chat)
                         .padding(.leading, 3)
                         .foregroundColor(.gray)
                         .opacity(0.5) // Makes the whole message washed out
                         .onTapGesture {
-                            // Toggle the reveal state.
-                            // This method should update the model such that the ChatPost's
-                            // isRevealed property is set to true (or toggled).
                             model.revealChatPost(post)
                         }
                         .modifier(RotationAndScaleModifier(rotation: rotation, scaleX: scaleX))

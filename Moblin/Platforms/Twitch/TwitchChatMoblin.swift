@@ -1,13 +1,16 @@
 import Network
 import SwiftUI
 
+private var sharedChatActive: Bool = false
+private var userProfileImages: [String: String] = [:] // Cache profile images
+
 private func getEmotes(from message: ChatMessage) -> [ChatMessageEmote] {
     var emotes: [ChatMessageEmote] = []
     for emote in message.emotes {
         do {
             try emotes.append(ChatMessageEmote(url: emote.imageURL(), range: emote.range))
         } catch {
-            logger.warning("twitch: chat: Failed to get emote URL")
+            logger.warning("⚠️ Failed to get emote URL for \(emote.range)")
         }
     }
     return emotes
@@ -25,8 +28,10 @@ private class Badges {
         self.accessToken = accessToken
         self.urlSession = urlSession
         guard !accessToken.isEmpty else {
+            logger.error("❌ Access token is empty, cannot fetch badges")
             return
         }
+        logger.info("📡 Fetching Twitch badges for channel \(channelId)...")
         tryFetch()
     }
 
@@ -42,6 +47,7 @@ private class Badges {
         startTryFetchAgainTimer()
         TwitchApi(accessToken, urlSession).getGlobalChatBadges { data in
             guard let data else {
+                logger.error("❌ Failed to fetch global chat badges")
                 return
             }
             DispatchQueue.main.async {
@@ -49,11 +55,13 @@ private class Badges {
                 TwitchApi(self.accessToken, self.urlSession)
                     .getChannelChatBadges(broadcasterId: self.channelId) { data in
                         guard let data else {
+                            logger.error("❌ Failed to fetch channel-specific chat badges")
                             return
                         }
                         DispatchQueue.main.async {
                             self.addBadges(badges: data)
                             self.stopTryFetchAgainTimer()
+                            logger.info("✅ Successfully fetched all badges")
                         }
                     }
             }
@@ -162,9 +170,13 @@ protocol TwitchChatMoblinDelegate: AnyObject {
         isModerator: Bool,
         bits: String?,
         highlight: ChatHighlight?,
-        messageId: String?
+        messageId: String?,
+        sourceRoomId: String?
     )
+    // ✅ New Delegate Method to Notify Shared Chat State
+    func twitchChatMoblinUpdateSharedChatStatus(isActive: Bool)
 }
+
 
 final class TwitchChatMoblin {
     private var webSocket: WebSocketClient
@@ -192,7 +204,7 @@ final class TwitchChatMoblin {
         urlSession: URLSession
     ) {
         self.channelName = channelName
-        logger.debug("twitch: chat: Start")
+        logger.info("📡 Connecting to Twitch chat: \(channelName) (ID: \(channelId))")
         stopInternal()
         emotes.start(
             platform: .twitch,
@@ -222,14 +234,35 @@ final class TwitchChatMoblin {
 
     private func handleMessage(message: String) throws {
         let message = try Message(string: message)
+        logger.debug("\(message)")
         if let chatMessage = ChatMessage(message) {
             try handleChatMessage(message: chatMessage)
         } else if message.command == .ping {
             webSocket.send(string: "PONG \(message.parameters.joined(separator: " "))")
+        } else if message.command == .notice {
+            handleSharedChatNotice(message: message)
+        }
+    }
+
+    private func handleSharedChatNotice(message: Message) {
+        guard let msgId = message.tags["msg-id"] else {
+            logger.warning("⚠️ Received notice without msg-id")
+            return
+        }
+
+        if msgId == "shared_chat_begin" {
+            logger.info("🔵 Shared Chat Activated")
+            sharedChatActive = true
+            delegate?.twitchChatMoblinUpdateSharedChatStatus(isActive: true)
+        } else if msgId == "shared_chat_end" {
+            logger.info("🔴 Shared Chat Deactivated")
+            sharedChatActive = false
+            delegate?.twitchChatMoblinUpdateSharedChatStatus(isActive: false)
         }
     }
 
     private func handleChatMessage(message: ChatMessage) throws {
+        logger.info(message.description)
         let emotes = getEmotes(from: message)
         var badgeUrls: [URL] = []
         for badge in message.badges {
@@ -244,6 +277,22 @@ final class TwitchChatMoblin {
         } else {
             text = message.text
         }
+
+        // ✅ Check if `message.sourceRoomId` is not nil and update `sharedChatActive`
+        if let sourceRoomId = message.sourceRoomId {
+            if !sharedChatActive {
+                logger.info("🔵 Detected Source Room ID: \(sourceRoomId). Enabling Shared Chat.")
+                sharedChatActive = true
+                delegate?.twitchChatMoblinUpdateSharedChatStatus(isActive: true)
+            }
+        } else if sharedChatActive {
+            logger.info("🔴 No Source Room ID detected. Disabling Shared Chat.")
+            sharedChatActive = false
+            delegate?.twitchChatMoblinUpdateSharedChatStatus(isActive: false)
+        }
+
+        logger.info("🔎 Message Source Room ID: \(message.sourceRoomId ?? "None")")
+        
         let segments = createSegments(
             text: text,
             emotes: emotes,
@@ -261,7 +310,8 @@ final class TwitchChatMoblin {
             isModerator: message.moderator,
             bits: message.bits,
             highlight: createHighlight(message: message),
-            messageId: message.uniqueId
+            messageId: message.uniqueId,
+            sourceRoomId: message.sourceRoomId
         )
     }
 
@@ -423,7 +473,7 @@ extension ChatMessage {
 
 extension TwitchChatMoblin: WebSocketClientDelegate {
     func webSocketClientConnected(_ webSocket: WebSocketClient) {
-        logger.debug("twitch: chat: Connected")
+        logger.info("✅ Connected to Twitch WebSocket")
         webSocket.send(string: "CAP REQ :twitch.tv/membership")
         webSocket.send(string: "CAP REQ :twitch.tv/tags")
         webSocket.send(string: "CAP REQ :twitch.tv/commands")
@@ -433,12 +483,13 @@ extension TwitchChatMoblin: WebSocketClientDelegate {
     }
 
     func webSocketClientDisconnected(_: WebSocketClient) {
-        logger.debug("twitch: chat: Disconnected")
+        logger.warning("❌ Disconnected from Twitch WebSocket")
     }
 
     func webSocketClientReceiveMessage(_: WebSocketClient, string: String) {
-        logger.debug(string)
+        logger.info("📩 WebSocket Received: \(string)")
         for line in string.split(whereSeparator: { $0.isNewline }) {
+            logger.info("Is this even working?")
             try? handleMessage(message: String(line))
         }
     }

@@ -525,8 +525,13 @@ extension Telegraph.WebSocket {
 }
 
 extension RemoteControlAssistant: TwitchEventSubDelegate {
-    func twitchEventSubChannelModerate(event: NotificationChannelModerateMessage) {
-    }
+    func twitchEventSubSharedChatBegin(event: TwitchEventSubSharedChatEvent) {}
+    
+    func twitchEventSubSharedChatUpdate(event: TwitchEventSubSharedChatEvent) {}
+    
+    func twitchEventSubSharedChatEnd(event: TwitchEventSubSharedChatEndEvent) {}
+    
+    func twitchEventSubChannelModerate(event: NotificationChannelModerateMessage) {}
     
     func twitchEventSubChannelAdBreakBegin(event _: TwitchEventSubChannelAdBreakBeginEvent) {}
 
@@ -571,6 +576,8 @@ extension RemoteControlAssistant: TwitchEventSubDelegate {
 }
 
 extension RemoteControlAssistant: TwitchChatMoblinDelegate {
+    func twitchChatMoblinUpdateSharedChatStatus(isActive: Bool) {}
+    
     func twitchChatMoblinMakeErrorToast(title _: String, subTitle _: String?) {}
 
     func twitchChatMoblinAppendMessage(
@@ -584,7 +591,8 @@ extension RemoteControlAssistant: TwitchChatMoblinDelegate {
         isModerator: Bool,
         bits: String?,
         highlight _: ChatHighlight?,
-        messageId _: String?
+        messageId _: String?,
+        sourceRoomId _: String?
     ) {
         let timestamp = digitalClockFormatter.string(from: Date())
         let message = RemoteControlChatMessage(id: getNextChatMessageId(),

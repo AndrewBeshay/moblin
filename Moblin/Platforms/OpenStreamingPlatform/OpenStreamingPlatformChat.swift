@@ -233,7 +233,8 @@ class OpenStreamingPlatformChat {
                                     bits: nil,
                                     highlight: nil,
                                     live: true,
-                                    messageId: "")
+                                    messageId: "",
+                                    sourceRoomId: "")
         }
     }
 
