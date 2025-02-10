@@ -411,6 +411,24 @@ struct BasicMetadataTimestamp: Decodable {
     var message_timestamp: String
 }
 
+struct SharedChatParticipants: Decodable {
+    var broadcaster_user_id: String
+    var broadcaster_user_name: String
+    var broadcaster_user_login: String
+}
+
+struct SharedChannelEvent: Decodable {
+    var session_id: String
+    var broadcaster_user_id: String
+    var broadcaster_user_login: String
+    var broadcaster_user_name: String
+    var host_broadcaster_user_id: String
+    var host_broadcaster_user_login: String
+    var host_broadcaster_user_name: String
+    var participants: SharedChatParticipants?
+}
+
+
 private var url = URL(string: "wss://eventsub.wss.twitch.tv/ws")!
 
 protocol TwitchEventSubDelegate: AnyObject {
@@ -433,6 +451,9 @@ protocol TwitchEventSubDelegate: AnyObject {
     func twitchEventSubUnauthorized()
     func twitchEventSubNotification(message: String)
     func twitchEventSubChannelModerate(event: NotificationChannelModerateMessage) // New delegate method
+    func twitchEventSharedChannelBegin(event: SharedChannelEvent)
+    func twitchEventSharedChannelUpdate(event: SharedChannelEvent)
+    func twitchEventSharedChannelEnd(event: SharedChannelEvent)
 }
 
 private let subTypeChannelFollow = "channel.follow"
@@ -448,6 +469,9 @@ private let subTypeChannelHypeTrainProgress = "channel.hype_train.progress"
 private let subTypeChannelHypeTrainEnd = "channel.hype_train.end"
 private let subTypeChannelAdBreakBegin = "channel.ad_break.begin"
 private let CHANNEL_MODERATE = "channel.moderate"
+private let channelSharedChatBegin = "channel.shared_chat.begin"
+private let channelSharedChatUpdate = "channel.shared_chat.update"
+private let channelSharedChatEnd = "channel.shared_chat.end"
 
 final class TwitchEventSub: NSObject {
     private var webSocket: WebSocketClient
@@ -638,16 +662,34 @@ final class TwitchEventSub: NSObject {
     }
     
     private func subscribeToChannelModerate() {
-            let condition = "{\"broadcaster_user_id\":\"\(userId)\",\"moderator_user_id\":\"\(userId)\"}"
-            let body = createBody(type: CHANNEL_MODERATE, version: 2, condition: condition)
-            twitchApi.createEventSubSubscription(body: body) { ok in
-                self.makeSubscribeErrorToastIfNotOk(ok: ok, eventType: CHANNEL_MODERATE)
-                guard ok else {
-                    return
-                }
-                self.connected = true
+        let condition = "{\"broadcaster_user_id\":\"\(userId)\",\"moderator_user_id\":\"\(userId)\"}"
+        let body = createBody(type: CHANNEL_MODERATE, version: 2, condition: condition)
+        twitchApi.createEventSubSubscription(body: body) { ok in
+            self.makeSubscribeErrorToastIfNotOk(ok: ok, eventType: CHANNEL_MODERATE)
+            guard ok else {
+                return
             }
+            self.subcribeToChannelSharedChatBegin()
         }
+    }
+
+    private func subcribeToChannelSharedChatBegin() {
+        subscribeBroadcasterUserId(type: channelSharedChatBegin, eventType: "Shared Chat Begins") {
+            self.subcribeToChannelSharedChatUpdate()
+        }
+    }
+
+    private func subcribeToChannelSharedChatUpdate() {
+        subscribeBroadcasterUserId(type: channelSharedChatUpdate, eventType: "Shared Chat Update") {
+            self.subcribeToChannelSharedChatEnd()
+        }
+    }
+
+    private func subcribeToChannelSharedChatEnd() {
+        subscribeBroadcasterUserId(type: channelSharedChatEnd, eventType: "Shared Chat Ends") {
+            self.connected = true
+        }
+    }
 
     private func subscribeBroadcasterUserId(
         type: String,
@@ -711,6 +753,12 @@ final class TwitchEventSub: NSObject {
                 try handleChannelAdBreakBegin(messageData: messageData)
             case CHANNEL_MODERATE: // New case for moderation events
                 try handleChannelModerate(messageData: messageData)
+            case channelSharedChatBegin:
+                try handleSharedChatBegin(messageData: messageData)
+            case channelSharedChatUpdate:
+                try handleSharedChatUpdate(messageData: messageData)
+            case channelSharedChatEnd:
+                try handleSharedChatEnd(messageData: messageData)
             default:
                 if let type = message.metadata.subscription_type {
                     logger.info("twitch: event-sub: Unknown notification type \(type)")
@@ -823,7 +871,45 @@ final class TwitchEventSub: NSObject {
             if let rawPayload = String(data: messageData, encoding: .utf8) {
                 print("Raw Payload: \(rawPayload)")
             }
-            throw error  // or handle the error as needed
+        }
+    }
+
+    // New handler for channel moderate events
+    private func handleSharedChatBegin(messageData: Data) throws {
+        do {
+            let message = try JSONDecoder().decode(SharedChannelEvent.self, from: messageData)
+            delegate.twitchEventSharedChannelBegin(event: message)
+        } catch {
+            print("Decoding failed: \(error)")
+            if let rawPayload = String(data: messageData, encoding: .utf8) {
+                print("Raw Payload: \(rawPayload)")
+            }
+        }
+    }
+
+        // New handler for channel moderate events
+    private func handleSharedChatUpdate(messageData: Data) throws {
+        do {
+            let message = try JSONDecoder().decode(SharedChannelEvent.self, from: messageData)
+            delegate.twitchEventSharedChannelUpdate(event: message)
+        } catch {
+            print("Decoding failed: \(error)")
+            if let rawPayload = String(data: messageData, encoding: .utf8) {
+                print("Raw Payload: \(rawPayload)")
+            }
+        }
+    }
+
+        // New handler for channel moderate events
+    private func handleSharedChatEnd(messageData: Data) throws {
+        do {
+            let message = try JSONDecoder().decode(SharedChannelEvent.self, from: messageData)
+            delegate.twitchEventSharedChannelEnd(event: message)
+        } catch {
+            print("Decoding failed: \(error)")
+            if let rawPayload = String(data: messageData, encoding: .utf8) {
+                print("Raw Payload: \(rawPayload)")
+            }
         }
     }
 }
