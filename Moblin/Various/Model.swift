@@ -122,6 +122,8 @@ private let screenCaptureCameraId = UUID(uuidString: "00000000-cafe-babe-beef-00
 let builtinCameraId = UUID(uuidString: "00000000-cafe-dead-beef-000000000000")!
 private let screenCaptureCamera = "Screen capture"
 private let backTripleLowEnergyCamera = "Back Triple (low energy)"
+private let backDualLowEnergyCamera = "Back Dual (low energy)"
+private let backWideDualLowEnergyCamera = "Back Wide dual (low energy)"
 
 let plainIcon = Icon(name: "Plain", id: "AppIcon", price: "")
 private let noMic = Mic(name: "", inputUid: "")
@@ -5438,6 +5440,10 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             attachReplaceCamera(cameraId: screenCaptureCameraId)
         case .backTripleLowEnergy:
             attachBackTripleLowEnergyCamera()
+        case .backDualLowEnergy:
+            attachBackDualLowEnergyCamera()
+        case .backWideDualLowEnergy:
+            attachBackWideDualLowEnergyCamera()
         }
     }
 
@@ -5465,6 +5471,12 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         if !excludeBuiltin {
             if hasTripleBackCamera() {
                 cameras.append((backTripleLowEnergyCamera, backTripleLowEnergyCamera))
+            }
+            if hasDualBackCamera() {
+                cameras.append((backDualLowEnergyCamera, backDualLowEnergyCamera))
+            }
+            if hasWideDualBackCamera() {
+                cameras.append((backWideDualLowEnergyCamera, backWideDualLowEnergyCamera))
             }
             cameras += backCameras.map {
                 ($0.id, "Back \($0.name)")
@@ -5505,6 +5517,14 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         return cameraId == backTripleLowEnergyCamera
     }
 
+    func isBackDualLowEnergyAutoCamera(cameraId: String) -> Bool {
+        return cameraId == backDualLowEnergyCamera
+    }
+
+    func isBackWideDualLowEnergyAutoCamera(cameraId: String) -> Bool {
+        return cameraId == backWideDualLowEnergyCamera
+    }
+
     func getCameraPositionId(scene: SettingsScene?) -> String {
         return getCameraPositionId(settingsCameraId: scene?.toCameraId())
     }
@@ -5528,6 +5548,10 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             return .screenCapture
         } else if isBackTripleLowEnergyAutoCamera(cameraId: cameraId) {
             return .backTripleLowEnergy
+        } else if isBackDualLowEnergyAutoCamera(cameraId: cameraId) {
+            return .backDualLowEnergy
+        } else if isBackWideDualLowEnergyAutoCamera(cameraId: cameraId) {
+            return .backWideDualLowEnergy
         } else {
             return .external(id: cameraId, name: getExternalCameraName(cameraId: cameraId))
         }
@@ -5554,6 +5578,10 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             return screenCaptureCamera
         case .backTripleLowEnergy:
             return backTripleLowEnergyCamera
+        case .backDualLowEnergy:
+            return backDualLowEnergyCamera
+        case .backWideDualLowEnergy:
+            return backWideDualLowEnergyCamera
         }
     }
 
@@ -5598,6 +5626,10 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             return screenCaptureCamera
         case .backTripleLowEnergy:
             return backTripleLowEnergyCamera
+        case .backDualLowEnergy:
+            return backDualLowEnergyCamera
+        case .backWideDualLowEnergy:
+            return backWideDualLowEnergyCamera
         }
     }
 
@@ -6324,7 +6356,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             backZoomX = database.zoom.switchToBack.x!
         }
         zoomX = backZoomX
-        guard let bestDevice = getBestBackCameraDevice(),
+        guard let bestDevice = AVCaptureDevice.default(.builtInTripleCamera, for: .video, position: .back),
               let lastZoomFactor = bestDevice.virtualDeviceSwitchOverVideoZoomFactors.last
         else {
             return
@@ -6338,6 +6370,72 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
         } else {
             device = AVCaptureDevice.default(.builtInTelephotoCamera, for: .video, position: .back)
+        }
+        guard let device, let scene = getSelectedScene() else {
+            return
+        }
+        if !force, device == cameraDevice {
+            return
+        }
+        cameraDevice = device
+        cameraZoomLevelToXScale = device.getZoomFactorScale(hasUltraWideCamera: hasUltraWideBackCamera())
+        (cameraZoomXMinimum, cameraZoomXMaximum) = bestDevice
+            .getUIZoomRange(hasUltraWideCamera: hasUltraWideBackCamera())
+        cameraPosition = .back
+        attachCameraFinalize(scene: scene)
+    }
+
+    private func attachBackDualLowEnergyCamera(force: Bool = true) {
+        if database.zoom.switchToBack.enabled {
+            clearZoomId()
+            backZoomX = database.zoom.switchToBack.x!
+        }
+        zoomX = backZoomX
+        guard let bestDevice = AVCaptureDevice.default(.builtInDualCamera, for: .video, position: .back),
+              let lastZoomFactor = bestDevice.virtualDeviceSwitchOverVideoZoomFactors.last
+        else {
+            return
+        }
+        let scale = bestDevice.getZoomFactorScale(hasUltraWideCamera: hasUltraWideBackCamera())
+        let x = (Float(truncating: lastZoomFactor) * scale).rounded()
+        var device: AVCaptureDevice?
+        if backZoomX < x {
+            device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+        } else {
+            device = AVCaptureDevice.default(.builtInTelephotoCamera, for: .video, position: .back)
+        }
+        guard let device, let scene = getSelectedScene() else {
+            return
+        }
+        if !force, device == cameraDevice {
+            return
+        }
+        cameraDevice = device
+        cameraZoomLevelToXScale = device.getZoomFactorScale(hasUltraWideCamera: hasUltraWideBackCamera())
+        (cameraZoomXMinimum, cameraZoomXMaximum) = bestDevice
+            .getUIZoomRange(hasUltraWideCamera: hasUltraWideBackCamera())
+        cameraPosition = .back
+        attachCameraFinalize(scene: scene)
+    }
+
+    private func attachBackWideDualLowEnergyCamera(force: Bool = true) {
+        if database.zoom.switchToBack.enabled {
+            clearZoomId()
+            backZoomX = database.zoom.switchToBack.x!
+        }
+        zoomX = backZoomX
+        guard let bestDevice = AVCaptureDevice.default(.builtInDualWideCamera, for: .video, position: .back),
+              let lastZoomFactor = bestDevice.virtualDeviceSwitchOverVideoZoomFactors.last
+        else {
+            return
+        }
+        let scale = bestDevice.getZoomFactorScale(hasUltraWideCamera: hasUltraWideBackCamera())
+        let x = (Float(truncating: lastZoomFactor) * scale).rounded()
+        var device: AVCaptureDevice?
+        if backZoomX < x {
+            device = AVCaptureDevice.default(.builtInUltraWideCamera, for: .video, position: .back)
+        } else {
+            device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
         }
         guard let device, let scene = getSelectedScene() else {
             return
@@ -6552,8 +6650,15 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         if let preset = findZoomPreset(id: id) {
             if setCameraZoomX(x: preset.x!, rate: database.zoom.speed!) != nil {
                 setZoomX(x: preset.x!)
-                if getSelectedScene()?.cameraPosition == .backTripleLowEnergy {
+                switch getSelectedScene()?.cameraPosition {
+                case .backTripleLowEnergy:
                     attachBackTripleLowEnergyCamera(force: false)
+                case .backDualLowEnergy:
+                    attachBackDualLowEnergyCamera(force: false)
+                case .backWideDualLowEnergy:
+                    attachBackWideDualLowEnergyCamera(force: false)
+                default:
+                    break
                 }
             }
             if isWatchLocal() {
