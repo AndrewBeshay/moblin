@@ -54841,6 +54841,7 @@
       }
     },
     "Failed to subscribe to Twitch %@ event" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

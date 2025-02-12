@@ -524,11 +524,16 @@ final class TwitchEventSub: NSObject {
     private let userId: String
     private let httpProxy: HttpProxy?
     private var sessionId: String = ""
-    private var twitchApi: TwitchApi
+    private var twitchApi: TwitchAPI
     private let delegate: any TwitchEventSubDelegate
     private var connected = false
     private var started = false
 
+    /// Computed property to ensure correct transport data
+    private var transport: TwitchApiEventSubTransport {
+        return TwitchApiEventSubTransport(method: "websocket", callback: nil, secret: nil, session_id: sessionId)
+    }
+    
     init(
         remoteControl: Bool,
         userId: String,
@@ -541,36 +546,28 @@ final class TwitchEventSub: NSObject {
         self.userId = userId
         self.httpProxy = httpProxy
         self.delegate = delegate
-        twitchApi = TwitchApi(accessToken, urlSession)
-        webSocket = .init(url: url, httpProxy: httpProxy)
+        twitchApi = TwitchAPI.shared
+        webSocket = .init(url: URL(string: "wss://eventsub.wss.twitch.tv/ws")!, httpProxy: httpProxy)
         super.init()
-        twitchApi.delegate = self
     }
-
+    
+    /// **Starts WebSocket Connection & Subscription Process**
     func start() {
-        logger.debug("twitch: event-sub: Start")
+        logger.info("🔄 Twitch EventSub: Starting WebSocket connection")
         stopInternal()
         connect()
         started = true
     }
 
-    private func connect() {
-        connected = false
-        webSocket = .init(url: url, httpProxy: httpProxy)
-        webSocket.delegate = self
-        if !remoteControl {
-            webSocket.start()
-        }
-    }
-
+    /// **Stops WebSocket & Clears State**
     func stop() {
-        logger.debug("twitch: event-sub: Stop")
+        logger.info("🛑 Twitch EventSub: Stopping WebSocket")
         webSocket.delegate = nil
         started = false
         stopInternal()
     }
 
-    func stopInternal() {
+    private func stopInternal() {
         connected = false
         webSocket.stop()
     }
@@ -578,7 +575,17 @@ final class TwitchEventSub: NSObject {
     func isConnected() -> Bool {
         return connected
     }
-
+    
+    private func connect() {
+        connected = false
+        webSocket = .init(url: URL(string: "wss://eventsub.wss.twitch.tv/ws")!, httpProxy: httpProxy)
+        webSocket.delegate = self
+        if !remoteControl {
+            webSocket.start()
+        }
+    }
+    
+    /// **Handles incoming WebSocket messages**
     func handleMessage(messageText: String) {
         let messageData = messageText.utf8Data
         guard let message = try? JSONDecoder().decode(BasicMessage.self, from: messageData) else {
@@ -596,162 +603,109 @@ final class TwitchEventSub: NSObject {
         }
     }
 
+    /// **Handles WebSocket Session Welcome & Ensures Subscription Process**
     private func handleSessionWelcome(messageData: Data) {
         guard let message = try? JSONDecoder().decode(WelcomeMessage.self, from: messageData) else {
-            logger.info("twitch: event-sub: Failed to decode welcome message")
+            logger.error("❌ Failed to decode welcome message")
             return
         }
+
         sessionId = message.payload.session.id
-        subscribeToChannelFollow()
+        logger.info("✅ WebSocket Connected - Session ID: \(sessionId)")
+        verifyAndSubscribe()
     }
 
-    private func makeSubscribeErrorToastIfNotOk(ok: Bool, eventType: String) {
-        guard !ok else {
-            return
-        }
-        guard started else {
-            return
-        }
-        delegate
-            .twitchEventSubMakeErrorToast(
-                title: String(localized: "Failed to subscribe to Twitch \(eventType) event")
-            )
-    }
-
-    private func subscribeToChannelFollow() {
-        let body = createBody(
-            type: subTypeChannelFollow,
-            version: 2,
-            condition: "{\"broadcaster_user_id\":\"\(userId)\",\"moderator_user_id\":\"\(userId)\"}"
-        )
-        twitchApi.createEventSubSubscription(body: body) { ok in
-            self.makeSubscribeErrorToastIfNotOk(ok: ok, eventType: "follow")
-            guard ok else {
+    /// **Fetches Active Subscriptions & Prevents Duplicates**
+    private func verifyAndSubscribe() {
+        twitchApi.eventSub.getEventSubSubscriptions { subs, total, _, _ in
+            guard let existingSubs = subs else {
+                logger.error("❌ Failed to fetch existing EventSub subscriptions, proceeding with new subscriptions.")
+                self.subscribeAllEvents()
                 return
             }
+
+            let activeEventTypes = Set(existingSubs.map { $0.type })
+            logger.info("🔍 Existing Active Subscriptions: \(activeEventTypes)")
+
+            DispatchQueue.global(qos: .background).async {
+                if !activeEventTypes.contains(subTypeChannelFollow) { self.subscribeToChannelFollow() }
+                if !activeEventTypes.contains(subTypeChannelSubscribe) { self.subscribeToChannelSubscribe() }
+                if !activeEventTypes.contains(subTypeChannelSubscriptionGift) { self.subscribeToChannelSubscriptionGift() }
+                if !activeEventTypes.contains(subTypeChannelSubscriptionMessage) { self.subscribeToChannelSubscriptionMessage() }
+                if !activeEventTypes.contains(subTypeChannelRaid) { self.subscribeToChannelRaid() }
+                if !activeEventTypes.contains(subTypeChannelCheer) { self.subscribeToChannelCheer() }
+                if !activeEventTypes.contains(CHANNEL_MODERATE) { self.subscribeToChannelModerate() }
+            }
+        }
+    }
+
+
+    /// **Subscribes All Events in Parallel**
+    private func subscribeAllEvents() {
+        logger.info("🔄 Subscribing to all EventSub events in parallel")
+
+        DispatchQueue.global(qos: .background).async {
+            self.subscribeToChannelFollow()
             self.subscribeToChannelSubscribe()
-        }
-    }
-
-    private func subscribeToChannelSubscribe() {
-        subscribeBroadcasterUserId(type: subTypeChannelSubscribe, eventType: "subscription") {
             self.subscribeToChannelSubscriptionGift()
-        }
-    }
-
-    private func subscribeToChannelSubscriptionGift() {
-        subscribeBroadcasterUserId(type: subTypeChannelSubscriptionGift, eventType: "subscription gift") {
             self.subscribeToChannelSubscriptionMessage()
-        }
-    }
-
-    private func subscribeToChannelSubscriptionMessage() {
-        subscribeBroadcasterUserId(
-            type: subTypeChannelSubscriptionMessage,
-            eventType: "subscription message"
-        ) {
-            self.subscribeToChannelPointsCustomRewardRedemptionAdd()
-        }
-    }
-
-    private func subscribeToChannelPointsCustomRewardRedemptionAdd() {
-        subscribeBroadcasterUserId(
-            type: subTypeChannelChannelPointsCustomRewardRedemptionAdd,
-            eventType: "reward redemption"
-        ) {
             self.subscribeToChannelRaid()
-        }
-    }
-
-    private func subscribeToChannelRaid() {
-        let body = createBody(type: subTypeChannelRaid,
-                              version: 1,
-                              condition: "{\"to_broadcaster_user_id\":\"\(userId)\"}")
-        twitchApi.createEventSubSubscription(body: body) { ok in
-            self.makeSubscribeErrorToastIfNotOk(ok: ok, eventType: "raid")
-            guard ok else {
-                return
-            }
             self.subscribeToChannelCheer()
-        }
-    }
-
-    private func subscribeToChannelCheer() {
-        subscribeBroadcasterUserId(type: subTypeChannelCheer, eventType: "cheer") {
-            self.subscribeToChannelHypeTrainBegin()
-        }
-    }
-
-    private func subscribeToChannelHypeTrainBegin() {
-        subscribeBroadcasterUserId(type: subTypeChannelHypeTrainBegin, eventType: "hype train begin") {
-            self.subscribeToChannelHypeTrainProgress()
-        }
-    }
-
-    private func subscribeToChannelHypeTrainProgress() {
-        subscribeBroadcasterUserId(type: subTypeChannelHypeTrainProgress, eventType: "hype train progress") {
-            self.subscribeToChannelHypeTrainEnd()
-        }
-    }
-
-    private func subscribeToChannelHypeTrainEnd() {
-        subscribeBroadcasterUserId(type: subTypeChannelHypeTrainEnd, eventType: "hype train end") {
-            self.subscribeTochannelAdBreakBegin()
-        }
-    }
-
-    private func subscribeTochannelAdBreakBegin() {
-        subscribeBroadcasterUserId(type: subTypeChannelAdBreakBegin, eventType: "ad break begin") {
             self.subscribeToChannelModerate()
         }
     }
-    
+
+    private func subscribeToChannelFollow() {
+        subscribe(type: subTypeChannelFollow, condition: ["broadcaster_user_id": userId], eventType: "Follow")
+    }
+
+    /// **Subscribes to Channel Subscription Event**
+    private func subscribeToChannelSubscribe() {
+        subscribe(type: subTypeChannelSubscribe, condition: ["broadcaster_user_id": userId], eventType: "Subscription")
+    }
+
+    /// **Subscribes to Channel Subscription Gift Event**
+    private func subscribeToChannelSubscriptionGift() {
+        subscribe(type: subTypeChannelSubscriptionGift, condition: ["broadcaster_user_id": userId], eventType: "Subscription Gift")
+    }
+
+    /// **Subscribes to Channel Subscription Message Event**
+    private func subscribeToChannelSubscriptionMessage() {
+        subscribe(type: subTypeChannelSubscriptionMessage, condition: ["broadcaster_user_id": userId], eventType: "Subscription Message")
+    }
+
+    /// **Subscribes to Channel Raid Event**
+    private func subscribeToChannelRaid() {
+        subscribe(type: subTypeChannelRaid, condition: ["to_broadcaster_user_id": userId], eventType: "Raid")
+    }
+
+    /// **Subscribes to Channel Cheer Event**
+    private func subscribeToChannelCheer() {
+        subscribe(type: subTypeChannelCheer, condition: ["broadcaster_user_id": userId], eventType: "Cheer")
+    }
+
+    /// **Subscribes to Channel Moderation Event**
     private func subscribeToChannelModerate() {
-        let condition = "{\"broadcaster_user_id\":\"\(userId)\",\"moderator_user_id\":\"\(userId)\"}"
-        let body = createBody(type: CHANNEL_MODERATE, version: 2, condition: condition)
-        twitchApi.createEventSubSubscription(body: body) { ok in
-            self.makeSubscribeErrorToastIfNotOk(ok: ok, eventType: CHANNEL_MODERATE)
-            guard ok else {
-                return
-            }
-            self.subscribeToChannelSharedChatBegin()
-        }
-    }
-    
-    private func subscribeToChannelSharedChatBegin() {
-        subscribeBroadcasterUserId(type: channelSharedChatBegin, eventType: "Shared Chat Begins") {
-            self.subscribeToChannelSharedChatUpdate()
-        }
-    }
-    
-    private func subscribeToChannelSharedChatUpdate() {
-        subscribeBroadcasterUserId(type: channelSharedChatUpdate, eventType: "Shared Chat Update") {
-            self.subscribeToChannelSharedChatEnd()
-        }
-    }
-    
-    private func subscribeToChannelSharedChatEnd() {
-        subscribeBroadcasterUserId(type: channelSharedChatEnd, eventType: "Shared Chat Ends") {
-            logger.info("Event Subscription is connnected")
-            self.connected = true
-        }
+        let condition = ["broadcaster_user_id": userId, "moderator_user_id": userId]
+        subscribe(type: CHANNEL_MODERATE, condition: condition, eventType: "Moderation")
     }
 
-    private func subscribeBroadcasterUserId(
-        type: String,
-        eventType: String,
-        onSuccess: @escaping () -> Void
-    ) {
-        let body = createBroadcasterUserIdBody(type: type)
-        twitchApi.createEventSubSubscription(body: body) { ok in
-            self.makeSubscribeErrorToastIfNotOk(ok: ok, eventType: eventType)
-            guard ok else {
-                return
+    /// **Generic Subscription Method**
+    private func subscribe(type: String, condition: [String: String], eventType: String) {
+        logger.info("📡 Subscribing to \(eventType) event")
+
+        twitchApi.eventSub.createEventSubSubscription(
+            type: type, version: "1", condition: condition, transport: transport
+        ) { success in
+            if success != nil {
+                logger.info("✅ Successfully subscribed to \(eventType) event")
+            } else {
+                logger.error("❌ Failed to subscribe to \(eventType) event")
             }
-            onSuccess()
         }
     }
-
+    
+    
     private func createBody(type: String, version: Int, condition: String) -> String {
         return """
         {
@@ -937,7 +891,9 @@ final class TwitchEventSub: NSObject {
 }
 
 extension TwitchEventSub: WebSocketClientDelegate {
-    func webSocketClientConnected(_: WebSocketClient) {}
+    func webSocketClientConnected(_: WebSocketClient) {
+        connected = true
+    }
 
     func webSocketClientDisconnected(_: WebSocketClient) {
         connected = false

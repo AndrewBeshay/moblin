@@ -9,6 +9,19 @@ struct MoblinApp: App {
     init() {
         MoblinApp.globalModel = Model()
         _model = StateObject(wrappedValue: MoblinApp.globalModel!)
+        
+        // 2) If we have at least one stream, load its token
+        if let firstStream = MoblinApp.globalModel?.database.streams.first {
+            // 3) get the stream.id
+            let streamId = firstStream.id
+            
+            // 4) load from Keychain
+            if let storedToken = loadTwitchAccessTokenFromKeychain(streamId: streamId) {
+                // 5) set it on TwitchAPI
+                TwitchAPI.shared.setAccessToken(storedToken)
+                print("✅ Twitch token loaded for stream \(streamId) in MoblinApp init.")
+            }
+        }
     }
 
     var body: some Scene {

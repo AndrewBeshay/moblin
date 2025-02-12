@@ -71,7 +71,6 @@
 		031C15C62B9341F400BA967D /* StreamOverlayIconAndTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0379BBA12AAD824600B718B6 /* StreamOverlayIconAndTextView.swift */; };
 		031C15C82B93425200BA967D /* StreamOverlayTextView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0379BB9F2AAD823900B718B6 /* StreamOverlayTextView.swift */; };
 		031E9FBB2C5ABCC9009FF4D8 /* TwitchAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 031E9FBA2C5ABCC9009FF4D8 /* TwitchAuth.swift */; };
-		031E9FC12C5B1D87009FF4D8 /* TwitchApi.swift in Sources */ = {isa = PBXBuildFile; fileRef = 031E9FC02C5B1D87009FF4D8 /* TwitchApi.swift */; };
 		031E9FC52C5B3EFC009FF4D8 /* TwitchEventSub.swift in Sources */ = {isa = PBXBuildFile; fileRef = 031E9FC42C5B3EFC009FF4D8 /* TwitchEventSub.swift */; };
 		031F413C2C6F166400790EEC /* WidgetAlertsImageSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 031F413B2C6F166400790EEC /* WidgetAlertsImageSettingsView.swift */; };
 		031F413F2C6F167400790EEC /* WidgetAlertsSoundSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 031F413E2C6F167400790EEC /* WidgetAlertsSoundSettingsView.swift */; };
@@ -613,7 +612,6 @@
 		031C15BE2B9336D200BA967D /* ControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlView.swift; sourceTree = "<group>"; };
 		031C15C32B9340FB00BA967D /* AudioLevelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioLevelView.swift; sourceTree = "<group>"; };
 		031E9FBA2C5ABCC9009FF4D8 /* TwitchAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwitchAuth.swift; sourceTree = "<group>"; };
-		031E9FC02C5B1D87009FF4D8 /* TwitchApi.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwitchApi.swift; sourceTree = "<group>"; };
 		031E9FC42C5B3EFC009FF4D8 /* TwitchEventSub.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwitchEventSub.swift; sourceTree = "<group>"; };
 		031F413B2C6F166400790EEC /* WidgetAlertsImageSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetAlertsImageSettingsView.swift; sourceTree = "<group>"; };
 		031F413E2C6F167400790EEC /* WidgetAlertsSoundSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetAlertsSoundSettingsView.swift; sourceTree = "<group>"; };
@@ -1068,6 +1066,7 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		498DB2B12D57A6AD00EFBDBC /* Chat */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Chat; sourceTree = "<group>"; };
 		498DB2B82D58CFD300EFBDBC /* Models */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Models; sourceTree = "<group>"; };
+		49A6156D2D5B75300030F5CD /* TwitchAPI */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = TwitchAPI; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1967,6 +1966,7 @@
 		0379BB712AA4BFA500B718B6 /* Twitch */ = {
 			isa = PBXGroup;
 			children = (
+				49A6156D2D5B75300030F5CD /* TwitchAPI */,
 				49A615612D59E45C0030F5CD /* TwitchProfileImageFetcher.swift */,
 				498DB28F2D57791700EFBDBC /* Extensions */,
 				498DB2962D57791700EFBDBC /* Models */,
@@ -1975,7 +1975,6 @@
 				498DB29E2D57791700EFBDBC /* TwitchChatAppKit */,
 				03C3572E2D041A1F00B8B29F /* TwitchMultiTrack.swift */,
 				035F24412CB76830008288C7 /* TwitchCommon.swift */,
-				031E9FC02C5B1D87009FF4D8 /* TwitchApi.swift */,
 				031E9FBA2C5ABCC9009FF4D8 /* TwitchAuth.swift */,
 				03A983702A9A0659008FF0DB /* TwitchChatMoblin.swift */,
 				031E9FC42C5B3EFC009FF4D8 /* TwitchEventSub.swift */,
@@ -2918,6 +2917,7 @@
 			fileSystemSynchronizedGroups = (
 				498DB2B12D57A6AD00EFBDBC /* Chat */,
 				498DB2B82D58CFD300EFBDBC /* Models */,
+				49A6156D2D5B75300030F5CD /* TwitchAPI */,
 			);
 			name = Moblin;
 			packageProductDependencies = (
@@ -3528,7 +3528,6 @@
 				032B4ED72C34918E00204547 /* SceneSelectorView.swift in Sources */,
 				03A930112C14460600BB9679 /* AudioSpecificConfig.swift in Sources */,
 				0330F2B52AFADD18001262C3 /* StreamYouTubeSettingsView.swift in Sources */,
-				031E9FC12C5B1D87009FF4D8 /* TwitchApi.swift in Sources */,
 				03AD38D22C5280B300824980 /* TextFormatStringLoader.swift in Sources */,
 				498DB2B02D5793E100EFBDBC /* ChannelModerationAction.swift in Sources */,
 				0359F8D62BD3DA61005BFDA8 /* Adts.swift in Sources */,
@@ -3842,7 +3841,7 @@
 				CODE_SIGN_ENTITLEMENTS = Moblin/MoblinDebug.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 0;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 88NC43T2FF;
 				ENABLE_PREVIEWS = YES;
@@ -3875,7 +3874,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.394.0;
+				MARKETING_VERSION = 0.395.0;
 				MTL_HEADER_SEARCH_PATHS = "$(HEADER_SEARCH_PATHS)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.Landy.Mobs;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -3899,7 +3898,7 @@
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Moblin/Moblin.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 0;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = 88NC43T2FF;
 				ENABLE_PREVIEWS = YES;
@@ -3932,7 +3931,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.394.0;
+				MARKETING_VERSION = 0.395.0;
 				MTL_HEADER_SEARCH_PATHS = "$(HEADER_SEARCH_PATHS)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.Landy.Mobs;
 				PRODUCT_NAME = "$(TARGET_NAME)";

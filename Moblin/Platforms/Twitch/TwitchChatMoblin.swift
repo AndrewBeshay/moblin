@@ -20,7 +20,7 @@ private class Badges {
     private var channelId: String = ""
     private var accessToken: String = ""
     private var urlSession = URLSession.shared
-    private var badges: [String: TwitchApiChatBadgesVersion] = [:]
+    private var badges: [String: TwitchApiChatBadge] = [:]
     private var tryFetchAgainTimer = SimpleTimer(queue: .main)
 
     func start(channelId: String, accessToken: String, urlSession: URLSession) {
@@ -45,15 +45,15 @@ private class Badges {
 
     func tryFetch() {
         startTryFetchAgainTimer()
-        TwitchApi(accessToken, urlSession).getGlobalChatBadges { data in
+        TwitchAPI.shared.chat.getGlobalChatBadges { data in
+            logger.info("idk \(data?.count)")
             guard let data else {
                 logger.error("❌ Failed to fetch global chat badges")
                 return
             }
             DispatchQueue.main.async {
                 self.addBadges(badges: data)
-                TwitchApi(self.accessToken, self.urlSession)
-                    .getChannelChatBadges(broadcasterId: self.channelId) { data in
+                TwitchAPI.shared.chat.getChannelChatBadges(broadcasterId: self.channelId) { data in
                         guard let data else {
                             logger.error("❌ Failed to fetch channel-specific chat badges")
                             return
@@ -78,7 +78,7 @@ private class Badges {
         tryFetchAgainTimer.stop()
     }
 
-    private func addBadges(badges: [TwitchApiChatBadgesData]) {
+    private func addBadges(badges: [TwitchApiChatBadgeSet]) {
         for badge in badges {
             for version in badge.versions {
                 self.badges["\(badge.set_id)/\(version.id)"] = version
@@ -91,7 +91,7 @@ private class Cheermotes {
     private var channelId: String = ""
     private var accessToken: String = ""
     private var urlSession: URLSession = .shared
-    private var emotes: [String: [TwitchApiGetCheermotesDataTier]] = [:]
+    private var emotes: [String: [TwitchApiCheermoteTier]] = [:]
     private var tryFetchAgainTimer = SimpleTimer(queue: .main)
 
     func start(channelId: String, accessToken: String, urlSession: URLSession) {
@@ -110,7 +110,7 @@ private class Cheermotes {
 
     func tryFetch() {
         startTryFetchAgainTimer()
-        TwitchApi(accessToken, urlSession).getCheermotes(broadcasterId: channelId) { datas in
+        TwitchAPI.shared.bits.getCheermotes(broadcasterId: channelId) { datas in
             guard let datas else {
                 return
             }
@@ -148,7 +148,7 @@ private class Cheermotes {
             guard let tier = tiers.reversed().first(where: { bits >= $0.min_bits }) else {
                 continue
             }
-            guard let url = URL(string: tier.images.dark.static_.two) else {
+            guard let url = URL(string: tier.images.dark.staticImages?.url_2x ?? "") else {
                 continue
             }
             return (url, bits)
@@ -489,7 +489,6 @@ extension TwitchChatMoblin: WebSocketClientDelegate {
     func webSocketClientReceiveMessage(_: WebSocketClient, string: String) {
         logger.info("📩 WebSocket Received: \(string)")
         for line in string.split(whereSeparator: { $0.isNewline }) {
-            logger.info("Is this even working?")
             try? handleMessage(message: String(line))
         }
     }

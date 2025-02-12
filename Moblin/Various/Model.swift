@@ -780,8 +780,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     func createStreamMarker() {
-        TwitchApi(stream.twitchAccessToken!, urlSession)
-            .createStreamMarker(userId: stream.twitchChannelId) { data in
+        TwitchAPI.shared.streams.createStreamMarker(userId: stream.twitchChannelId, description: "Stream Marker") { data in
                 if data != nil {
                     self.makeToast(title: String(localized: "Stream marker created"))
                 } else {
@@ -791,13 +790,12 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     private func getStream() {
-        TwitchApi(stream.twitchAccessToken!, urlSession)
-            .getStream(userId: stream.twitchChannelId) { data in
-                guard let data else {
+        TwitchAPI.shared.streams.getStreams(userIds: [stream.twitchChannelId]) { data in
+                guard let streamData = data, let firstStream = streamData.first else {
                     self.numberOfTwitchViewers = nil
                     return
                 }
-                self.numberOfTwitchViewers = data.viewer_count
+                self.numberOfTwitchViewers = firstStream.viewer_count
             }
     }
 
@@ -3715,8 +3713,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     func startAds(seconds: Int) {
-        TwitchApi(stream.twitchAccessToken!, urlSession)
-            .startCommercial(broadcasterId: stream.twitchChannelId, length: seconds) { data in
+        TwitchAPI.shared.ads.startCommercial(broadcasterId: stream.twitchChannelId, length: seconds) { data in
                 if let data {
                     self.makeToast(title: data.message)
                 } else {
@@ -4465,14 +4462,14 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     func fetchTwitchRewards() {
-        TwitchApi(stream.twitchAccessToken!, urlSession)
-            .getChannelPointsCustomRewards(broadcasterId: stream.twitchChannelId) { rewards in
+        TwitchAPI.shared.channelPoints
+            .getCustomRewards(broadcasterId: stream.twitchChannelId) { rewards in
                 guard let rewards else {
                     logger.info("Failed to get Twitch rewards")
                     return
                 }
                 logger.info("Twitch rewards: \(rewards)")
-                self.stream.twitchRewards = rewards.data.map {
+                self.stream.twitchRewards = rewards.map {
                     let reward = SettingsStreamTwitchReward()
                     reward.rewardId = $0.id
                     reward.title = $0.title
@@ -4496,8 +4493,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             makeNotLoggedInToTwitchToast()
             return
         }
-        TwitchApi(stream.twitchAccessToken!, urlSession)
-            .getChannelInformation(broadcasterId: stream.twitchChannelId) { channelInformation in
+        TwitchAPI.shared.channels
+            .getChannelInformation(broadcasterId: stream.twitchChannelId) { channelInformation, response  in
                 guard let channelInformation else {
                     return
                 }
@@ -4510,11 +4507,17 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             makeNotLoggedInToTwitchToast()
             return
         }
-        TwitchApi(stream.twitchAccessToken!, urlSession)
-            .modifyChannelInformation(broadcasterId: stream.twitchChannelId, category: nil,
-                                      title: title)
-        { ok in
-            if !ok {
+        
+        TwitchAPI.shared.channels.modifyChannelInformation(
+            broadcasterId: stream.twitchChannelId,
+            category: nil,
+            title: title,
+            language: nil,
+            delay: nil
+        ) { success, response in
+            if success {
+                self.makeToast(title: "Stream title updated successfully")
+            } else {
                 self.makeErrorToast(title: "Failed to set stream title")
             }
         }
@@ -4525,8 +4528,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             makeNotLoggedInToTwitchToast()
             return
         }
-        TwitchApi(stream.twitchAccessToken!, urlSession)
-            .sendChatMessage(broadcasterId: stream.twitchChannelId, message: message) { ok in
+        TwitchAPI.shared.chat
+            .sendChatMessage(broadcasterId: stream.twitchChannelId, senderId: stream.twitchChannelId, message: message) { ok in
                 if !ok {
                     self.makeErrorToast(title: "Failed to send chat message")
                 }
@@ -5179,26 +5182,28 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             onCompleted()
             return
         }
-        if command.message.isSubscriber, permissions.subscribersEnabled! {
+
+        if command.message.isSubscriber, permissions.subscribersEnabled == true {
             if command.message.platform == .twitch {
-                if permissions.minimumSubscriberTier! > 1 {
+                if let minTier = permissions.minimumSubscriberTier, minTier > 1 {
                     if let userId = command.message.userId {
-                        TwitchApi(stream.twitchAccessToken!, urlSession).getBroadcasterSubscriptions(
+                        TwitchAPI.shared.subscriptions.getBroadcasterSubscriptions(
                             broadcasterId: stream.twitchChannelId,
-                            userId: userId
-                        ) { data in
+                            userIds: [userId]
+                        ) { subscriptions, _ in // Ignore `total`, we only need subscriptions
                             DispatchQueue.main.async {
-                                if let tier = data?.tierAsNumber(),
-                                   tier >= permissions.minimumSubscriberTier!
-                                {
+                                // Ensure we have at least one subscription, then check its tier
+                                if let firstSubscription = subscriptions?.first,
+                                   let tier = Int(firstSubscription.tier),
+                                   tier >= minTier {
                                     onCompleted()
-                                    return
+                                } else {
+                                    self.executeIfUserAllowedToUseChatBotAfterSubscribeCheck(
+                                        permissions: permissions,
+                                        command: command,
+                                        onCompleted: onCompleted
+                                    )
                                 }
-                                self.executeIfUserAllowedToUseChatBotAfterSubscribeCheck(
-                                    permissions: permissions,
-                                    command: command,
-                                    onCompleted: onCompleted
-                                )
                             }
                         }
                         return
@@ -5212,6 +5217,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
                 return
             }
         }
+
         executeIfUserAllowedToUseChatBotAfterSubscribeCheck(
             permissions: permissions,
             command: command,
@@ -9915,8 +9921,10 @@ extension Model {
             self.showTwitchAuth = false
             self.wizardShowTwitchAuth = false
             
+            TwitchAPI.shared.setAccessToken(accessToken)
+            
             // Fetch user info
-            TwitchApi(accessToken, self.urlSession).getUserInfo { info in
+            TwitchAPI.shared.users.getUserInfo { info in
                 guard let info else {
                     logger.error("❌ Failed to fetch Twitch user info")
                     return
@@ -9969,19 +9977,18 @@ extension Model: TwitchEventSubDelegate {
         // Extract unique user IDs
         let userIds = Set(participants.map { $0.broadcaster_user_id })
 
-        TwitchApi(stream.twitchAccessToken!, urlSession)
-            .getUsers(broadcasterIds: Array(userIds)) { users in
-                guard let users = users?.data, !users.isEmpty else {
-                    logger.error("❌ Failed to fetch user information from Twitch API")
-                    return
-                }
+        TwitchAPI.shared.users.getUsers(userIds: Array(userIds)) { users in
+            guard let users = users, !users.isEmpty else {
+                logger.error("❌ Failed to fetch user information from Twitch API")
+                return
+            }
 
-                DispatchQueue.main.async {
-                    for user in users {
-                        self.sharedChatProfileCache[user.id] = user.profile_image_url
-                        logger.info("✅ Cached Profile Image: \(user.login) -> \(user.profile_image_url)")
-                    }
+            DispatchQueue.main.async {
+                for user in users {
+                    self.sharedChatProfileCache[user.id] = user.profile_image_url
+                    logger.info("✅ Cached Profile Image: \(user.login) -> \(user.profile_image_url)")
                 }
+            }
         }
     }
     

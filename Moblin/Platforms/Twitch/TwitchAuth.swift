@@ -5,9 +5,26 @@ private let twitchServer = "www.twitch.tv"
 private let authorizeUrl = "https://id.twitch.tv/oauth2/authorize"
 let twitchMoblinAppClientId = "qv6bnocuwapqigeqjoamfhif0cv2xn"
 private let scopes = [
+    // User & Chat Permissions
     "user:read:chat",
     "user:write:chat",
+    "user:read:subscriptions",
+    "user:manage:whispers",
+    
+    // Moderation
     "moderator:read:followers",
+    "moderator:read:moderators",
+    "moderator:read:vips",
+    "moderator:read:chatters",
+    "moderator:manage:blocked_terms",
+    "moderator:manage:chat_settings",
+    "moderator:manage:unban_requests",
+    "moderator:manage:banned_users",
+    "moderator:manage:chat_messages",
+    "moderator:manage:warnings",
+    "moderator:manage:shoutouts",
+
+    // Channel & Broadcast
     "channel:read:subscriptions",
     "channel:read:redemptions",
     "channel:read:stream_key",
@@ -15,17 +32,26 @@ private let scopes = [
     "channel:read:ads",
     "channel:manage:broadcast",
     "channel:edit:commercial",
+    "channel:read:goals",
+    "channel:read:polls",
+    "channel:manage:polls",
+    "channel:read:predictions",
+    "channel:manage:predictions",
+    "channel:read:vips",
+    "channel:manage:vips",
+    "channel:manage:redemptions",
+
+    // Bits & Cheermotes
     "bits:read",
     
-    "moderator:manage:blocked_terms",
-    "moderator:manage:chat_settings",
-    "moderator:manage:unban_requests",
-    "moderator:manage:banned_users",
-    "moderator:manage:chat_messages",
-    "moderator:manage:warnings",
-    "moderator:read:moderators",
-    "moderator:read:vips"
+    // Chat & Messaging
+    "chat:read",
+    "chat:edit",
+
+    // Misc
+    "moderation:read"
 ]
+
 private let redirectHost = "localhost"
 private let redirectUri = "https://\(redirectHost)"
 
