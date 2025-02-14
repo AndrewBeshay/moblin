@@ -28,22 +28,25 @@ func performDnsLookup(host: String, family: DnsLookupFamily) -> String? {
         ai_addr: nil,
         ai_next: nil
     )
+    
     var infoPointer: UnsafeMutablePointer<addrinfo>?
     let status = getaddrinfo(host, nil, &hints, &infoPointer)
-    if status != 0 {
-        if let errorString = gai_strerror(status) {
-            logger.error("dns: Lookup of \(host) failed with \(String(cString: errorString))")
-        }
+    guard status == 0 else {
+        logger.error("dns: Lookup of \(host) failed with \(String(cString: gai_strerror(status)))")
         return nil
     }
+
+    defer { freeaddrinfo(infoPointer) }  // ✅ Automatically frees memory on function exit
+
     var addresses: [String] = []
     var pointer = infoPointer
-    while pointer != nil {
-        if let address = pointer?.pointee.ai_addr {
+
+    while let addrInfo = pointer?.pointee {
+        if let address = addrInfo.ai_addr {
             var hostname = [CChar](repeating: 0, count: Int(NI_MAXHOST))
             if getnameinfo(
                 address,
-                socklen_t(pointer!.pointee.ai_addrlen),
+                socklen_t(addrInfo.ai_addrlen),
                 &hostname,
                 socklen_t(hostname.count),
                 nil,
@@ -53,11 +56,9 @@ func performDnsLookup(host: String, family: DnsLookupFamily) -> String? {
                 addresses.append(String(cString: hostname))
             }
         }
-        pointer = pointer?.pointee.ai_next
+        pointer = addrInfo.ai_next
     }
-    freeaddrinfo(infoPointer)
-    for address in addresses {
-        logger.info("dns: Found address \(address) for \(host)")
-    }
+
+    addresses.forEach { logger.info("dns: Found address \($0) for \(host)") }
     return addresses.first
 }
