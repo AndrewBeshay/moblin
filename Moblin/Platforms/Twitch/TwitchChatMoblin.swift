@@ -46,7 +46,7 @@ private class Badges {
     func tryFetch() {
         startTryFetchAgainTimer()
         TwitchAPI.shared.chat.getGlobalChatBadges { data in
-            logger.info("idk \(data?.count)")
+            logger.info("idk \(String(describing: data?.count))")
             guard let data else {
                 logger.error("❌ Failed to fetch global chat badges")
                 return
@@ -99,37 +99,48 @@ private class Cheermotes {
         self.accessToken = accessToken
         self.urlSession = urlSession
         guard !accessToken.isEmpty else {
+            logger.error("❌ Access token is empty, cannot fetch cheermotes.")
             return
         }
+        logger.info("📡 Starting to fetch Twitch cheermotes for channel: \(channelId)")
         tryFetch()
     }
 
     func stop() {
+        logger.info("🛑 Stopping Cheermote fetch attempts.")
         stopTryFetchAgainTimer()
     }
 
     func tryFetch() {
+        logger.info("🔄 Attempting to fetch Cheermotes... )")
+
         startTryFetchAgainTimer()
-        TwitchAPI.shared.bits.getCheermotes(broadcasterId: channelId) { datas in
-            guard let datas else {
-                return
-            }
-            DispatchQueue.main.async {
-                for data in datas {
-                    self.emotes[data.prefix.lowercased()] = data.tiers
+        logger.info("Calling get cheermotes again?")
+        TwitchAPI.shared.bits.getCheermotes(broadcasterId: channelId) { datas, responses  in
+            if let datas = datas {
+                DispatchQueue.main.async {
+                    logger.info("✅ Successfully fetched \(datas.count) Cheermotes.")
+                    for data in datas {
+                        self.emotes[data.prefix.lowercased()] = data.tiers
+                        logger.debug("📌 Added Cheermote: \(data.prefix) with \(data.tiers.count) tiers")
+                    }
+                    self.stopTryFetchAgainTimer()
                 }
-                self.stopTryFetchAgainTimer()
+            } else {
+                logger.warning("⚠️ Failed to fetch Cheermotes. Retrying in 30 seconds...")
             }
         }
     }
 
     private func startTryFetchAgainTimer() {
+        logger.info("⏳ Scheduling next Cheermote fetch attempt in 30 seconds...")
         tryFetchAgainTimer.startSingleShot(timeout: 30) { [weak self] in
             self?.tryFetch()
         }
     }
 
     private func stopTryFetchAgainTimer() {
+        logger.info("🛑 Stopping Cheermote retry timer.")
         tryFetchAgainTimer.stop()
     }
 
@@ -487,7 +498,7 @@ extension TwitchChatMoblin: WebSocketClientDelegate {
     }
 
     func webSocketClientReceiveMessage(_: WebSocketClient, string: String) {
-        logger.info("📩 WebSocket Received: \(string)")
+//        logger.info("📩 WebSocket Received: \(string)")
         for line in string.split(whereSeparator: { $0.isNewline }) {
             try? handleMessage(message: String(line))
         }

@@ -9,12 +9,14 @@ private let browserQueue = DispatchQueue(label: "com.eerimoq.widget.browser")
 
 private func createStyleSheetSource(styleSheet: String) -> String? {
     guard !styleSheet.isEmpty else {
+        logger.warning("❌ [BrowserEffect] StyleSheet is empty.")
         return nil
     }
     guard let styleSheetData = styleSheet.data(using: .utf8) else {
-        logger.info("Failed to encode browser style sheet to UTF-8.")
+        logger.error("❌ [BrowserEffect] Failed to encode style sheet to UTF-8.")
         return nil
     }
+    logger.info("✅ [BrowserEffect] StyleSheet created successfully.")
     return """
     var style = document.createElement('style');
     style.type = 'text/css';
@@ -22,6 +24,7 @@ private func createStyleSheetSource(styleSheet: String) -> String? {
     document.head.appendChild(style);
     """
 }
+
 
 final class BrowserEffect: VideoEffect {
     private let filter = CIFilter.sourceOverCompositing()
@@ -54,6 +57,7 @@ final class BrowserEffect: VideoEffect {
         videoSize: CGSize,
         settingName: String
     ) {
+        logger.info("🔵 [BrowserEffect] Initializing BrowserEffect for URL: \(url.absoluteString)")
         scaleToFitVideo = widget.scaleToFitVideo!
         self.url = url
         self.videoSize = videoSize
@@ -73,7 +77,7 @@ final class BrowserEffect: VideoEffect {
         let configuration = WKWebViewConfiguration()
         configuration.allowsInlineMediaPlayback = true
         configuration.allowsPictureInPictureMediaPlayback = false
-        configuration.mediaTypesRequiringUserActionForPlayback = []
+        configuration.mediaTypesRequiringUserActionForPlayback = [.audio, .video]
         if let source = createStyleSheetSource(styleSheet: styleSheet) {
             configuration.userContentController.addUserScript(.init(
                 source: source,
@@ -89,6 +93,7 @@ final class BrowserEffect: VideoEffect {
         webView.scrollView.showsVerticalScrollIndicator = false
         webView.scrollView.showsHorizontalScrollIndicator = false
         super.init()
+        logger.info("✅ [BrowserEffect] WebView initialized successfully.")
     }
 
     override func getName() -> String {
@@ -104,16 +109,20 @@ final class BrowserEffect: VideoEffect {
     }
 
     deinit {
+        logger.info("🛑 [BrowserEffect] Deinitializing BrowserEffect")
         stopTakeSnapshots()
     }
 
     func stop() {
+        logger.info("🛑 [BrowserEffect] Stopping BrowserEffect.")
         stopTakeSnapshots()
     }
 
     func reload() {
+        logger.info("🔄 [BrowserEffect] Reloading webView content.")
         webView.reload()
     }
+
 
     func setSceneWidget(sceneWidget: SettingsSceneWidget?, crops: [WidgetCrop]) {
         let enabled = !(sceneWidget == nil && crops.isEmpty)

@@ -2191,7 +2191,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     private func keepSpeakerAlive(now: ContinuousClock.Instant) {
-        guard keepSpeakerAliveLatestPlayed.duration(to: now) > .seconds(5 * 60) else {
+        guard keepSpeakerAliveLatestPlayed.duration(to: now) > .seconds(1 * 60) else {
             return
         }
         keepSpeakerAliveLatestPlayed = now

@@ -74,7 +74,7 @@ final class TwitchAPIEventSub {
                     logger.info("✅ Successfully created EventSub subscription with ID: \(data.first!.id)")
                 } else {
                     logger.error("❌ Failed to create EventSub subscription. No valid data returned.")
-                    logger.error("\(response)")
+                    logger.error("\(String(describing: response))")
                 }
                 onComplete(response?.data)
             }(data, response) // 🔹 Call the returned closure with 'data'

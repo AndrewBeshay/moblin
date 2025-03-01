@@ -26,12 +26,40 @@ final class TwitchAPIBits {
     }
 
     // MARK: - Get Cheermotes
-    func getCheermotes(broadcasterId: String, onComplete: @escaping ([TwitchApiCheermoteData]?) -> Void) {
+    func getCheermotes(broadcasterId: String, onComplete: @escaping ([TwitchApiCheermoteData]?, String?) -> Void) {
         api.sendRequest(
             method: "GET",
             subPath: "bits/cheermotes?broadcaster_id=\(broadcasterId)",
-            onComplete: decode(TwitchApiGetCheermotesResponse.self) { response in
-                onComplete(response?.data)
+            onComplete: { data, response in
+                let httpStatusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+                
+                switch httpStatusCode {
+                case 200:
+                    // ✅ Successfully retrieved Cheermotes
+                    if let data = data {
+                        // 📝 Convert Data to String for Logging
+                        if let jsonString = String(data: data, encoding: .utf8) {
+                            logger.info("📜 Raw JSON Response: \(jsonString)")
+                        } else {
+                            logger.warning("⚠️ Unable to convert Data to String.")
+                        }
+
+                        let decodedData = try? JSONDecoder().decode(TwitchApiGetCheermotesResponse.self, from: data)
+                        onComplete(decodedData?.data, nil)
+                    } else {
+                        onComplete(nil, "Received 200 OK but response body is empty.")
+                    }
+
+                case 401:
+                    // ❌ Unauthorized request
+                    logger.error("❌ 401 Unauthorized: Missing or invalid authentication token.")
+                    onComplete(nil, "401 Unauthorized: Invalid OAuth token or Client ID mismatch.")
+
+                default:
+                    // ❌ Handle unexpected errors
+                    logger.error("❌ Unexpected HTTP Status: \(httpStatusCode)")
+                    onComplete(nil, "Unexpected error: HTTP \(httpStatusCode)")
+                }
             }
         )
     }
