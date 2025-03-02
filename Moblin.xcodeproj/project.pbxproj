@@ -488,6 +488,7 @@
 		498DB2AB2D57791700EFBDBC /* MessageError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498DB2942D57791700EFBDBC /* MessageError.swift */; };
 		498DB2B02D5793E100EFBDBC /* ChannelModerationAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 498DB2AF2D5793DC00EFBDBC /* ChannelModerationAction.swift */; };
 		49A615622D59E4630030F5CD /* TwitchProfileImageFetcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49A615612D59E45C0030F5CD /* TwitchProfileImageFetcher.swift */; };
+		49B7A3CB2D745CCF00BD05A4 /* WebSocketManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B7A3CA2D745CC700BD05A4 /* WebSocketManager.swift */; };
 		ABF045852C1CEAF800D07696 /* AdaptiveBitrateSrtBela.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABF045842C1CEAF800D07696 /* AdaptiveBitrateSrtBela.swift */; };
 		C7E682562BC2E3FE004EB747 /* ThermalStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03B373FE2A9FCA790028DDD5 /* ThermalStateView.swift */; };
 /* End PBXBuildFile section */
@@ -1060,6 +1061,7 @@
 		498DB2AC2D57798C00EFBDBC /* MoblinDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = MoblinDebug.entitlements; sourceTree = "<group>"; };
 		498DB2AF2D5793DC00EFBDBC /* ChannelModerationAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChannelModerationAction.swift; sourceTree = "<group>"; };
 		49A615612D59E45C0030F5CD /* TwitchProfileImageFetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwitchProfileImageFetcher.swift; sourceTree = "<group>"; };
+		49B7A3CA2D745CC700BD05A4 /* WebSocketManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSocketManager.swift; sourceTree = "<group>"; };
 		ABF045842C1CEAF800D07696 /* AdaptiveBitrateSrtBela.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveBitrateSrtBela.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -1067,6 +1069,7 @@
 		498DB2B12D57A6AD00EFBDBC /* Chat */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Chat; sourceTree = "<group>"; };
 		498DB2B82D58CFD300EFBDBC /* Models */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Models; sourceTree = "<group>"; };
 		49A6156D2D5B75300030F5CD /* TwitchAPI */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = TwitchAPI; sourceTree = "<group>"; };
+		49B7A3CC2D745DD600BD05A4 /* EventSub */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = EventSub; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -1966,6 +1969,7 @@
 		0379BB712AA4BFA500B718B6 /* Twitch */ = {
 			isa = PBXGroup;
 			children = (
+				49B7A3CA2D745CC700BD05A4 /* WebSocketManager.swift */,
 				49A6156D2D5B75300030F5CD /* TwitchAPI */,
 				49A615612D59E45C0030F5CD /* TwitchProfileImageFetcher.swift */,
 				498DB28F2D57791700EFBDBC /* Extensions */,
@@ -2861,6 +2865,7 @@
 		498DB29A2D57791700EFBDBC /* Networking */ = {
 			isa = PBXGroup;
 			children = (
+				49B7A3CC2D745DD600BD05A4 /* EventSub */,
 				498DB2972D57791700EFBDBC /* APIDataReceiver.swift */,
 				498DB2982D57791700EFBDBC /* APIDataSession.swift */,
 				498DB2992D57791700EFBDBC /* APIError.swift */,
@@ -2918,6 +2923,7 @@
 				498DB2B12D57A6AD00EFBDBC /* Chat */,
 				498DB2B82D58CFD300EFBDBC /* Models */,
 				49A6156D2D5B75300030F5CD /* TwitchAPI */,
+				49B7A3CC2D745DD600BD05A4 /* EventSub */,
 			);
 			name = Moblin;
 			packageProductDependencies = (
@@ -3398,6 +3404,7 @@
 				03D10E7A2B64099500B1E436 /* TextEditNavigationView.swift in Sources */,
 				03ADC6FD2CDDE01100E625BF /* SimpleTimer.swift in Sources */,
 				03A983672A9A05D7008FF0DB /* ScenesSettingsView.swift in Sources */,
+				49B7A3CB2D745CCF00BD05A4 /* WebSocketManager.swift in Sources */,
 				0359F8F22BD3DA61005BFDA8 /* RtmpSocket.swift in Sources */,
 				0330F2B02AFAD26C001262C3 /* YouTubeLiveChat.swift in Sources */,
 				038C0F632C2D7C6400A258C6 /* LogsStorage.swift in Sources */,

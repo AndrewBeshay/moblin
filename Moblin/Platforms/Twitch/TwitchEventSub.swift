@@ -372,14 +372,14 @@ struct NotificationChannelModeratePayload: Decodable, CustomStringConvertible {
     }
 }
 
-private func parseRFC3339NanoTimestamp(_ timestamp: String) -> Date? {
-    let dateFormatter = DateFormatter()
-    dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSSX"
-    dateFormatter.locale = Locale(identifier: "en_US_POSIX")
-    dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
-
-    return dateFormatter.date(from: timestamp)
-}
+//private func parseRFC3339NanoTimestamp(_ timestamp: String) -> Date? {
+//    let dateFormatter = DateFormatter()
+//    dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSSX"
+//    dateFormatter.locale = Locale(identifier: "en_US_POSIX")
+//    dateFormatter.timeZone = TimeZone(secondsFromGMT: 0)
+//
+//    return dateFormatter.date(from: timestamp)
+//}
 
 // Wrap the payload in a message struct.
 struct NotificationChannelModerateMessage: Decodable, CustomStringConvertible {
