@@ -23,19 +23,16 @@ protocol TwitchEventSubDelegate: AnyObject {
 }
 
 // MARK: - WebSocketClient Protocol
-protocol WebSocketClientProtocol {
+protocol TwitchWebSocketClientProtocol {
     var delegate: WebSocketClientDelegate? { get set }
     init(url: URL, httpProxy: HttpProxy?)
     func start()
     func stop()
 }
 
-// MARK: - WebSocketClient Delegate
-protocol WebSocketClientDelegate: AnyObject {
-    func webSocketClientConnected(_ client: WebSocketClient)
-    func webSocketClientDisconnected(_ client: WebSocketClient)
-    func webSocketClientReceiveMessage(_ client: WebSocketClient, string: String)
-}
+// MARK: - Use the existing WebSocketClientDelegate
+// The protocol is already defined in Moblin/Various/WebSocketClient.swift
+// No need to redefine it here to avoid ambiguity
 
 // MARK: - TwitchEventSub Service Protocol
 protocol TwitchEventSubServiceProtocol {
