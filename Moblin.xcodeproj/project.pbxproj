@@ -495,6 +495,13 @@
 		03FBD1812B3B0DE500757CA9 /* RtmpServerClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03FBD1802B3B0DE500757CA9 /* RtmpServerClient.swift */; };
 		03FBD1852B3B0DF300757CA9 /* RtmpServerChunkStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03FBD1842B3B0DF300757CA9 /* RtmpServerChunkStream.swift */; };
 		45E3E780842910145791546F /* DjiDeviceScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45E3EAA92F1B2253BB2ED4FC /* DjiDeviceScanner.swift */; };
+		49B732152D8D8F8A00AF76D0 /* TwitchEventSubHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B732112D8D8F8A00AF76D0 /* TwitchEventSubHandler.swift */; };
+		49B732162D8D8F8A00AF76D0 /* TwitchEventSubConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B732102D8D8F8A00AF76D0 /* TwitchEventSubConstants.swift */; };
+		49B732172D8D8F8A00AF76D0 /* TwitchEventSubModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B732122D8D8F8A00AF76D0 /* TwitchEventSubModels.swift */; };
+		49B732182D8D8F8A00AF76D0 /* TwitchEventSubSubscriptionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B732142D8D8F8A00AF76D0 /* TwitchEventSubSubscriptionService.swift */; };
+		49B732192D8D8F8A00AF76D0 /* TwitchEventSubProtocols.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B732132D8D8F8A00AF76D0 /* TwitchEventSubProtocols.swift */; };
+		49B7321D2D8D982500AF76D0 /* KeychainService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B7321C2D8D982500AF76D0 /* KeychainService.swift */; };
+		49B7321F2D8D983F00AF76D0 /* TwitchUserInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49B7321E2D8D983F00AF76D0 /* TwitchUserInfo.swift */; };
 		ABF045852C1CEAF800D07696 /* AdaptiveBitrateSrtBela.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABF045842C1CEAF800D07696 /* AdaptiveBitrateSrtBela.swift */; };
 		C7E682562BC2E3FE004EB747 /* ThermalStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03B373FE2A9FCA790028DDD5 /* ThermalStateView.swift */; };
 /* End PBXBuildFile section */
@@ -1072,6 +1079,13 @@
 		03FBD1802B3B0DE500757CA9 /* RtmpServerClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RtmpServerClient.swift; sourceTree = "<group>"; };
 		03FBD1842B3B0DF300757CA9 /* RtmpServerChunkStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RtmpServerChunkStream.swift; sourceTree = "<group>"; };
 		45E3EAA92F1B2253BB2ED4FC /* DjiDeviceScanner.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DjiDeviceScanner.swift; sourceTree = "<group>"; };
+		49B732102D8D8F8A00AF76D0 /* TwitchEventSubConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwitchEventSubConstants.swift; sourceTree = "<group>"; };
+		49B732112D8D8F8A00AF76D0 /* TwitchEventSubHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwitchEventSubHandler.swift; sourceTree = "<group>"; };
+		49B732122D8D8F8A00AF76D0 /* TwitchEventSubModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwitchEventSubModels.swift; sourceTree = "<group>"; };
+		49B732132D8D8F8A00AF76D0 /* TwitchEventSubProtocols.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwitchEventSubProtocols.swift; sourceTree = "<group>"; };
+		49B732142D8D8F8A00AF76D0 /* TwitchEventSubSubscriptionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwitchEventSubSubscriptionService.swift; sourceTree = "<group>"; };
+		49B7321C2D8D982500AF76D0 /* KeychainService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainService.swift; sourceTree = "<group>"; };
+		49B7321E2D8D983F00AF76D0 /* TwitchUserInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwitchUserInfo.swift; sourceTree = "<group>"; };
 		ABF045842C1CEAF800D07696 /* AdaptiveBitrateSrtBela.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveBitrateSrtBela.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -2011,6 +2025,12 @@
 		0379BB712AA4BFA500B718B6 /* Twitch */ = {
 			isa = PBXGroup;
 			children = (
+				49B7321E2D8D983F00AF76D0 /* TwitchUserInfo.swift */,
+				49B732102D8D8F8A00AF76D0 /* TwitchEventSubConstants.swift */,
+				49B732112D8D8F8A00AF76D0 /* TwitchEventSubHandler.swift */,
+				49B732122D8D8F8A00AF76D0 /* TwitchEventSubModels.swift */,
+				49B732132D8D8F8A00AF76D0 /* TwitchEventSubProtocols.swift */,
+				49B732142D8D8F8A00AF76D0 /* TwitchEventSubSubscriptionService.swift */,
 				03C3572E2D041A1F00B8B29F /* TwitchMultiTrack.swift */,
 				035F24412CB76830008288C7 /* TwitchCommon.swift */,
 				031E9FC02C5B1D87009FF4D8 /* TwitchApi.swift */,
@@ -2615,6 +2635,7 @@
 		03BE504E2B3EC107004720AF /* Various */ = {
 			isa = PBXGroup;
 			children = (
+				49B7321C2D8D982500AF76D0 /* KeychainService.swift */,
 				0397C3692C5E16FA00F93E58 /* AlertMediaStorage.swift */,
 				0386053D2D8006D000B9C3CE /* BluetoothScanner.swift */,
 				03E6F7F82CE5B4AB00D9198A /* BondingStatisticsFormatter.swift */,
@@ -3349,10 +3370,16 @@
 				0359F8D82BD3DA61005BFDA8 /* MpegTsVideoConfigAvc.swift in Sources */,
 				0379BB8E2AA90D1900B718B6 /* DebugLogSettingsView.swift in Sources */,
 				03C3560F2CFC90EC00B8B29F /* KeyboardKeySettingsView.swift in Sources */,
+				49B7321D2D8D982500AF76D0 /* KeychainService.swift in Sources */,
 				038605302D7DF6A300B9C3CE /* CyclingPowerDevice.swift in Sources */,
 				03B16A2D2B35D72F00E5AB07 /* CameraSettingsView.swift in Sources */,
 				030621E92D8608E1001EE50B /* DjiGimbalDeviceScannerSettingsView.swift in Sources */,
 				0359F8E72BD3DA61005BFDA8 /* Amf0Serializer.swift in Sources */,
+				49B732152D8D8F8A00AF76D0 /* TwitchEventSubHandler.swift in Sources */,
+				49B732162D8D8F8A00AF76D0 /* TwitchEventSubConstants.swift in Sources */,
+				49B732172D8D8F8A00AF76D0 /* TwitchEventSubModels.swift in Sources */,
+				49B732182D8D8F8A00AF76D0 /* TwitchEventSubSubscriptionService.swift in Sources */,
+				49B732192D8D8F8A00AF76D0 /* TwitchEventSubProtocols.swift in Sources */,
 				031F41442C6FB3B900790EEC /* AboutAttributionsSettingsView.swift in Sources */,
 				03DC9DAF2C4F846D005E2104 /* CMBlockBuffer+Extension.swift in Sources */,
 				03AC13CA2CDED772000BC82A /* DebugHttpProxySettingsView.swift in Sources */,
@@ -3464,6 +3491,7 @@
 				03279CF22B4D2AEC006CEA5A /* RealtimeIrl.swift in Sources */,
 				031A2E112ADDDD7E005CE350 /* VideoStabilizationSettingsView.swift in Sources */,
 				032B4EDC2C3491F200204547 /* CameraSettingsControlView.swift in Sources */,
+				49B7321F2D8D983F00AF76D0 /* TwitchUserInfo.swift in Sources */,
 				0379E66A2C88C9340021AB59 /* CatPrinterCommands.swift in Sources */,
 				03C3560D2CFC90D200B8B29F /* KeyboardSettingsView.swift in Sources */,
 				035F24422CB76835008288C7 /* TwitchCommon.swift in Sources */,

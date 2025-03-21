@@ -132,7 +132,7 @@ final class TwitchEventSub: NSObject {
         webSocket.stop()
     }
     
-    private func handleMessage(messageText: String) {
+    func handleMessage(messageText: String) {
         // Use the event handler to process the message
         if eventHandler.handleMessage(messageText: messageText) {
             return
