@@ -1,5 +1,8 @@
 import Foundation
 
+// Import the models file to ensure models are available
+import SwiftUI
+
 private struct BasicMetadata: Decodable {
     var message_type: String
     var subscription_type: String?
@@ -21,7 +24,7 @@ private struct WelcomeMessage: Decodable {
     var payload: WelcomePayload
 }
 
-
+// MARK: - Private Payload Types
 
 private struct NotificationChannelSubscribePayload: Decodable {
     var event: TwitchEventSubNotificationChannelSubscribeEvent
@@ -31,32 +34,15 @@ private struct NotificationChannelSubscribeMessage: Decodable {
     var payload: NotificationChannelSubscribePayload
 }
 
+private struct NotificationChannelAdBreakBeginPayload: Decodable {
+    var event: TwitchEventSubChannelAdBreakBeginEvent
+}
+
 private struct NotificationChannelAdBreakBeginMessage: Decodable {
     var payload: NotificationChannelAdBreakBeginPayload
 }
 
-private var url = URL(string: "wss://eventsub.wss.twitch.tv/ws")!
-
-protocol TwitchEventSubDelegate: AnyObject {
-    func twitchEventSubMakeErrorToast(title: String)
-    func twitchEventSubChannelFollow(event: TwitchEventSubNotificationChannelFollowEvent)
-    func twitchEventSubChannelSubscribe(event: TwitchEventSubNotificationChannelSubscribeEvent)
-    func twitchEventSubChannelSubscriptionGift(event: TwitchEventSubNotificationChannelSubscriptionGiftEvent)
-    func twitchEventSubChannelSubscriptionMessage(
-        event: TwitchEventSubNotificationChannelSubscriptionMessageEvent
-    )
-    func twitchEventSubChannelPointsCustomRewardRedemptionAdd(
-        event: TwitchEventSubNotificationChannelPointsCustomRewardRedemptionAddEvent
-    )
-    func twitchEventSubChannelRaid(event: TwitchEventSubChannelRaidEvent)
-    func twitchEventSubChannelCheer(event: TwitchEventSubChannelCheerEvent)
-    func twitchEventSubChannelHypeTrainBegin(event: TwitchEventSubChannelHypeTrainBeginEvent)
-    func twitchEventSubChannelHypeTrainProgress(event: TwitchEventSubChannelHypeTrainProgressEvent)
-    func twitchEventSubChannelHypeTrainEnd(event: TwitchEventSubChannelHypeTrainEndEvent)
-    func twitchEventSubChannelAdBreakBegin(event: TwitchEventSubChannelAdBreakBeginEvent)
-    func twitchEventSubUnauthorized()
-    func twitchEventSubNotification(message: String)
-}
+// MARK: - Constants
 
 private let subTypeChannelFollow = "channel.follow"
 private let subTypeChannelSubscribe = "channel.subscribe"
@@ -70,6 +56,8 @@ private let subTypeChannelHypeTrainBegin = "channel.hype_train.begin"
 private let subTypeChannelHypeTrainProgress = "channel.hype_train.progress"
 private let subTypeChannelHypeTrainEnd = "channel.hype_train.end"
 private let subTypeChannelAdBreakBegin = "channel.ad_break.begin"
+
+// MARK: - TwitchEventSub
 
 final class TwitchEventSub: NSObject {
     // MARK: - Properties

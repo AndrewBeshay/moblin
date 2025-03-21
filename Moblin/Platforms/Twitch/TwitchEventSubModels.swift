@@ -1,5 +1,9 @@
 import Foundation
 
+// MARK: - TwitchEventSub Model Definitions
+// This file contains all event models used by the TwitchEventSub system.
+// IMPORTANT: These models must be public to be available across the codebase
+
 // MARK: - Base Message Types
 
 struct TwitchEventSubBasicMetadata: Decodable {
@@ -33,13 +37,21 @@ struct TwitchEventSubMessage: Decodable {
 
 // MARK: - Channel Subscribe Event
 
-struct TwitchEventSubNotificationChannelSubscribeEvent: Decodable {
-    var user_name: String
-    var tier: String
-    var is_gift: Bool
+// This is a public model used across the app
+public struct TwitchEventSubNotificationChannelSubscribeEvent: Decodable {
+    public var user_name: String
+    public var tier: String
+    public var is_gift: Bool
 
-    func tierAsNumber() -> Int {
+    public func tierAsNumber() -> Int {
         return twitchTierAsNumber(tier: tier)
+    }
+    
+    // Default initializer for public access
+    public init(user_name: String, tier: String, is_gift: Bool) {
+        self.user_name = user_name
+        self.tier = tier
+        self.is_gift = is_gift
     }
 }
 
