@@ -298,43 +298,48 @@ the JSON blob format. Class members are JSON object keys. Members with
 - Twitch app.
 - https://softvelum.com/larix/ios/
 
-# Development environment setup
+# Development Setup
 
-Roughly the steps to setup Moblin's developement environment.
+## Prerequisites
 
-1. Install Xcode with iOS and MacOS simulators on your Mac.
+- Xcode 15.0 or later
+- macOS 13.0 or later
+- iOS 16.0 or later
 
-2. Open a terminal.
+## Building from Source
 
-3. Clone Moblin.
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/moblin.git
+   cd moblin
+   ```
 
-   `git clone https://github.com/eerimoq/moblin.git`
+2. Open the project in Xcode:
+   ```bash
+   open Moblin.xcodeproj
+   ```
 
-4. Enter Moblins repository.
+3. Configure signing:
+   - Select the project in the navigator
+   - For each target:
+     - Go to "Signing & Capabilities"
+     - Set "Team" to your development team
+     - Enable "Automatically manage signing"
 
-   `cd moblin`
+4. Build and run the project
 
-5. Open the Moblin project in Xcode. Wait for the dependencies to load.
+## Project Structure
 
-   `open Moblin.xcodeproj`
+- `Moblin/` - Main app target
+- `Moblin Widget/` - iOS widget extension
+- `Moblin Watch/` - Apple Watch app
+- `Moblin Screen Recording/` - Screen recording extension
+- `Common/` - Shared code between targets
 
-6. Press `Command + B` to build Moblin.
+## Contributing
 
-7. Click on the code signing error and add your account. No Apple
-   developer account is needed.
-
-8. Change the `Bundle Identifier` to anything you want (i.e. `com.whoami.Moblin`).
-
-9. Remove `In-App Purchase` and `Access Wi-Fi Information` by clicking
-   their trash cans.
-
-10. Build again. Hopefully successfully.
-
-11. Enable developer mode in your iPhone/iPad.
-
-12. Select you iPhone/iPad as `Run Destination` in Xcode (at the top
-    in the middle).
-
-13. Build and run by pressing `Command + R`.
-
-14. Done!
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
