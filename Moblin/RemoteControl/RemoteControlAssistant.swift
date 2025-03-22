@@ -567,6 +567,8 @@ extension RemoteControlAssistant: TwitchEventSubDelegate {
 
     func twitchEventSubChannelMessageDelete(event _: TwitchEventSubChannelMessageDeleteEvent) {}
 
+    func twitchEventSubModerationAction(event _: TwitchEventSubModerationActionEvent) {}
+
     func twitchEventSubUnauthorized() {
         logger.info("remote-control-assistant: twitch-event-sub: Twitch not authorized")
         twitchEventSub?.stop()

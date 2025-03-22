@@ -191,5 +191,14 @@ final class TwitchEventSubRegistry {
         ) { event, delegate in
             delegate.twitchEventSubChannelMessageDelete(event: event)
         }
+        
+        // Channel Moderation Action
+        register(
+            type: TwitchEventSubConstants.SubscriptionType.channelModerate,
+            messageType: TwitchEventSubModerationActionMessage.self,
+            eventExtractor: { $0.payload.event }
+        ) { event, delegate in
+            delegate.twitchEventSubModerationAction(event: event)
+        }
     }
 } 

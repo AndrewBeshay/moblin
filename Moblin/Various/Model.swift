@@ -10365,6 +10365,10 @@ extension Model {
 }
 
 extension Model: TwitchEventSubDelegate {
+    func twitchEventSubModerationAction(event: TwitchEventSubModerationActionEvent) {
+        logger.info(event.action)
+    }
+    
     
     func twitchEventSubMakeErrorToast(title: String) {
         makeErrorToast(

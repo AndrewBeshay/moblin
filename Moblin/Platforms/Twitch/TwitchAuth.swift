@@ -20,7 +20,15 @@ private let scopes = [
     "channel:edit:commercial",
     "bits:read",
     "user:bot",
-    "channel:bot"
+    "channel:bot",
+    "moderator:manage:chat_settings",
+    "moderator:manage:blocked_terms",
+    "moderator:manage:unban_requests",
+    "moderator:manage:banned_users",
+    "moderator:manage:chat_messages",
+    "moderator:manage:warnings",
+    "moderator:read:moderators",
+    "moderator:read:vips"
 ]
 
 
@@ -45,7 +53,15 @@ struct TwitchAuthConfig {
         "channel:edit:commercial",
         "bits:read",
         "user:bot",
-        "channel:bot"
+        "channel:bot",
+        "moderator:manage:chat_settings",
+        "moderator:manage:blocked_terms",
+        "moderator:manage:unban_requests",
+        "moderator:manage:banned_users",
+        "moderator:manage:chat_messages",
+        "moderator:manage:warnings",
+        "moderator:read:moderators",
+        "moderator:read:vips"
     ]
     static let tokenRefreshThreshold: TimeInterval = 300 // 5 minutes
     static let userInfoCacheTimeout: TimeInterval = 300 // 5 minutes

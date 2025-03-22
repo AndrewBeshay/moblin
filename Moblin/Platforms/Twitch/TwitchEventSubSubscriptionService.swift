@@ -40,6 +40,11 @@ final class TwitchEventSubSubscriptionService: TwitchEventSubSubscriptionService
                 "{\"broadcaster_user_id\":\"\(userId)\",\"user_id\":\"\(userId)\"}"
             }),
             
+            // Moderation event (requires mod scopes)
+            (TwitchEventSubConstants.SubscriptionType.channelModerate, 1, { userId in
+                "{\"broadcaster_user_id\":\"\(userId)\",\"moderator_user_id\":\"\(userId)\"}"
+            }),
+            
             // Raid events need a different condition (to_broadcaster_user_id)
             (TwitchEventSubConstants.SubscriptionType.channelRaid, 1, { userId in
                 "{\"to_broadcaster_user_id\":\"\(userId)\"}"
@@ -164,6 +169,8 @@ final class TwitchEventSubSubscriptionService: TwitchEventSubSubscriptionService
             return "ad break"
         case TwitchEventSubConstants.SubscriptionType.channelMessageDelete:
             return "message delete"
+        case TwitchEventSubConstants.SubscriptionType.channelModerate:
+            return "user timeout"
         default:
             return subscriptionType
         }

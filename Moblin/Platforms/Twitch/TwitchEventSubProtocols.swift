@@ -19,6 +19,7 @@ protocol TwitchEventSubDelegate: AnyObject {
     func twitchEventSubChannelHypeTrainEnd(event: TwitchEventSubChannelHypeTrainEndEvent)
     func twitchEventSubChannelAdBreakBegin(event: TwitchEventSubChannelAdBreakBeginEvent)
     func twitchEventSubChannelMessageDelete(event: TwitchEventSubChannelMessageDeleteEvent)
+    func twitchEventSubModerationAction(event: TwitchEventSubModerationActionEvent)
     func twitchEventSubUnauthorized()
     func twitchEventSubNotification(message: String)
 }
