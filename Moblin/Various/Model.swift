@@ -4856,7 +4856,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         }
         TwitchApi(stream.twitchAccessToken!, urlSession)
             .modifyChannelInformation(broadcasterId: stream.twitchChannelId, category: nil,
-                                      title: title)
+                                     title: title)
         { ok in
             if !ok {
                 self.makeErrorToast(title: "Failed to set stream title")
@@ -10365,6 +10365,7 @@ extension Model {
 }
 
 extension Model: TwitchEventSubDelegate {
+    
     func twitchEventSubMakeErrorToast(title: String) {
         makeErrorToast(
             title: title,
@@ -10372,6 +10373,39 @@ extension Model: TwitchEventSubDelegate {
         )
     }
 
+    func twitchEventSubChannelMessageDelete(event: TwitchEventSubChannelMessageDeleteEvent) {
+        DispatchQueue.main.async {
+            // Log the event
+            logger.debug("twitch: event-sub: Message deleted: \(event.message_id) from \(event.target_user_name)")
+            
+            // Update UI or handle the deleted message
+            let text = String(localized: "had a message deleted by a moderator")
+//            self.makeToast(title: "\(event.target_user_name) \(text)")
+            
+//            // If the message content is available (using version 2), show it
+//            if let message = event.message {
+//                self.appendTwitchChatAlertMessage(
+//                    user: event.target_user_name,
+//                    text: String(localized: "Deleted message: \(message)"),
+//                    title: String(localized: "Message Deleted"),
+//                    color: .red,
+//                    image: "trash"
+//                )
+//            } else {
+//                self.appendTwitchChatAlertMessage(
+//                    user: event.target_user_name,
+//                    text: text,
+//                    title: String(localized: "Message Deleted"),
+//                    color: .red,
+//                    image: "trash"
+//                )
+//            }
+            
+            // Here you would also remove the message from any chat history if you're tracking that
+            // self.twitchChat.removeMessage(withId: event.message_id)
+        }
+    }
+    
     func twitchEventSubChannelFollow(event: TwitchEventSubChannelFollowEvent) {
         DispatchQueue.main.async {
             let text = String(localized: "just followed!")
@@ -10566,8 +10600,8 @@ extension Model: TwitchEventSubDelegate {
                           bits: nil,
                           highlight: .init(
                               kind: kind ?? .redemption,
-                              color: color,
-                              image: image ?? "medal",
+                    color: color,
+                    image: image ?? "medal",
                               title: title
                           ), live: true)
     }

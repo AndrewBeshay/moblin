@@ -32,7 +32,21 @@ struct TwitchAuthConfig {
     static let clientId = "your_client_id"
     static let clientSecret = "your_client_secret"
     static let redirectUri = "your_redirect_uri"
-    static let scopes = ["user:read:email", "channel:read:subscriptions"]
+    static let scopes = [
+        "user:read:chat",
+        "user:write:chat",
+        "moderator:read:followers",
+        "channel:read:subscriptions",
+        "channel:read:redemptions",
+        "channel:read:stream_key",
+        "channel:read:hype_train",
+        "channel:read:ads",
+        "channel:manage:broadcast",
+        "channel:edit:commercial",
+        "bits:read",
+        "user:bot",
+        "channel:bot"
+    ]
     static let tokenRefreshThreshold: TimeInterval = 300 // 5 minutes
     static let userInfoCacheTimeout: TimeInterval = 300 // 5 minutes
     static let minimumApiCallInterval: TimeInterval = 1.0

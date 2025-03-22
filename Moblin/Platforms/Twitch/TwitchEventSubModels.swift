@@ -147,6 +147,17 @@ public struct TwitchEventSubChannelAdBreakBeginEvent: Decodable {
     public var is_automatic: Bool
 }
 
+// Message Delete Event
+public struct TwitchEventSubChannelMessageDeleteEvent: Decodable {
+    public var broadcaster_user_id: String
+    public var broadcaster_user_login: String
+    public var broadcaster_user_name: String
+    public var target_user_id: String
+    public var target_user_login: String
+    public var target_user_name: String
+    public var message_id: String
+}
+
 // MARK: - Type Aliases for Complete Messages
 
 public typealias TwitchEventSubChannelSubscribeMessage = 
@@ -180,4 +191,7 @@ public typealias TwitchEventSubChannelHypeTrainEndMessage =
     TwitchEventSubMessage<TwitchEventSubChannelHypeTrainEndEvent>
 
 public typealias TwitchEventSubChannelAdBreakBeginMessage = 
-    TwitchEventSubMessage<TwitchEventSubChannelAdBreakBeginEvent> 
+    TwitchEventSubMessage<TwitchEventSubChannelAdBreakBeginEvent>
+
+public typealias TwitchEventSubChannelMessageDeleteMessage = 
+    TwitchEventSubMessage<TwitchEventSubChannelMessageDeleteEvent> 

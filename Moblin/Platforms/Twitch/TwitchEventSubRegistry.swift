@@ -182,5 +182,14 @@ final class TwitchEventSubRegistry {
         ) { event, delegate in
             delegate.twitchEventSubChannelAdBreakBegin(event: event)
         }
+        
+        // Channel Message Delete
+        register(
+            type: TwitchEventSubConstants.SubscriptionType.channelMessageDelete,
+            messageType: TwitchEventSubChannelMessageDeleteMessage.self,
+            eventExtractor: { $0.payload.event }
+        ) { event, delegate in
+            delegate.twitchEventSubChannelMessageDelete(event: event)
+        }
     }
 } 

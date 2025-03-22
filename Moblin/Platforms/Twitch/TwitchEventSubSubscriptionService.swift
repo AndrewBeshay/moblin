@@ -35,6 +35,11 @@ final class TwitchEventSubSubscriptionService: TwitchEventSubSubscriptionService
             (TwitchEventSubConstants.SubscriptionType.channelHypeTrainEnd, 1, nil),
             (TwitchEventSubConstants.SubscriptionType.channelAdBreakBegin, 1, nil),
             
+            // Message delete event (version 2 gets message content)
+            (TwitchEventSubConstants.SubscriptionType.channelMessageDelete, 1, { userId in
+                "{\"broadcaster_user_id\":\"\(userId)\",\"user_id\":\"\(userId)\"}"
+            }),
+            
             // Raid events need a different condition (to_broadcaster_user_id)
             (TwitchEventSubConstants.SubscriptionType.channelRaid, 1, { userId in
                 "{\"to_broadcaster_user_id\":\"\(userId)\"}"
@@ -157,6 +162,8 @@ final class TwitchEventSubSubscriptionService: TwitchEventSubSubscriptionService
             return "hype train end"
         case TwitchEventSubConstants.SubscriptionType.channelAdBreakBegin:
             return "ad break"
+        case TwitchEventSubConstants.SubscriptionType.channelMessageDelete:
+            return "message delete"
         default:
             return subscriptionType
         }

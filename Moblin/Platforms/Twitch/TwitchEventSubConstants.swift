@@ -26,5 +26,6 @@ enum TwitchEventSubConstants {
         static let channelHypeTrainProgress = "channel.hype_train.progress"
         static let channelHypeTrainEnd = "channel.hype_train.end"
         static let channelAdBreakBegin = "channel.ad_break.begin"
+        static let channelMessageDelete = "channel.chat.message_delete"
     }
 } 
