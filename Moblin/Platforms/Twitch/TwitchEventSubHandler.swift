@@ -7,171 +7,98 @@ protocol TwitchEventSubHandlerProtocol {
     func handleSessionWelcome(messageData: Data) -> String?
 }
 
+/// Handler for processing Twitch EventSub messages and dispatching them to the appropriate delegates
 final class TwitchEventSubHandler: TwitchEventSubHandlerProtocol {
     // MARK: - Properties
     private(set) weak var delegate: TwitchEventSubDelegate?
+    private let decoder = JSONDecoder()
+    private let registry: TwitchEventSubRegistry
     
     // MARK: - Initialization
-    init(delegate: TwitchEventSubDelegate) {
+    init(delegate: TwitchEventSubDelegate, registry: TwitchEventSubRegistry = TwitchEventSubRegistry.shared) {
         self.delegate = delegate
+        self.registry = registry
     }
     
     // MARK: - Public Methods
+    
+    /// Handle an incoming message from the WebSocket
+    /// - Parameter messageText: The message text to process
+    /// - Returns: true if the message was processed, false if it requires further handling
     func handleMessage(messageText: String) -> Bool {
-        let messageData = messageText.utf8Data
-        guard let message = try? JSONDecoder().decode(TwitchEventSubBasicMessage.self, from: messageData) else {
+        // First, try to decode the basic message structure to determine message type
+        guard let messageData = messageText.data(using: .utf8) else {
+            logger.error("twitch: event-sub: Could not convert message to data")
             return false
         }
         
-        switch message.metadata.message_type {
-        case TwitchEventSubMessageType.sessionWelcome:
-            _ = handleSessionWelcome(messageData: messageData)
-            return true
-        case TwitchEventSubMessageType.sessionKeepAlive:
-            return true
-        case TwitchEventSubMessageType.notification:
-            handleNotification(message: message, messageText: messageText, messageData: messageData)
-            return true
-        default:
-            logger.info("twitch: event-sub: Unknown message type \(message.metadata.message_type)")
+        do {
+            let message = try decoder.decode(TwitchEventSubMessage<EmptyEvent>.self, from: messageData)
+            
+            switch message.metadata.message_type {
+            case TwitchEventSubConstants.MessageType.welcome:
+                // Welcome messages are handled separately
+                return false
+                
+            case TwitchEventSubConstants.MessageType.keepalive:
+                // Keepalive messages don't need further processing
+                return true
+                
+            case TwitchEventSubConstants.MessageType.notification:
+                guard let subscriptionType = message.metadata.subscription_type else {
+                    logger.error("twitch: event-sub: Missing subscription type in notification")
+                    return false
+                }
+                
+                // Use the registry to handle this event type
+                return handleNotification(subscriptionType: subscriptionType, messageData: messageData)
+                
+            default:
+                logger.debug("twitch: event-sub: Unknown message type: \(message.metadata.message_type)")
+                return false
+            }
+        } catch {
+            logger.error("twitch: event-sub: Failed to decode message: \(error.localizedDescription)")
             return false
         }
     }
     
+    /// Extract session ID from a welcome message
+    /// - Parameter messageData: The raw message data
+    /// - Returns: The session ID if found, nil otherwise
     func handleSessionWelcome(messageData: Data) -> String? {
-        guard let message = try? JSONDecoder().decode(TwitchEventSubWelcomeMessage.self, from: messageData) else {
-            logger.info("twitch: event-sub: Failed to decode welcome message")
+        do {
+            let message = try decoder.decode(TwitchEventSubWelcomeMessage.self, from: messageData)
+            return message.payload.session.id
+        } catch {
+            logger.error("twitch: event-sub: Failed to decode welcome message: \(error.localizedDescription)")
             return nil
         }
-        return message.payload.session.id
     }
     
     // MARK: - Private Methods
-    private func handleNotification(message: TwitchEventSubBasicMessage, messageText: String, messageData: Data) {
+    
+    /// Handle an event notification
+    /// - Parameters:
+    ///   - subscriptionType: The type of notification
+    ///   - messageData: The raw message data
+    /// - Returns: true if successfully handled, false otherwise
+    private func handleNotification(subscriptionType: String, messageData: Data) -> Bool {
+        guard let delegate = delegate else {
+            logger.error("twitch: event-sub: No delegate available to handle notification")
+            return false
+        }
+        
         do {
-            switch message.metadata.subscription_type {
-            case TwitchEventSubSubscriptionType.channelFollow:
-                try handleNotificationChannelFollow(messageData: messageData)
-            case TwitchEventSubSubscriptionType.channelSubscribe:
-                try handleNotificationChannelSubscribe(messageData: messageData)
-            case TwitchEventSubSubscriptionType.channelSubscriptionGift:
-                try handleNotificationChannelSubscriptionGift(messageData: messageData)
-            case TwitchEventSubSubscriptionType.channelSubscriptionMessage:
-                try handleNotificationChannelSubscriptionMessage(messageData: messageData)
-            case TwitchEventSubSubscriptionType.channelPointsCustomRewardRedemptionAdd:
-                try handleChannelPointsCustomRewardRedemptionAdd(messageData: messageData)
-            case TwitchEventSubSubscriptionType.channelRaid:
-                try handleChannelRaid(messageData: messageData)
-            case TwitchEventSubSubscriptionType.channelCheer:
-                try handleChannelCheer(messageData: messageData)
-            case TwitchEventSubSubscriptionType.channelHypeTrainBegin:
-                try handleChannelHypeTrainBegin(messageData: messageData)
-            case TwitchEventSubSubscriptionType.channelHypeTrainProgress:
-                try handleChannelHypeTrainProgress(messageData: messageData)
-            case TwitchEventSubSubscriptionType.channelHypeTrainEnd:
-                try handleChannelHypeTrainEnd(messageData: messageData)
-            case TwitchEventSubSubscriptionType.channelAdBreakBegin:
-                try handleChannelAdBreakBegin(messageData: messageData)
-            default:
-                if let type = message.metadata.subscription_type {
-                    logger.info("twitch: event-sub: Unknown notification type \(type)")
-                } else {
-                    logger.info("twitch: event-sub: Missing notification type")
-                }
-            }
-            delegate?.twitchEventSubNotification(message: messageText)
+            // Use the registry to process this event type
+            try registry.handleMessage(subscriptionType: subscriptionType, messageData: messageData, delegate: delegate)
+            return true
         } catch {
-            let subscription_type = message.metadata.subscription_type ?? "unknown"
-            logger.info("twitch: event-sub: Failed to handle notification \(subscription_type).")
+            logger.error("twitch: event-sub: Failed to handle notification: \(error.localizedDescription)")
+            return false
         }
     }
-    
-    // MARK: - Event Handlers
-    private func handleNotificationChannelFollow(messageData: Data) throws {
-        let message = try JSONDecoder().decode(
-            TwitchEventSubNotificationChannelFollowMessage.self,
-            from: messageData
-        )
-        delegate?.twitchEventSubChannelFollow(event: message.payload.event)
-    }
-    
-    private func handleNotificationChannelSubscribe(messageData: Data) throws {
-        let message = try JSONDecoder().decode(
-            TwitchEventSubNotificationChannelSubscribeMessage.self,
-            from: messageData
-        )
-        delegate?.twitchEventSubChannelSubscribe(event: message.payload.event)
-    }
-    
-    private func handleNotificationChannelSubscriptionGift(messageData: Data) throws {
-        let message = try JSONDecoder().decode(
-            TwitchEventSubNotificationChannelSubscriptionGiftMessage.self,
-            from: messageData
-        )
-        delegate?.twitchEventSubChannelSubscriptionGift(event: message.payload.event)
-    }
-    
-    private func handleNotificationChannelSubscriptionMessage(messageData: Data) throws {
-        let message = try JSONDecoder().decode(
-            TwitchEventSubNotificationChannelSubscriptionMessageMessage.self,
-            from: messageData
-        )
-        delegate?.twitchEventSubChannelSubscriptionMessage(event: message.payload.event)
-    }
-    
-    private func handleChannelPointsCustomRewardRedemptionAdd(messageData: Data) throws {
-        let message = try JSONDecoder().decode(
-            TwitchEventSubNotificationChannelPointsCustomRewardRedemptionAddMessage.self,
-            from: messageData
-        )
-        delegate?.twitchEventSubChannelPointsCustomRewardRedemptionAdd(event: message.payload.event)
-    }
-    
-    private func handleChannelRaid(messageData: Data) throws {
-        let message = try JSONDecoder().decode(
-            TwitchEventSubNotificationChannelRaidMessage.self,
-            from: messageData
-        )
-        delegate?.twitchEventSubChannelRaid(event: message.payload.event)
-    }
-    
-    private func handleChannelCheer(messageData: Data) throws {
-        let message = try JSONDecoder().decode(
-            TwitchEventSubNotificationChannelCheerMessage.self,
-            from: messageData
-        )
-        delegate?.twitchEventSubChannelCheer(event: message.payload.event)
-    }
-    
-    private func handleChannelHypeTrainBegin(messageData: Data) throws {
-        let message = try JSONDecoder().decode(
-            TwitchEventSubNotificationChannelHypeTrainBeginMessage.self,
-            from: messageData
-        )
-        delegate?.twitchEventSubChannelHypeTrainBegin(event: message.payload.event)
-    }
-    
-    private func handleChannelHypeTrainProgress(messageData: Data) throws {
-        let message = try JSONDecoder().decode(
-            TwitchEventSubNotificationChannelHypeTrainProgressMessage.self,
-            from: messageData
-        )
-        delegate?.twitchEventSubChannelHypeTrainProgress(event: message.payload.event)
-    }
-    
-    private func handleChannelHypeTrainEnd(messageData: Data) throws {
-        let message = try JSONDecoder().decode(
-            TwitchEventSubNotificationChannelHypeTrainEndMessage.self,
-            from: messageData
-        )
-        delegate?.twitchEventSubChannelHypeTrainEnd(event: message.payload.event)
-    }
-    
-    private func handleChannelAdBreakBegin(messageData: Data) throws {
-        let message = try JSONDecoder().decode(
-            TwitchEventSubNotificationChannelAdBreakBeginMessage.self,
-            from: messageData
-        )
-        delegate?.twitchEventSubChannelAdBreakBegin(event: message.payload.event)
-    }
-} 
+}
+
+// Empty struct used for parsing messages without needing the full event data
+private struct EmptyEvent: Decodable {} 

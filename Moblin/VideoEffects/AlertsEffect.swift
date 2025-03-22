@@ -68,10 +68,10 @@ private struct Word: Identifiable {
 }
 
 enum AlertsEffectAlert {
-    case twitchFollow(TwitchEventSubNotificationChannelFollowEvent)
-    case twitchSubscribe(TwitchEventSubNotificationChannelSubscribeEvent)
-    case twitchSubscrptionGift(TwitchEventSubNotificationChannelSubscriptionGiftEvent)
-    case twitchResubscribe(TwitchEventSubNotificationChannelSubscriptionMessageEvent)
+    case twitchFollow(TwitchEventSubChannelFollowEvent)
+    case twitchSubscribe(TwitchEventSubChannelSubscribeEvent)
+    case twitchSubscrptionGift(TwitchEventSubChannelSubscriptionGiftEvent)
+    case twitchResubscribe(TwitchEventSubChannelSubscriptionMessageEvent)
     case twitchRaid(TwitchEventSubChannelRaidEvent)
     case twitchCheer(TwitchEventSubChannelCheerEvent)
     case chatBotCommand(String, String)
@@ -305,7 +305,7 @@ final class AlertsEffect: VideoEffect {
     }
 
     @MainActor
-    private func playTwitchFollow(event: TwitchEventSubNotificationChannelFollowEvent) {
+    private func playTwitchFollow(event: TwitchEventSubChannelFollowEvent) {
         guard settings.twitch!.follows.enabled else {
             return
         }
@@ -318,7 +318,7 @@ final class AlertsEffect: VideoEffect {
     }
 
     @MainActor
-    private func playTwitchSubscribe(event: TwitchEventSubNotificationChannelSubscribeEvent) {
+    private func playTwitchSubscribe(event: TwitchEventSubChannelSubscribeEvent) {
         guard settings.twitch!.subscriptions.enabled else {
             return
         }
@@ -331,7 +331,7 @@ final class AlertsEffect: VideoEffect {
     }
 
     @MainActor
-    private func playTwitchSubscriptionGift(event: TwitchEventSubNotificationChannelSubscriptionGiftEvent) {
+    private func playTwitchSubscriptionGift(event: TwitchEventSubChannelSubscriptionGiftEvent) {
         guard settings.twitch!.subscriptions.enabled else {
             return
         }
@@ -346,7 +346,7 @@ final class AlertsEffect: VideoEffect {
     }
 
     @MainActor
-    private func playTwitchResubscribe(event: TwitchEventSubNotificationChannelSubscriptionMessageEvent) {
+    private func playTwitchResubscribe(event: TwitchEventSubChannelSubscriptionMessageEvent) {
         guard settings.twitch!.subscriptions.enabled else {
             return
         }

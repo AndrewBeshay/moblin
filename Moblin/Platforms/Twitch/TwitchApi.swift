@@ -161,6 +161,7 @@ class TwitchApi {
     private let accessToken: String
     private let urlSession: URLSession
     weak var delegate: (any TwitchApiDelegate)?
+    private(set) var lastError: Error?
 
     init(_ accessToken: String, _ urlSession: URLSession) {
         clientId = twitchMoblinAppClientId
@@ -377,6 +378,7 @@ class TwitchApi {
                     if response?.http?.isUnauthorized == true {
                         self.delegate?.twitchApiUnauthorized()
                     }
+                    self.lastError = error
                     onComplete(nil)
                     return
                 }
@@ -398,6 +400,7 @@ class TwitchApi {
                     if response?.http?.isUnauthorized == true {
                         self.delegate?.twitchApiUnauthorized()
                     }
+                    self.lastError = error
                     if let data, let data = String(bytes: data, encoding: .utf8) {
                         logger.info("twitch-api: Error response body: \(data)")
                     }
@@ -422,6 +425,7 @@ class TwitchApi {
                     if response?.http?.isUnauthorized == true {
                         self.delegate?.twitchApiUnauthorized()
                     }
+                    self.lastError = error
                     onComplete(nil)
                     return
                 }

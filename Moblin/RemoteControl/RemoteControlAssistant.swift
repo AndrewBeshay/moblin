@@ -424,7 +424,7 @@ class RemoteControlAssistant: NSObject {
         twitchAccessToken = accessToken
         twitchEventSub?.stop()
         twitchEventSub = TwitchEventSub(
-            remoteControl: false,
+//            remoteControl: false,
             userId: channelId,
             accessToken: accessToken,
             httpProxy: httpProxy,
@@ -539,20 +539,20 @@ extension RemoteControlAssistant: TwitchEventSubDelegate {
 
     func twitchEventSubMakeErrorToast(title _: String) {}
 
-    func twitchEventSubChannelFollow(event _: TwitchEventSubNotificationChannelFollowEvent) {}
+    func twitchEventSubChannelFollow(event _: TwitchEventSubChannelFollowEvent) {}
 
-    func twitchEventSubChannelSubscribe(event _: TwitchEventSubNotificationChannelSubscribeEvent) {}
+    func twitchEventSubChannelSubscribe(event _: TwitchEventSubChannelSubscribeEvent) {}
 
     func twitchEventSubChannelSubscriptionGift(
-        event _: TwitchEventSubNotificationChannelSubscriptionGiftEvent
+        event _: TwitchEventSubChannelSubscriptionGiftEvent
     ) {}
 
     func twitchEventSubChannelSubscriptionMessage(
-        event _: TwitchEventSubNotificationChannelSubscriptionMessageEvent
+        event _: TwitchEventSubChannelSubscriptionMessageEvent
     ) {}
 
     func twitchEventSubChannelPointsCustomRewardRedemptionAdd(
-        event _: TwitchEventSubNotificationChannelPointsCustomRewardRedemptionAddEvent
+        event _: TwitchEventSubChannelPointsRedemptionEvent
     ) {}
 
     func twitchEventSubChannelRaid(event _: TwitchEventSubChannelRaidEvent) {}

@@ -1,96 +1,71 @@
 import Foundation
-
-// Import the models file to ensure models are available
 import SwiftUI
-
-private struct BasicMetadata: Decodable {
-    var message_type: String
-    var subscription_type: String?
-}
-
-private struct BasicMessage: Decodable {
-    var metadata: BasicMetadata
-}
-
-private struct WelcomePayloadSession: Decodable {
-    var id: String
-}
-
-private struct WelcomePayload: Decodable {
-    var session: WelcomePayloadSession
-}
-
-private struct WelcomeMessage: Decodable {
-    var payload: WelcomePayload
-}
-
-// MARK: - Private Payload Types
-
-private struct NotificationChannelSubscribePayload: Decodable {
-    var event: TwitchEventSubNotificationChannelSubscribeEvent
-}
-
-private struct NotificationChannelSubscribeMessage: Decodable {
-    var payload: NotificationChannelSubscribePayload
-}
-
-private struct NotificationChannelAdBreakBeginPayload: Decodable {
-    var event: TwitchEventSubChannelAdBreakBeginEvent
-}
-
-private struct NotificationChannelAdBreakBeginMessage: Decodable {
-    var payload: NotificationChannelAdBreakBeginPayload
-}
-
-// MARK: - Constants
-
-private let subTypeChannelFollow = "channel.follow"
-private let subTypeChannelSubscribe = "channel.subscribe"
-private let subTypeChannelSubscriptionGift = "channel.subscription.gift"
-private let subTypeChannelSubscriptionMessage = "channel.subscription.message"
-private let subTypeChannelChannelPointsCustomRewardRedemptionAdd =
-    "channel.channel_points_custom_reward_redemption.add"
-private let subTypeChannelRaid = "channel.raid"
-private let subTypeChannelCheer = "channel.cheer"
-private let subTypeChannelHypeTrainBegin = "channel.hype_train.begin"
-private let subTypeChannelHypeTrainProgress = "channel.hype_train.progress"
-private let subTypeChannelHypeTrainEnd = "channel.hype_train.end"
-private let subTypeChannelAdBreakBegin = "channel.ad_break.begin"
 
 // MARK: - TwitchEventSub
 
 final class TwitchEventSub: NSObject {
+    // MARK: - Enum to track connection states
+    private enum ConnectionState {
+        case disconnected
+        case connecting
+        case connected
+        case subscribing
+        case ready
+    }
+    
     // MARK: - Properties
     private var webSocket: WebSocketClient
-    private var remoteControl: Bool
     private let userId: String
     private let httpProxy: HttpProxy?
     private var sessionId: String = ""
-    private var twitchApi: TwitchApi
+    private let twitchApi: TwitchApi
     private let delegate: TwitchEventSubDelegate
-    private var connected = false
-    private var started = false
     private var subscriptionService: TwitchEventSubSubscriptionServiceProtocol
     private var eventHandler: TwitchEventSubHandlerProtocol
     
+    // Settings
+    private let maxReconnectAttempts = 5
+    private let reconnectBackoffSeconds: [TimeInterval] = [1, 2, 5, 10, 15]
+    
+    // State tracking
+    private var connectionState: ConnectionState = .disconnected {
+        didSet {
+            if oldValue != connectionState {
+                logger.debug("twitch: event-sub: State changed from \(oldValue) to \(connectionState)")
+            }
+        }
+    }
+    private var isEnabled = false
+    private var reconnectAttempts = 0
+    private var reconnectTimer: DispatchSourceTimer?
+    private var lastConnectTime: Date?
+    private var stateOperationQueue = DispatchQueue(label: "com.moblin.twitch.eventsub", qos: .utility)
+    
+    // Used for debouncing
+    private var operationLock = DispatchSemaphore(value: 1)
+    private var pendingStartTask: DispatchWorkItem?
+    private var pendingStopTask: DispatchWorkItem?
+    
     // MARK: - Initialization
     init(
-        remoteControl: Bool,
         userId: String,
         accessToken: String,
         httpProxy: HttpProxy?,
         urlSession: URLSession,
         delegate: TwitchEventSubDelegate
     ) {
-        self.remoteControl = remoteControl
         self.userId = userId
         self.httpProxy = httpProxy
         self.delegate = delegate
         
+        // Initialize components
         twitchApi = TwitchApi(accessToken, urlSession)
-        webSocket = WebSocketClient(url: TwitchEventSubConfig.websocketURL, httpProxy: httpProxy)
-        
-        // Initialize services after all properties are set
+        webSocket = WebSocketClient(
+            url: TwitchEventSubConstants.websocketURL, 
+            httpProxy: httpProxy,
+            loopback: false,
+            cellular: true
+        )
         subscriptionService = TwitchEventSubSubscriptionService(twitchApi: twitchApi, delegate: delegate)
         eventHandler = TwitchEventSubHandler(delegate: delegate)
         
@@ -98,76 +73,263 @@ final class TwitchEventSub: NSObject {
         twitchApi.delegate = self
     }
     
-    // MARK: - Public Methods
-    func start() {
-        logger.debug("twitch: event-sub: Start")
-        stopInternal()
-        connect()
-        started = true
-    }
-    
-    func stop() {
-        logger.debug("twitch: event-sub: Stop")
+    deinit {
+        pendingStartTask?.cancel()
+        pendingStopTask?.cancel()
+        cancelReconnectTimer()
         webSocket.delegate = nil
-        started = false
-        stopInternal()
-    }
-    
-    func isConnected() -> Bool {
-        return connected
-    }
-    
-    // MARK: - Private Methods
-    private func connect() {
-        connected = false
-        webSocket = WebSocketClient(url: TwitchEventSubConfig.websocketURL, httpProxy: httpProxy)
-        webSocket.delegate = self
-        if !remoteControl {
-            webSocket.start()
-        }
-    }
-    
-    private func stopInternal() {
-        connected = false
         webSocket.stop()
     }
     
-    func handleMessage(messageText: String) {
-        // Use the event handler to process the message
+    // MARK: - Public Methods
+    
+    /// Start the EventSub connection. This method is debounced.
+    func start() {
+        stateOperationQueue.async { [weak self] in
+            guard let self = self else { return }
+            
+            // Cancel any pending tasks
+            self.pendingStopTask?.cancel()
+            self.pendingStopTask = nil
+            
+            // If already starting, don't start again
+            if self.pendingStartTask != nil {
+                logger.debug("twitch: event-sub: Start already in progress, ignoring")
+                return
+            }
+            
+            // If already enabled, don't start again
+            if self.isEnabled {
+                logger.debug("twitch: event-sub: Already started, ignoring start request")
+                return
+            }
+            
+            // Create a debounced task
+            let task = DispatchWorkItem { [weak self] in
+                guard let self = self else { return }
+                logger.debug("twitch: event-sub: Starting EventSub connection")
+                
+                self.operationLock.wait()
+                self.isEnabled = true
+                self.reconnectAttempts = 0
+                self.connectionState = .disconnected
+                self.pendingStartTask = nil
+                self.operationLock.signal()
+                
+                self.connectWebSocket()
+            }
+            
+            self.pendingStartTask = task
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: task)
+        }
+    }
+    
+    /// Stop the EventSub connection. This method is debounced.
+    func stop() {
+        stateOperationQueue.async { [weak self] in
+            guard let self = self else { return }
+            
+            // Cancel any pending tasks
+            self.pendingStartTask?.cancel()
+            self.pendingStartTask = nil
+            
+            // If already stopping, don't stop again
+            if self.pendingStopTask != nil {
+                logger.debug("twitch: event-sub: Stop already in progress, ignoring")
+                return
+            }
+            
+            // If already disabled, don't stop again
+            if !self.isEnabled {
+                logger.debug("twitch: event-sub: Already stopped, ignoring stop request")
+                return
+            }
+            
+            // Create a debounced task
+            let task = DispatchWorkItem { [weak self] in
+                guard let self = self else { return }
+                logger.debug("twitch: event-sub: Stopping EventSub connection")
+                
+                self.operationLock.wait()
+                self.isEnabled = false
+                self.connectionState = .disconnected
+                self.cancelReconnectTimer()
+                self.webSocket.delegate = nil
+                self.pendingStopTask = nil
+                self.operationLock.signal()
+                
+                self.webSocket.stop()
+            }
+            
+            self.pendingStopTask = task
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: task)
+        }
+    }
+    
+    /// Check if the connection is fully established and subscribed to events
+    func isConnected() -> Bool {
+        return connectionState == .ready
+    }
+    
+    // MARK: - Private Methods
+    
+    /// Connect to the WebSocket
+    private func connectWebSocket() {
+        guard isEnabled, connectionState == .disconnected else {
+            return
+        }
+        
+        connectionState = .connecting
+        lastConnectTime = Date()
+        webSocket.delegate = self
+        webSocket.start()
+    }
+    
+    /// Handle reconnection with exponential backoff
+    private func scheduleReconnect() {
+        guard isEnabled, connectionState != .connecting else {
+            return
+        }
+        
+        // Calculate backoff time
+        let backoffIndex = min(reconnectAttempts, reconnectBackoffSeconds.count - 1)
+        let delay = reconnectBackoffSeconds[backoffIndex]
+        
+        logger.debug("twitch: event-sub: Scheduling reconnect attempt \(reconnectAttempts + 1) in \(delay) seconds")
+        
+        // Cancel any existing timer
+        cancelReconnectTimer()
+        
+        // Schedule a new timer
+        let timer = DispatchSource.makeTimerSource(queue: stateOperationQueue)
+        timer.setEventHandler { [weak self] in
+            guard let self = self, self.isEnabled else { return }
+            
+            self.reconnectAttempts += 1
+            
+            // If we've exceeded max attempts, notify the user
+            if self.reconnectAttempts > self.maxReconnectAttempts {
+                logger.error("twitch: event-sub: Exceeded maximum reconnection attempts")
+                self.delegate.twitchEventSubMakeErrorToast(
+                    title: String(localized: "Unable to establish Twitch notification connection")
+                )
+                // Reset but don't stop trying
+                self.reconnectAttempts = 0
+            }
+            
+            // Try to connect again
+            self.connectionState = .disconnected
+            self.connectWebSocket()
+        }
+        
+        timer.schedule(deadline: .now() + delay)
+        timer.activate()
+        reconnectTimer = timer
+    }
+    
+    /// Cancel any pending reconnect timer
+    private func cancelReconnectTimer() {
+        reconnectTimer?.cancel()
+        reconnectTimer = nil
+    }
+    
+    /// Process incoming messages from the WebSocket
+    private func processMessage(_ messageText: String) {
+        // For debugging
+        if messageText.contains("session_welcome") {
+            logger.debug("twitch: event-sub: Received welcome message")
+        } else if messageText.contains("session_keepalive") {
+            // Just a keepalive, no need to process
+            return
+        }
+        
+        // Let the event handler process normal notifications
         if eventHandler.handleMessage(messageText: messageText) {
             return
         }
         
-        // If the event handler could not process the message, extract the session ID if it's a welcome message
+        // Check if it's a welcome message with session ID
         let messageData = messageText.utf8Data
         if let sessionId = eventHandler.handleSessionWelcome(messageData: messageData) {
             self.sessionId = sessionId
-            // Start subscription process
+            logger.debug("twitch: event-sub: Session established: \(sessionId)")
+            
+            // Change state and start subscribing to events
+            connectionState = .subscribing
             subscribeToEvents()
         }
     }
     
+    /// Subscribe to all Twitch event types
     private func subscribeToEvents() {
-        // Use the subscription service to handle all subscriptions
+        logger.debug("twitch: event-sub: Starting subscription process")
+        
+        // Make sure we have a valid session ID
+        guard !sessionId.isEmpty else {
+            logger.error("twitch: event-sub: Cannot subscribe without session ID")
+            connectionState = .disconnected
+            scheduleReconnect()
+            return
+        }
+        
+        // Subscribe to all events
         subscriptionService.subscribe(sessionId: sessionId, userId: userId) { [weak self] success in
-            guard let self = self, success else {
-                return
+            guard let self = self else { return }
+            
+            if success {
+                logger.debug("twitch: event-sub: Successfully subscribed to all events")
+                self.connectionState = .ready
+                self.reconnectAttempts = 0  // Reset on successful connection
+            } else {
+                logger.error("twitch: event-sub: Failed to subscribe to events")
+                self.sessionId = ""
+                self.connectionState = .disconnected
+                self.scheduleReconnect()
             }
-            self.connected = true
         }
     }
 }
 
 // MARK: - WebSocketClientDelegate
 extension TwitchEventSub: WebSocketClientDelegate {
-    func webSocketClientConnected(_: WebSocketClient) {}
+    func webSocketClientConnected(_: WebSocketClient) {
+        stateOperationQueue.async { [weak self] in
+            guard let self = self, self.isEnabled else { return }
+            
+            logger.debug("twitch: event-sub: WebSocket connected")
+            self.lastConnectTime = Date()
+            
+            // Connected but waiting for welcome message with session ID
+            // State will change to .subscribing once we get the session ID
+            self.connectionState = .connected
+        }
+    }
     
     func webSocketClientDisconnected(_: WebSocketClient) {
-        connected = false
+        stateOperationQueue.async { [weak self] in
+            guard let self = self, self.isEnabled else { return }
+            
+            logger.debug("twitch: event-sub: WebSocket disconnected")
+            
+            // Check if disconnection happened shortly after a connection
+            if let lastConnect = self.lastConnectTime, 
+               Date().timeIntervalSince(lastConnect) < 5 {
+                // This might be a rapid disconnect-reconnect cycle
+                logger.debug("twitch: event-sub: Rapid disconnect detected")
+            }
+            
+            // Reset state and schedule reconnect
+            self.connectionState = .disconnected
+            self.scheduleReconnect()
+        }
     }
     
     func webSocketClientReceiveMessage(_: WebSocketClient, string: String) {
-        handleMessage(messageText: string)
+        // Process messages on a background queue to avoid blocking the socket thread
+        stateOperationQueue.async { [weak self] in
+            guard let self = self, self.isEnabled else { return }
+            self.processMessage(string)
+        }
     }
 }
 

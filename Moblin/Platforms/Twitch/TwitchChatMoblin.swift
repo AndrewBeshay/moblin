@@ -182,7 +182,7 @@ private struct IRCMessage {
     let parameters: [String]
     
     init?(raw: String) {
-        logger.info("twitch: chat: Raw IRC message: '\(raw)'")
+        
         var message = raw
         var tags: [String: String] = [:]
         var prefix: String?
@@ -193,7 +193,7 @@ private struct IRCMessage {
             let tagString = String(message[..<tagEnd])
             message = String(message[message.index(after: tagEnd)...])
             
-            logger.info("twitch: chat: Raw tags string: '\(tagString)'")
+            
             for tag in tagString.dropFirst().split(separator: ";") {
                 let parts = tag.split(separator: "=", maxSplits: 1)
                 if parts.count == 2 {
@@ -202,7 +202,7 @@ private struct IRCMessage {
                     tags[String(parts[0])] = ""
                 }
             }
-            logger.info("twitch: chat: Parsed tags: \(tags)")
+            
         }
         
         // Parse prefix if present
@@ -210,7 +210,7 @@ private struct IRCMessage {
             let prefixEnd = message.firstIndex(of: " ")!
             prefix = String(message[..<prefixEnd].dropFirst()) // Convert dropFirst() result to String
             message = String(message[message.index(after: prefixEnd)...])
-            logger.info("twitch: chat: Prefix: '\(prefix ?? "")'")
+            
         }
         
         // Parse command and parameters
@@ -229,11 +229,7 @@ private struct IRCMessage {
             }
         }
         
-        logger.info("""
-            twitch: chat: Parsed message:
-            - Command: '\(command)'
-            - Parameters: \(parameters)
-            """)
+        
         
         self.tags = tags
         self.prefix = prefix
@@ -275,7 +271,7 @@ private struct ChatMessage {
         // Parse emotes
         var emotes: [ChatMessageEmote] = []
         if let emotesString = ircMessage.tags["emotes"] {
-            logger.info("twitch: chat: Raw emotes string: '\(emotesString)'")
+            logger.debug("twitch: chat: Raw emotes string: '\(emotesString)'")
             for emote in emotesString.split(separator: "/") {
                 let parts = emote.split(separator: ":")
                 guard parts.count >= 2,
@@ -325,7 +321,7 @@ private struct ChatMessage {
         }
         
         self.text = text
-        logger.info("twitch: chat: Message text: '\(text)'")
+        logger.debug("twitch: chat: Message text: '\(text)'")
     }
     
     func isAction() -> Bool {
@@ -541,8 +537,8 @@ final class TwitchChatMoblin {
         let unicodeText = text.unicodeScalars
         var startIndex = unicodeText.startIndex
         
-        logger.info("twitch: chat: Processing text: '\(text)'")
-        logger.info("twitch: chat: Number of emotes: \(emotes.count)")
+        logger.debug("twitch: chat: Processing text")
+        logger.debug("twitch: chat: Emote count: \(emotes.count)")
         
         // Sort emotes by start position to process them in order
         let sortedEmotes = emotes.sorted { $0.range.lowerBound < $1.range.lowerBound }
@@ -557,13 +553,7 @@ final class TwitchChatMoblin {
             let completeEmoteRange = emoteStart..<nextSpace
             
             let emoteText = String(unicodeText[completeEmoteRange])
-            logger.info("""
-                twitch: chat: Processing emote \(index + 1)/\(emotes.count):
-                - Original Range: \(emote.range)
-                - Complete Range: \(completeEmoteRange)
-                - URL: \(emote.url)
-                - Text at range: '\(emoteText)'
-                """)
+            
             
             // Skip invalid ranges
             if emote.range.lowerBound >= unicodeText.count {
@@ -584,24 +574,24 @@ final class TwitchChatMoblin {
                 )
                 if startIndex < endIndex {
                     let textBefore = String(unicodeText[startIndex..<endIndex])
-                    logger.debug("twitch: chat: Adding text before emote: '\(textBefore)'")
+                    
                     segments += makeChatPostTextSegments(text: textBefore, id: &id)
                 }
             }
             
             // Add the emote
-            logger.debug("twitch: chat: Adding emote segment")
+            
             segments.append(ChatPostSegment(id: id, url: emote.url))
             id += 1
             
             // Add a space after the emote
-            logger.debug("twitch: chat: Adding space after emote")
+            
             segments.append(ChatPostSegment(id: id, text: " "))
             id += 1
             
             // Update start index to after the complete emote
             startIndex = nextSpace
-            logger.debug("twitch: chat: Updated start index to: \(startIndex)")
+            
         }
         
         // Add remaining text after the last emote
@@ -612,15 +602,7 @@ final class TwitchChatMoblin {
         }
         
         // Log final segments
-        logger.debug("twitch: chat: Final segments:")
-        for (index, segment) in segments.enumerated() {
-            logger.debug("""
-                twitch: chat: Segment \(index + 1):
-                - ID: \(segment.id)
-                - Text: '\(segment.text ?? "")'
-                - URL: \(segment.url?.absoluteString ?? "nil")
-                """)
-        }
+        
         
         return segments
     }

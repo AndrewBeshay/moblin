@@ -258,7 +258,7 @@ private struct TwitchFollowsView: View {
             AlertTextToSpeechView(alert: alert, ttsDelay: alert.textToSpeechDelay!)
             Section {
                 Button(action: {
-                    let event = TwitchEventSubNotificationChannelFollowEvent(
+                    let event = TwitchEventSubChannelFollowEvent(
                         user_name: testNames.randomElement()!
                     )
                     model.testAlert(alert: .twitchFollow(event))
@@ -305,7 +305,7 @@ private struct TwitchSubscriptionsView: View {
             AlertTextToSpeechView(alert: alert, ttsDelay: alert.textToSpeechDelay!)
             Section {
                 Button(action: {
-                    let event = TwitchEventSubNotificationChannelSubscribeEvent(
+                    let event = TwitchEventSubChannelSubscribeEvent(
                         user_name: testNames.randomElement()!,
                         tier: "2000",
                         is_gift: false

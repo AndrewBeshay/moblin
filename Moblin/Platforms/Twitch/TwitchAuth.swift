@@ -19,7 +19,11 @@ private let scopes = [
     "channel:manage:broadcast",
     "channel:edit:commercial",
     "bits:read",
+    "user:bot",
+    "channel:bot"
 ]
+
+
 private let redirectHost = "localhost"
 private let redirectUri = "https://\(redirectHost)"
 

@@ -4797,7 +4797,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         twitchEventSub = nil
         if isTwitchEventSubConfigured() {
             twitchEventSub = TwitchEventSub(
-                remoteControl: useRemoteControlForChatAndEvents,
+//                remoteControl: useRemoteControlForChatAndEvents,
                 userId: stream.twitchChannelId,
                 accessToken: stream.twitchAccessToken!,
                 httpProxy: httpProxy(),
@@ -7784,7 +7784,7 @@ extension Model: RemoteControlStreamerDelegate {
     }
 
     func remoteControlStreamerTwitchEventSubNotification(message: String) {
-        twitchEventSub?.handleMessage(messageText: message)
+//        twitchEventSub?.handleMessage(messageText: message)
     }
 
     func remoteControlStreamerChatMessages(history: Bool, messages: [RemoteControlChatMessage]) {
@@ -10372,7 +10372,7 @@ extension Model: TwitchEventSubDelegate {
         )
     }
 
-    func twitchEventSubChannelFollow(event: TwitchEventSubNotificationChannelFollowEvent) {
+    func twitchEventSubChannelFollow(event: TwitchEventSubChannelFollowEvent) {
         DispatchQueue.main.async {
             let text = String(localized: "just followed!")
             self.makeToast(title: "\(event.user_name) \(text)")
@@ -10387,7 +10387,7 @@ extension Model: TwitchEventSubDelegate {
         }
     }
 
-    func twitchEventSubChannelSubscribe(event: TwitchEventSubNotificationChannelSubscribeEvent) {
+    func twitchEventSubChannelSubscribe(event: TwitchEventSubChannelSubscribeEvent) {
         guard !event.is_gift else {
             return
         }
@@ -10405,7 +10405,7 @@ extension Model: TwitchEventSubDelegate {
         }
     }
 
-    func twitchEventSubChannelSubscriptionGift(event: TwitchEventSubNotificationChannelSubscriptionGiftEvent) {
+    func twitchEventSubChannelSubscriptionGift(event: TwitchEventSubChannelSubscriptionGiftEvent) {
         DispatchQueue.main.async {
             let user = event.user_name ?? String(localized: "Anonymous")
             let text =
@@ -10423,7 +10423,7 @@ extension Model: TwitchEventSubDelegate {
     }
 
     func twitchEventSubChannelSubscriptionMessage(
-        event: TwitchEventSubNotificationChannelSubscriptionMessageEvent
+        event: TwitchEventSubChannelSubscriptionMessageEvent
     ) {
         DispatchQueue.main.async {
             let text = String(localized: """
@@ -10443,7 +10443,7 @@ extension Model: TwitchEventSubDelegate {
     }
 
     func twitchEventSubChannelPointsCustomRewardRedemptionAdd(
-        event: TwitchEventSubNotificationChannelPointsCustomRewardRedemptionAddEvent
+        event: TwitchEventSubChannelPointsRedemptionEvent
     ) {
         let text = String(localized: "redeemed \(event.reward.title)!")
         makeToast(title: "\(event.user_name) \(text)")

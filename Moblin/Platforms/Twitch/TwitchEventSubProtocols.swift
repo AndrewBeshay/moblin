@@ -3,14 +3,14 @@ import Foundation
 // MARK: - TwitchEventSub Delegate Protocol
 protocol TwitchEventSubDelegate: AnyObject {
     func twitchEventSubMakeErrorToast(title: String)
-    func twitchEventSubChannelFollow(event: TwitchEventSubNotificationChannelFollowEvent)
-    func twitchEventSubChannelSubscribe(event: TwitchEventSubNotificationChannelSubscribeEvent)
-    func twitchEventSubChannelSubscriptionGift(event: TwitchEventSubNotificationChannelSubscriptionGiftEvent)
+    func twitchEventSubChannelFollow(event: TwitchEventSubChannelFollowEvent)
+    func twitchEventSubChannelSubscribe(event: TwitchEventSubChannelSubscribeEvent)
+    func twitchEventSubChannelSubscriptionGift(event: TwitchEventSubChannelSubscriptionGiftEvent)
     func twitchEventSubChannelSubscriptionMessage(
-        event: TwitchEventSubNotificationChannelSubscriptionMessageEvent
+        event: TwitchEventSubChannelSubscriptionMessageEvent
     )
     func twitchEventSubChannelPointsCustomRewardRedemptionAdd(
-        event: TwitchEventSubNotificationChannelPointsCustomRewardRedemptionAddEvent
+        event: TwitchEventSubChannelPointsRedemptionEvent
     )
     func twitchEventSubChannelRaid(event: TwitchEventSubChannelRaidEvent)
     func twitchEventSubChannelCheer(event: TwitchEventSubChannelCheerEvent)

@@ -6,39 +6,47 @@ import Foundation
 
 // MARK: - Base Message Types
 
-struct TwitchEventSubBasicMetadata: Decodable {
-    var message_type: String
-    var subscription_type: String?
+/// Base metadata for all Twitch EventSub messages
+public struct TwitchEventSubMetadata: Decodable {
+    public var message_type: String
+    public var subscription_type: String?
 }
 
-struct TwitchEventSubBasicMessage: Decodable {
-    var metadata: TwitchEventSubBasicMetadata
+/// Generic payload container for all Twitch EventSub events
+public struct TwitchEventSubPayload<T: Decodable>: Decodable {
+    public var event: T
 }
 
-// MARK: - Welcome Message Types
-
-struct TwitchEventSubWelcomePayloadSession: Decodable {
-    var id: String
+/// Generic message structure for all Twitch EventSub notifications
+public struct TwitchEventSubMessage<T: Decodable>: Decodable {
+    public var metadata: TwitchEventSubMetadata
+    public var payload: TwitchEventSubPayload<T>
 }
 
-struct TwitchEventSubWelcomePayload: Decodable {
-    var session: TwitchEventSubWelcomePayloadSession
+/// Welcome message for establishing a session
+public struct TwitchEventSubWelcomeSession: Decodable {
+    public var id: String
 }
 
-struct TwitchEventSubWelcomeMessage: Decodable {
-    var payload: TwitchEventSubWelcomePayload
+public struct TwitchEventSubWelcomePayload: Decodable {
+    public var session: TwitchEventSubWelcomeSession
 }
 
-// MARK: - Message Types
-
-struct TwitchEventSubMessage: Decodable {
-    var text: String
+public struct TwitchEventSubWelcomeMessage: Decodable {
+    public var metadata: TwitchEventSubMetadata
+    public var payload: TwitchEventSubWelcomePayload
 }
 
-// MARK: - Channel Subscribe Event
+// MARK: - Common Types
 
-// This is a public model used across the app
-public struct TwitchEventSubNotificationChannelSubscribeEvent: Decodable {
+public struct TwitchEventSubTextMessage: Decodable {
+    public var text: String
+}
+
+// MARK: - Event Types
+
+// Channel Subscribe Event
+public struct TwitchEventSubChannelSubscribeEvent: Decodable {
     public var user_name: String
     public var tier: String
     public var is_gift: Bool
@@ -46,198 +54,130 @@ public struct TwitchEventSubNotificationChannelSubscribeEvent: Decodable {
     public func tierAsNumber() -> Int {
         return twitchTierAsNumber(tier: tier)
     }
-    
-    // Default initializer for public access
-    public init(user_name: String, tier: String, is_gift: Bool) {
-        self.user_name = user_name
-        self.tier = tier
-        self.is_gift = is_gift
-    }
 }
 
-struct TwitchEventSubNotificationChannelSubscribePayload: Decodable {
-    var event: TwitchEventSubNotificationChannelSubscribeEvent
-}
+// Channel Subscription Gift Event
+public struct TwitchEventSubChannelSubscriptionGiftEvent: Decodable {
+    public var user_name: String?
+    public var total: Int
+    public var tier: String
 
-struct TwitchEventSubNotificationChannelSubscribeMessage: Decodable {
-    var payload: TwitchEventSubNotificationChannelSubscribePayload
-}
-
-// MARK: - Channel Subscription Gift Event
-
-struct TwitchEventSubNotificationChannelSubscriptionGiftEvent: Decodable {
-    var user_name: String?
-    var total: Int
-    var tier: String
-
-    func tierAsNumber() -> Int {
+    public func tierAsNumber() -> Int {
         return twitchTierAsNumber(tier: tier)
     }
 }
 
-struct TwitchEventSubNotificationChannelSubscriptionGiftPayload: Decodable {
-    var event: TwitchEventSubNotificationChannelSubscriptionGiftEvent
-}
+// Channel Subscription Message Event
+public struct TwitchEventSubChannelSubscriptionMessageEvent: Decodable {
+    public var user_name: String
+    public var cumulative_months: Int
+    public var tier: String
+    public var message: TwitchEventSubTextMessage
 
-struct TwitchEventSubNotificationChannelSubscriptionGiftMessage: Decodable {
-    var payload: TwitchEventSubNotificationChannelSubscriptionGiftPayload
-}
-
-// MARK: - Channel Subscription Message Event
-
-struct TwitchEventSubNotificationChannelSubscriptionMessageEvent: Decodable {
-    var user_name: String
-    var cumulative_months: Int
-    var tier: String
-    var message: TwitchEventSubMessage
-
-    func tierAsNumber() -> Int {
+    public func tierAsNumber() -> Int {
         return twitchTierAsNumber(tier: tier)
     }
 }
 
-struct TwitchEventSubNotificationChannelSubscriptionMessagePayload: Decodable {
-    var event: TwitchEventSubNotificationChannelSubscriptionMessageEvent
+// Channel Follow Event
+public struct TwitchEventSubChannelFollowEvent: Decodable {
+    public var user_name: String
 }
 
-struct TwitchEventSubNotificationChannelSubscriptionMessageMessage: Decodable {
-    var payload: TwitchEventSubNotificationChannelSubscriptionMessagePayload
+// Channel Points Custom Reward Redemption Add Event
+public struct TwitchEventSubChannelPointsCustomRewardEvent: Decodable {
+    public var id: String
+    public var title: String
+    public var cost: Int
+    public var prompt: String
 }
 
-// MARK: - Channel Follow Event
-
-struct TwitchEventSubNotificationChannelFollowEvent: Decodable {
-    var user_name: String
+public struct TwitchEventSubChannelPointsRedemptionEvent: Decodable {
+    public var id: String
+    public var user_id: String
+    public var user_login: String
+    public var user_name: String
+    public var broadcaster_user_id: String
+    public var broadcaster_user_login: String
+    public var broadcaster_user_name: String
+    public var status: String
+    public var reward: TwitchEventSubChannelPointsCustomRewardEvent
+    public var redeemed_at: String
 }
 
-struct TwitchEventSubNotificationChannelFollowPayload: Decodable {
-    var event: TwitchEventSubNotificationChannelFollowEvent
+// Channel Raid Event
+public struct TwitchEventSubChannelRaidEvent: Decodable {
+    public var from_broadcaster_user_name: String
+    public var viewers: Int
 }
 
-struct TwitchEventSubNotificationChannelFollowMessage: Decodable {
-    var payload: TwitchEventSubNotificationChannelFollowPayload
+// Channel Cheer Event
+public struct TwitchEventSubChannelCheerEvent: Decodable {
+    public var user_name: String?
+    public var message: String
+    public var bits: Int
 }
 
-// MARK: - Channel Points Custom Reward Redemption Add Event
-
-struct TwitchEventSubNotificationChannelPointsCustomRewardRedemptionAddEventReward: Decodable {
-    var id: String
-    var title: String
-    var cost: Int
-    var prompt: String
+// Hype Train Events
+public struct TwitchEventSubChannelHypeTrainBeginEvent: Decodable {
+    public var progress: Int
+    public var goal: Int
+    public var level: Int
+    public var started_at: String
+    public var expires_at: String
 }
 
-struct TwitchEventSubNotificationChannelPointsCustomRewardRedemptionAddEvent: Decodable {
-    var id: String
-    var user_id: String
-    var user_login: String
-    var user_name: String
-    var broadcaster_user_id: String
-    var broadcaster_user_login: String
-    var broadcaster_user_name: String
-    var status: String
-    var reward: TwitchEventSubNotificationChannelPointsCustomRewardRedemptionAddEventReward
-    var redeemed_at: String
+public struct TwitchEventSubChannelHypeTrainProgressEvent: Decodable {
+    public var progress: Int
+    public var goal: Int
+    public var level: Int
+    public var started_at: String
+    public var expires_at: String
 }
 
-struct TwitchEventSubNotificationChannelPointsCustomRewardRedemptionAddPayload: Decodable {
-    var event: TwitchEventSubNotificationChannelPointsCustomRewardRedemptionAddEvent
+public struct TwitchEventSubChannelHypeTrainEndEvent: Decodable {
+    public var level: Int
+    public var started_at: String
+    public var ended_at: String
 }
 
-struct TwitchEventSubNotificationChannelPointsCustomRewardRedemptionAddMessage: Decodable {
-    var payload: TwitchEventSubNotificationChannelPointsCustomRewardRedemptionAddPayload
+// Ad Break Begin Event
+public struct TwitchEventSubChannelAdBreakBeginEvent: Decodable {
+    public var duration_seconds: Int
+    public var is_automatic: Bool
 }
 
-// MARK: - Channel Raid Event
+// MARK: - Type Aliases for Complete Messages
 
-struct TwitchEventSubChannelRaidEvent: Decodable {
-    var from_broadcaster_user_name: String
-    var viewers: Int
-}
+public typealias TwitchEventSubChannelSubscribeMessage = 
+    TwitchEventSubMessage<TwitchEventSubChannelSubscribeEvent>
 
-struct TwitchEventSubNotificationChannelRaidPayload: Decodable {
-    var event: TwitchEventSubChannelRaidEvent
-}
+public typealias TwitchEventSubChannelSubscriptionGiftMessage = 
+    TwitchEventSubMessage<TwitchEventSubChannelSubscriptionGiftEvent>
 
-struct TwitchEventSubNotificationChannelRaidMessage: Decodable {
-    var payload: TwitchEventSubNotificationChannelRaidPayload
-}
+public typealias TwitchEventSubChannelSubscriptionMessageMessage = 
+    TwitchEventSubMessage<TwitchEventSubChannelSubscriptionMessageEvent>
 
-// MARK: - Channel Cheer Event
+public typealias TwitchEventSubChannelFollowMessage = 
+    TwitchEventSubMessage<TwitchEventSubChannelFollowEvent>
 
-struct TwitchEventSubChannelCheerEvent: Decodable {
-    var user_name: String?
-    var message: String
-    var bits: Int
-}
+public typealias TwitchEventSubChannelPointsRedemptionMessage = 
+    TwitchEventSubMessage<TwitchEventSubChannelPointsRedemptionEvent>
 
-struct TwitchEventSubNotificationChannelCheerPayload: Decodable {
-    var event: TwitchEventSubChannelCheerEvent
-}
+public typealias TwitchEventSubChannelRaidMessage = 
+    TwitchEventSubMessage<TwitchEventSubChannelRaidEvent>
 
-struct TwitchEventSubNotificationChannelCheerMessage: Decodable {
-    var payload: TwitchEventSubNotificationChannelCheerPayload
-}
+public typealias TwitchEventSubChannelCheerMessage = 
+    TwitchEventSubMessage<TwitchEventSubChannelCheerEvent>
 
-// MARK: - Hype Train Events
+public typealias TwitchEventSubChannelHypeTrainBeginMessage = 
+    TwitchEventSubMessage<TwitchEventSubChannelHypeTrainBeginEvent>
 
-struct TwitchEventSubChannelHypeTrainBeginEvent: Decodable {
-    var progress: Int
-    var goal: Int
-    var level: Int
-    var started_at: String
-    var expires_at: String
-}
+public typealias TwitchEventSubChannelHypeTrainProgressMessage = 
+    TwitchEventSubMessage<TwitchEventSubChannelHypeTrainProgressEvent>
 
-struct TwitchEventSubNotificationChannelHypeTrainBeginPayload: Decodable {
-    var event: TwitchEventSubChannelHypeTrainBeginEvent
-}
+public typealias TwitchEventSubChannelHypeTrainEndMessage = 
+    TwitchEventSubMessage<TwitchEventSubChannelHypeTrainEndEvent>
 
-struct TwitchEventSubNotificationChannelHypeTrainBeginMessage: Decodable {
-    var payload: TwitchEventSubNotificationChannelHypeTrainBeginPayload
-}
-
-struct TwitchEventSubChannelHypeTrainProgressEvent: Decodable {
-    var progress: Int
-    var goal: Int
-    var level: Int
-    var started_at: String
-    var expires_at: String
-}
-
-struct TwitchEventSubNotificationChannelHypeTrainProgressPayload: Decodable {
-    var event: TwitchEventSubChannelHypeTrainProgressEvent
-}
-
-struct TwitchEventSubNotificationChannelHypeTrainProgressMessage: Decodable {
-    var payload: TwitchEventSubNotificationChannelHypeTrainProgressPayload
-}
-
-struct TwitchEventSubChannelHypeTrainEndEvent: Decodable {
-    var level: Int
-    var started_at: String
-    var ended_at: String
-}
-
-struct TwitchEventSubNotificationChannelHypeTrainEndPayload: Decodable {
-    var event: TwitchEventSubChannelHypeTrainEndEvent
-}
-
-struct TwitchEventSubNotificationChannelHypeTrainEndMessage: Decodable {
-    var payload: TwitchEventSubNotificationChannelHypeTrainEndPayload
-}
-
-// MARK: - Ad Break Begin Event
-
-struct TwitchEventSubChannelAdBreakBeginEvent: Decodable {
-    var duration_seconds: Int
-    var is_automatic: Bool
-}
-
-struct TwitchEventSubNotificationChannelAdBreakBeginPayload: Decodable {
-    var event: TwitchEventSubChannelAdBreakBeginEvent
-}
-
-struct TwitchEventSubNotificationChannelAdBreakBeginMessage: Decodable {
-    var payload: TwitchEventSubNotificationChannelAdBreakBeginPayload
-} 
+public typealias TwitchEventSubChannelAdBreakBeginMessage = 
+    TwitchEventSubMessage<TwitchEventSubChannelAdBreakBeginEvent> 
