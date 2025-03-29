@@ -24,6 +24,16 @@ private let windowMultiply = 1000
 private let windowDecrement = 100
 private let windowIncrement = 30
 
+protocol RemoteConnectionDelegate: AnyObject {
+    func remoteConnectionOnSocketConnected(connection: RemoteConnection)
+    func remoteConnectionOnReg2(groupId: Data)
+    func remoteConnectionOnRegistered()
+    func remoteConnectionPacketHandler(packet: Data)
+    func remoteConnectionOnSrtAck(sn: UInt32)
+    func remoteConnectionOnSrtNak(sn: UInt32)
+    func remoteConnectionOnSrtlaAck(sn: UInt32)
+}
+
 class RemoteConnection {
     var type: NWInterface.InterfaceType?
     private var connection: NWConnection? {
@@ -36,13 +46,12 @@ class RemoteConnection {
     private var connectTimer = SimpleTimer(queue: srtlaClientQueue)
     private var keepaliveTimer = SimpleTimer(queue: srtlaClientQueue)
     private var latestReceivedTime = ContinuousClock.now
-    private var latestSentTime = ContinuousClock.now
     private var packetsInFlight: Set<UInt32> = []
     private var windowSize: Int = 0
     private var numberOfNullPacketsSent: UInt64 = 0
     private var numberOfNonNullPacketsSent: UInt64 = 0
-    private var hasGroupId: Bool = false
-    private var groupId: Data!
+    private var hasFullGroupId: Bool = false
+    private var groupId = Data()
     private var priority: Float
     private var state = State.idle {
         didSet {
@@ -54,8 +63,6 @@ class RemoteConnection {
     var rtt: Int = 0
     let interface: NWInterface?
     private var dataPacketsToSend: [Data] = []
-    private var latestDataSentTime = ContinuousClock.now
-
     private var totalDataSentByteCount: UInt64 = 0
 
     private var nullPacket: Data = {
@@ -85,13 +92,7 @@ class RemoteConnection {
     let relayId: UUID?
     private let relayName: String?
 
-    var onSocketConnected: (() -> Void)?
-    var onReg2: ((_ groupId: Data) -> Void)?
-    var onRegistered: (() -> Void)?
-    var packetHandler: ((_ packet: Data) -> Void)?
-    var onSrtAck: ((_ sn: UInt32) -> Void)?
-    var onSrtNak: ((_ sn: UInt32) -> Void)?
-    var onSrtlaAck: ((_ sn: UInt32) -> Void)?
+    weak var delegate: RemoteConnectionDelegate?
     private var networkInterfaces: SrtlaNetworkInterfaces
 
     init(
@@ -191,20 +192,18 @@ class RemoteConnection {
                 self.reconnect(reason: "Connection timeout")
             }
             latestReceivedTime = .now
-            latestSentTime = .now
             packetsInFlight.removeAll()
             totalDataSentByteCount = 0
             windowSize = windowDefault * windowMultiply
             if type == nil {
                 self.state = .registered
                 connectTimer.stop()
-            } else if self.state == .shouldSendRegisterRequest || hasGroupId {
+            } else if self.state == .shouldSendRegisterRequest || hasFullGroupId {
                 sendSrtlaReg2()
             } else {
                 self.state = .shouldSendRegisterRequest
             }
-            onSocketConnected?()
-            onSocketConnected = nil
+            delegate?.remoteConnectionOnSocketConnected(connection: self)
         case .failed:
             reconnect(reason: "Connection failed")
         default:
@@ -232,6 +231,7 @@ class RemoteConnection {
 
     private func sendPacket(packet: Data) {
         if isSrtDataPacket(packet: packet) {
+            packetsInFlight.insert(getSrtSequenceNumber(packet: packet))
             var numberOfMpegTsPackets = (packet.count - 16) / MpegTsPacket.size
             numberOfNonNullPacketsSent += UInt64(numberOfMpegTsPackets)
             if numberOfMpegTsPackets < mpegtsPacketsPerPacket {
@@ -248,45 +248,41 @@ class RemoteConnection {
                 totalDataSentByteCount += UInt64(packet.count)
             }
         } else {
-            sendPacketInternal(packet: packet)
+            sendControlPacketInternal(packet: packet)
         }
+    }
+
+    private func sendControlPacketInternal(packet: Data) {
+        connection?.send(content: packet, completion: .idempotent)
     }
 
     private func sendDataPacketInternal(packet: Data) {
         if srtlaBatchSend {
-            let now = ContinuousClock.now
             dataPacketsToSend.append(packet)
-            // For slightly better performance.
-            if latestDataSentTime.duration(to: now) > .milliseconds(10) {
-                latestSentTime = now
-                latestDataSentTime = now
-                connection?.batch {
-                    for packet in dataPacketsToSend {
-                        connection?.send(content: packet, completion: .idempotent)
-                    }
-                }
-                dataPacketsToSend.removeAll()
-            }
         } else {
-            sendPacketInternal(packet: packet)
+            connection?.send(content: packet, completion: .idempotent)
         }
-    }
-
-    private func sendPacketInternal(packet: Data) {
-        latestSentTime = .now
-        connection?.send(content: packet, completion: .contentProcessed { _ in })
     }
 
     func sendSrtPacket(packet: Data) {
-        if isSrtDataPacket(packet: packet) {
-            packetsInFlight.insert(getSrtSequenceNumber(packet: packet))
-        }
         sendPacket(packet: packet)
+    }
+
+    func flushDataPackets() {
+        guard !dataPacketsToSend.isEmpty else {
+            return
+        }
+        connection?.batch {
+            for packet in dataPacketsToSend {
+                connection?.send(content: packet, completion: .idempotent)
+            }
+        }
+        dataPacketsToSend.removeAll()
     }
 
     func register(groupId: Data) {
         self.groupId = groupId
-        hasGroupId = true
+        hasFullGroupId = true
         if state == .shouldSendRegisterRequest {
             sendSrtlaReg2()
         }
@@ -322,17 +318,16 @@ class RemoteConnection {
         guard packet.count >= 20 else {
             return
         }
-        onSrtAck?(getSrtSequenceNumber(packet: packet[16 ..< 20]))
+        delegate?.remoteConnectionOnSrtAck(sn: getSrtSequenceNumber(packet: packet[16 ..< 20]))
     }
 
     func handleSrtAckSn(sn ackSn: UInt32) {
-        packetsInFlight = packetsInFlight
-            .filter { sn in !isSrtSnAcked(sn: sn, ackSn: ackSn) }
+        packetsInFlight = packetsInFlight.filter { sn in !isSrtSnAcked(sn: sn, ackSn: ackSn) }
     }
 
     private func handleSrtNak(packet: Data) {
         processSrtNak(packet: packet) { sn in
-            self.onSrtNak?(sn)
+            self.delegate?.remoteConnectionOnSrtNak(sn: sn)
         }
     }
 
@@ -356,7 +351,7 @@ class RemoteConnection {
             return
         }
         for offset in stride(from: 4, to: packet.count, by: 4) {
-            onSrtlaAck?(packet.getUInt32Be(offset: offset))
+            delegate?.remoteConnectionOnSrtlaAck(sn: packet.getUInt32Be(offset: offset))
         }
     }
 
@@ -378,13 +373,12 @@ class RemoteConnection {
         guard groupId.count == 256 else {
             return
         }
-        guard packet[srtControlTypeSize ..< groupId.count / 2 + srtControlTypeSize] ==
-            groupId[0 ..< groupId.count / 2]
-        else {
+        let groupIdRange = 0 ..< groupId.count / 2
+        guard packet.advanced(by: srtControlTypeSize)[groupIdRange] == groupId[groupIdRange] else {
             logger.warning("srtla: \(typeString): Wrong group id in reg 2")
             return
         }
-        onReg2?(packet[srtControlTypeSize...])
+        delegate?.remoteConnectionOnReg2(groupId: packet.advanced(by: srtControlTypeSize))
     }
 
     private func handleSrtlaReg3() {
@@ -393,7 +387,7 @@ class RemoteConnection {
             return
         }
         state = .registered
-        onRegistered?()
+        delegate?.remoteConnectionOnRegistered()
         connectTimer.stop()
         keepaliveTimer.startPeriodic(interval: 1) {
             let now = ContinuousClock.now
@@ -459,12 +453,12 @@ class RemoteConnection {
             if let type = SrtPacketType(rawValue: type) {
                 handleSrtControlPacket(type: type, packet: packet)
             }
-            packetHandler?(packet)
+            delegate?.remoteConnectionPacketHandler(packet: packet)
         }
     }
 
     private func handleDataPacket(packet: Data) {
-        packetHandler?(packet)
+        delegate?.remoteConnectionPacketHandler(packet: packet)
     }
 
     private func handlePacketFromClient(packet: Data) {

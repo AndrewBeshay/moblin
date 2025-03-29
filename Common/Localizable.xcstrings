@@ -567,6 +567,136 @@
         }
       }
     },
+    "-- None --" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "-- Keine --"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "-Κανένα-"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "-- Ninguno --"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "-Ei mitään-"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "-- Aucun --"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "-- कोई नहीं --"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "-- Tidak ada --"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "-- Nessuno --"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "-  なし  -"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "-- 없음 --"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "-- Geen --"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "-- Nic --"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "-- Nenhum --"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "-- Nenhum --"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "-- Никто --"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " — Ingen --"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "-- Hiçbiri --"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "-жоден-"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "-- Không có --"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "-  没有任何  -"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "-  沒有任何  -"
+          }
+        }
+      }
+    },
     ": " : {
       "localizations" : {
         "de" : {
@@ -1607,6 +1737,9 @@
         }
       }
     },
+    "!moblin reaction <reaction>" : {
+
+    },
     "!moblin say <message>" : {
       "localizations" : {
         "de" : {
@@ -1736,6 +1869,9 @@
           }
         }
       }
+    },
+    "!moblin scene <name>" : {
+
     },
     "!moblin snapshot <optional message>" : {
       "localizations" : {
@@ -3356,7 +3492,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\"스트리밍 시 전면 카메라 반전\"은 스트리밍을 가로 모드로 진행할 때만 지원됩니다. 세로 모드에서는 지원되지 않습니다."
+            "value" : "\"스트리밍 시 전면 카메라 반전\" 기능은 스트리밍시 가로 모드에서만 지원되며 세로 모드에서는 사용할 수 없습니다."
           }
         },
         "nl" : {
@@ -6560,7 +6696,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "<필터>는 영화, 회색조, 세피아, 트리플, 픽셀레이트 또는 4:3입니다."
+            "value" : "<필터>는 레터박스, 흑백, 세피아, 3분할, 모자이크 또는 4:3입니다."
           }
         },
         "nl" : {
@@ -6772,6 +6908,9 @@
           }
         }
       }
+    },
+    "<reaction> is hearts, fireworks, balloons, confetti or lasers." : {
+
     },
     "★" : {
       "localizations" : {
@@ -8174,7 +8313,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "🥳 스트림이 연결된 것으로 보입니다. 🥳"
+            "value" : "🥳 스트림이 연결된 것 같습니다. 🥳"
           }
         },
         "nl" : {
@@ -8310,7 +8449,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "😠 스트림이 끊어진 것으로 보입니다. 😠"
+            "value" : "😠 스트림이 끊긴 것 같습니다. 😠"
           }
         },
         "nl" : {
@@ -10332,7 +10471,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "기본값 200"
+            "value" : "기본값: 200"
           }
         },
         "nl" : {
@@ -10598,7 +10737,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "기본값 250Kbps"
+            "value" : "기본값: 250Kbps"
           }
         },
         "nl" : {
@@ -10734,7 +10873,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "250ms 이상. 기본값 2000ms"
+            "value" : "250ms 이상, 기본값: 2000ms"
           }
         },
         "nl" : {
@@ -11396,7 +11535,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "우선순위가 높은 연결이 안정적인 경우 우선순위가 낮은 연결보다 우선순위가 높은 연결이 더 많이 사용됩니다. 불안정한 연결은 다시 안정될 때까지 구성된 우선순위에 관계없이 가장 낮은 우선순위를 갖습니다."
+            "value" : "우선순위가 높은 연결이 안정적이라면 우선순위가 낮은 연결보다 더 많이 사용됩니다. 불안정한 연결은 다시 안정될 때까지 설정된 우선순위에 관계없이 가장 낮은 우선순위를 가집니다."
           }
         },
         "nl" : {
@@ -11614,7 +11753,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ein Gerät"
+            "value" : "ein Gerät"
           }
         },
         "el" : {
@@ -12614,7 +12753,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "위의 설정이 수정되면(모든 값이 기본값은 아님) 여기에 QR 코드와 클립보드에 복사 버튼이 표시됩니다."
+            "value" : "위의 설정을 변경하면(모든 값이 기본값은 아님) 여기에 QR 코드와 클립보드에 복사 버튼이 표시됩니다."
           }
         },
         "nl" : {
@@ -12886,7 +13025,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "작고 저렴한 흑백 프린터."
+            "value" : "작고 저렴한 흑백 프린터"
           }
         },
         "nl" : {
@@ -13838,7 +13977,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "About"
+            "value" : "정보"
           }
         },
         "nl" : {
@@ -13974,7 +14113,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "일반적으로 5~8Mbps 정도면 충분한 화질을 제공합니다."
+            "value" : "일반적으로 5~8 Mbps 정도면 충분한 화질을 제공합니다."
           }
         },
         "nl" : {
@@ -14110,7 +14249,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "악센트"
+            "value" : "강조"
           }
         },
         "nl" : {
@@ -15050,7 +15189,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "아프리카TV"
+            "value" : "숲(아프리카TV)"
           }
         },
         "nl" : {
@@ -15452,7 +15591,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "조정"
+            "value" : "맞춤"
           }
         },
         "nl" : {
@@ -16948,7 +17087,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "애플 로그 LUT"
+            "value" : "Apple Log LUT"
           }
         },
         "nl" : {
@@ -18822,7 +18961,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "자동 카메라는 한 번에 하나만 사용 되더라도 여러 카메라가 전원을 켜므로 더 많은 전력을 사용합니다.대신 카메라를 빠르게 전환할 수 있습니다."
+            "value" : "자동 카메라는 한 번에 하나만 사용 되더라도 여러 카메라가 전원을 켜므로 더 많은 전력을 사용합니다. 대신 카메라를 빠르게 전환할 수 있습니다."
           }
         },
         "nl" : {
@@ -21264,7 +21403,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "배경 인쇄"
+            "value" : "백그라운드 인쇄"
           }
         },
         "nl" : {
@@ -23570,7 +23709,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "비트레이트 저하 수정"
+            "value" : "비트레이트 저하 문제 수정"
           }
         },
         "nl" : {
@@ -24244,7 +24383,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "블루투스 출력만 가능"
+            "value" : "블루투스 출력만"
           }
         },
         "nl" : {
@@ -24782,7 +24921,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "메시지 굵게표시"
+            "value" : "메시지 굵게 표시"
           }
         },
         "nl" : {
@@ -24918,7 +25057,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이름 굵게표시"
+            "value" : "이름 굵게 표시"
           }
         },
         "nl" : {
@@ -25722,7 +25861,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "맨 아래"
+            "value" : "하단"
           }
         },
         "nl" : {
@@ -25858,7 +25997,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "하단 오른쪽"
+            "value" : "우하단"
           }
         },
         "nl" : {
@@ -26266,7 +26405,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "브릿지 아이디"
+            "value" : "브릿지 ID"
           }
         },
         "nl" : {
@@ -27206,7 +27345,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "카메라 조정"
+            "value" : "카메라"
           }
         },
         "nl" : {
@@ -27342,7 +27481,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "카메라 컨트롤"
+            "value" : "카메라 조정"
           }
         },
         "nl" : {
@@ -28430,7 +28569,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "채널ID"
+            "value" : "채널 ID"
           }
         },
         "nl" : {
@@ -29110,7 +29249,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "채팅 봇 webhook URL"
+            "value" : "채팅 봇 Webhook URL"
           }
         },
         "nl" : {
@@ -44103,8 +44242,8 @@
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "더블스"
+            "state" : "translated",
+            "value" : "더블"
           }
         },
         "nl" : {
@@ -44778,7 +44917,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "지속시간"
+            "value" : "길이"
           }
         },
         "nl" : {
@@ -50880,7 +51019,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "외부 모니터 컨텐츠"
+            "value" : "외부 모니터 출력"
           }
         },
         "nl" : {
@@ -54516,7 +54655,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "FFFFF:s"
+            "value" : "\"저런! 완전! 실패! 했습니다!\" 횟수"
           }
         },
         "nl" : {
@@ -54994,6 +55133,9 @@
           }
         }
       }
+    },
+    "Fill frame" : {
+
     },
     "Filter" : {
       "localizations" : {
@@ -56006,7 +56148,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "OBS 입력을 수정하세요."
+            "value" : "OBS 입력 수정"
           }
         },
         "nl" : {
@@ -57088,7 +57230,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "폰트 사이즈"
+            "value" : "폰트 크기"
           }
         },
         "nl" : {
@@ -57360,7 +57502,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "예시 WS ://232.32.45.332 : 4567."
+            "value" : "예시: WS://232.32.45.332:4567"
           }
         },
         "nl" : {
@@ -60204,7 +60346,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "글로벌 톤 매핑"
+            "value" : "전역 톤 매핑"
           }
         },
         "nl" : {
@@ -60742,7 +60884,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "그레이톤"
+            "value" : "흑백"
           }
         },
         "nl" : {
@@ -63568,7 +63710,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "활성화하면 애플 Log 색 공간을 사용할 때 선택한 LUT가 적용됩니다."
+            "value" : "활성화하면 Apple Log 색 공간을 사용할 때 선택한 LUT가 적용됩니다."
           }
         },
         "nl" : {
@@ -63704,7 +63846,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "저장된 사진"
+            "value" : "사진"
           }
         },
         "nl" : {
@@ -67228,7 +67370,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "선두"
+            "value" : "앞"
           }
         },
         "nl" : {
@@ -67358,7 +67500,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "왼쪽"
+            "value" : "좌측"
           }
         },
         "nl" : {
@@ -67896,7 +68038,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "빛"
+            "value" : "얇게"
           }
         },
         "nl" : {
@@ -69055,6 +69197,9 @@
         }
       }
     },
+    "Location data" : {
+
+    },
     "Lock screen" : {
       "localizations" : {
         "de" : {
@@ -69114,7 +69259,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "화면 잠금"
+            "value" : "화면 잠그기"
           }
         },
         "nl" : {
@@ -69794,7 +69939,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "낮은 비트 전송률"
+            "value" : "낮은 비트레이트"
           }
         },
         "nl" : {
@@ -69930,7 +70075,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "낮은 비트 전송률 경고"
+            "value" : "낮은 비트레이트 경고"
           }
         },
         "nl" : {
@@ -70338,7 +70483,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "최저 배터리 비율"
+            "value" : "가장 낮은 배터리 잔량"
           }
         },
         "nl" : {
@@ -70411,137 +70556,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "最低電量百分比"
-          }
-        }
-      }
-    },
-    "LUT dimension %lld too big (over 64)" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "LUT-Dimension %lld zu groß (über 64)"
-          }
-        },
-        "el" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Η διάσταση LUT %lld είναι πολύ μεγάλη (πάνω από 64)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "La dimensión LUT %lld es demasiado grande (más de 64)"
-          }
-        },
-        "fi" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "LUT-dimensio %lld liian suuri (yli 64)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Dimension LUT %lld trop grande (plus de 64)"
-          }
-        },
-        "hi" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "LUT आयाम %lld बहुत बड़ा है (64 से अधिक)"
-          }
-        },
-        "id" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Dimensi LUT %lld terlalu besar (lebih dari 64)"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Dimensione LUT %lld troppo grande (oltre 64)"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "LUT 次元 %lld が大きすぎます (64 以上)"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "LUT 차원 %lld가 너무 큽니다(64 이상)"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "LUT-dimensie %lld te groot (meer dan 64)"
-          }
-        },
-        "pl" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Wymiar LUT %lld jest za duży (ponad 64)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Dimensão LUT %lld muito grande (mais de 64)"
-          }
-        },
-        "pt-PT" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Dimensão LUT %lld muito grande (mais de 64)"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Размер LUT %lld слишком большой (более 64)"
-          }
-        },
-        "sv" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "LUT-dimension %lld för stor (över 64)"
-          }
-        },
-        "tr" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "LUT boyutu %lld çok büyük (64'ün üzerinde)"
-          }
-        },
-        "uk" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Розмір LUT %lld завеликий (понад 64)"
-          }
-        },
-        "vi" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Kích thước LUT %lld quá lớn (trên 64)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "LUT 尺寸 %lld 太大（超过 64）"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "LUT 尺寸 %lld 太大（超過 64）"
           }
         }
       }
@@ -73703,7 +73717,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "최대 대역폭은 입력을 따릅니다."
+            "value" : "입력 값에 맞춰 최대 대역폭 조정"
           }
         },
         "nl" : {
@@ -75193,7 +75207,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "메탈페탈 필터"
+            "value" : "MetalPetal 필터"
           }
         },
         "nl" : {
@@ -75459,7 +75473,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "마이크ID %@"
+            "value" : "마이크 ID %@"
           }
         },
         "nl" : {
@@ -75731,7 +75745,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "최소 비트 전송률"
+            "value" : "최소 비트레이트"
           }
         },
         "nl" : {
@@ -77696,6 +77710,136 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "等寬"
+          }
+        }
+      }
+    },
+    "Monospaced digits" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einzeilige Ziffern"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Μονοεπιχειρησιακά ψηφία"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dígitos monoespacios"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Moniseliset numerot"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chiffres monospacés"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "मोनोस्पेरेस्ड अंक"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Digit monospaced"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cifre monospaziate"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "モノスパースの数字"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "고정폭 숫자"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Monospaced cijfers"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Monospaced Digits"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dígitos monofacestados"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dígitos monofacestados"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Монопространственные цифры"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monospaced siffror"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Monopsaced basamaklar"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Моноспровані цифри"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chữ số đơn"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "单层数字"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "單層數字"
           }
         }
       }
@@ -88065,7 +88209,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "오버헤드 대역폭"
+            "value" : "추가 대역폭"
           }
         },
         "nl" : {
@@ -88201,7 +88345,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "비디오 안정화 무시"
+            "value" : "비디오 안정화 재정의"
           }
         },
         "nl" : {
@@ -88331,7 +88475,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "전송 중인 패킷 감소 임계값"
+            "value" : "전송 중 패킷 감소 임계값"
           }
         },
         "nl" : {
@@ -88467,7 +88611,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "페달"
+            "value" : "빠델"
           }
         },
         "nl" : {
@@ -88809,6 +88953,9 @@
           }
         }
       }
+    },
+    "Perform Apple reaction." : {
+
     },
     "Permissions" : {
       "localizations" : {
@@ -91849,7 +91996,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "시사"
+            "value" : "미리보기"
           }
         },
         "nl" : {
@@ -92529,7 +92676,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "앱이 백그라운드 모드에있을 때 인쇄하십시오."
+            "value" : "앱이 백그라운드 모드에있을 때 인쇄합니다."
           }
         },
         "nl" : {
@@ -93333,7 +93480,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "푸시 키"
+            "value" : "Push key"
           }
         },
         "nl" : {
@@ -93680,7 +93827,7 @@
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "Rennen"
           }
         },
@@ -93734,8 +93881,8 @@
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "경마"
+            "state" : "translated",
+            "value" : "레이싱"
           }
         },
         "nl" : {
@@ -95905,7 +96052,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "정기적인"
+            "value" : "기본"
           }
         },
         "nl" : {
@@ -96041,7 +96188,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "장면 전환 후 비트레이트 감소가 완화됨"
+            "value" : "장면 전환 후 비트레이트 감소 완화"
           }
         },
         "nl" : {
@@ -96845,7 +96992,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "리모콘"
+            "value" : "원격 조종"
           }
         },
         "nl" : {
@@ -97738,6 +97885,136 @@
         }
       }
     },
+    "Remote scene" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remote Szene"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Απομακρυσμένη σκηνή"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Escena remota"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Etäkohta"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Scène éloignée"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "सुदूर दृश्य"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Adegan jarak jauh"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Scena remota"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "リモートシーン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "원격 장면"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Externe scène"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Scena zdalna"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cena remota"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cena remota"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Отдаленная сцена"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fjärrscen"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Uzak sahne"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Віддалена сцена"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cảnh từ xa"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "远程场景"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "遠程場景"
+          }
+        }
+      }
+    },
     "Remove keys in Controls → Locks on your Tesla's center screen." : {
       "localizations" : {
         "de" : {
@@ -98277,6 +98554,7 @@
       }
     },
     "Reset location data" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -98813,6 +99091,12 @@
           }
         }
       }
+    },
+    "Reset when going live" : {
+
+    },
+    "Resets distance, average speed and slope." : {
+
     },
     "Resolution" : {
       "localizations" : {
@@ -99955,7 +100239,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "오른쪽"
+            "value" : "우측"
           }
         },
         "nl" : {
@@ -102218,7 +102502,7 @@
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "주어진 메시지를 말하세요."
           }
         },
@@ -105619,7 +105903,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "세피아톤"
+            "value" : "세피아"
           }
         },
         "nl" : {
@@ -107930,8 +108214,8 @@
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Apple Watch 심박수를 보여줍니다"
+            "state" : "translated",
+            "value" : "애플워치 심박수 표시"
           }
         },
         "nl" : {
@@ -108060,8 +108344,8 @@
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "평균 속도를 보여줍니다"
+            "state" : "translated",
+            "value" : "평균 속도 표시"
           }
         },
         "nl" : {
@@ -108191,7 +108475,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "전송된 비트 전송률 및 총 바이트 수를 표시합니다."
+            "value" : "비트레이트와 총 바이트 수 표시"
           }
         },
         "nl" : {
@@ -108268,6 +108552,139 @@
         }
       }
     },
+    "Show browser title" : {
+
+    },
+    "Show city" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stadt anzeigen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Δείχνουν πόλη"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Exhibir la ciudad"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Näytä kaupunki"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Exposition"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "शहर दिखाओ"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tunjukkan Kota"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostra città"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "都市を見せます"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "도시 표시"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Toon stad"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pokaż miasto"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostrar cidade"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostrar cidade"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Показать город"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visa stad"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gösteri Şehri"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Показати місто"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hiển thị thành phố"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "展示城市"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "展示城市"
+          }
+        }
+      }
+    },
     "Show conditions" : {
       "localizations" : {
         "de" : {
@@ -108327,7 +108744,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "조건 표시"
+            "value" : "날씨 이모티콘 표시"
           }
         },
         "nl" : {
@@ -108404,12 +108821,272 @@
         }
       }
     },
+    "Show country" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Land anzeigen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Εκδήλωση"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Show country"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Näyttelymaa"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Exposition de pays"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "देश दिखाओ"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tunjukkan negara"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostra il paese"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "国を表示します"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "국가 표시"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Toon land"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pokaż kraj"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostrar país"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostrar país"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Страна шоу"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visa land"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gösteri Ülkesi"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Шоу -країна"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hiển thị đất nước"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "展示国家"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "展示國家"
+          }
+        }
+      }
+    },
+    "Show country flag" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Länder Flagge anzeigen"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Σημαία της χώρας"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostrar bandera de país"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Näytä maan lippu"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Montrer le drapeau de la campagne"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "देश का झंडा दिखाओ"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tunjukkan bendera negara"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostra la bandiera di campagna"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "カントリーフラグを表示します"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "국기 표시"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Toon landvlag"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pokaż flagę country"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Show Country Flag"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Show Country Flag"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Показать страновой флаг"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Visa flagga"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ülke bayrağını göster"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Прапор кантрі шоу"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hiển thị cờ quốc gia"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "展示国家旗帜"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "展示國家旗幟"
+          }
+        }
+      }
+    },
     "Show cycling cadence" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Zeigen Sie die Fahrradkadenz"
+            "state" : "translated",
+            "value" : "Trittfrequenz anzeigen"
           }
         },
         "el" : {
@@ -108462,8 +109139,8 @@
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "사이클링 케이던스를 보여줍니다"
+            "state" : "translated",
+            "value" : "사이클링 케이던스 표시"
           }
         },
         "nl" : {
@@ -108538,8 +109215,8 @@
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Zeigen Sie die Radsportkraft"
+            "state" : "translated",
+            "value" : "Leistung beim Radfahren anzeigen"
           }
         },
         "el" : {
@@ -108592,8 +109269,8 @@
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "사이클링 파워를 보여줍니다"
+            "state" : "translated",
+            "value" : "사이클링 파워 표시"
           }
         },
         "nl" : {
@@ -108722,7 +109399,7 @@
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "날짜 표시"
           }
         },
@@ -109130,7 +109807,7 @@
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "전체 날짜 표시"
           }
         },
@@ -109266,8 +109943,8 @@
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "\"%@\"라는 심박수 장치의 심박수 표시"
+            "state" : "translated",
+            "value" : "\"%@\" 심박수 기기의 심박수 표시"
           }
         },
         "nl" : {
@@ -109396,8 +110073,8 @@
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "랩 타임을 보여줍니다"
+            "state" : "translated",
+            "value" : "랩 타임 표시"
           }
         },
         "nl" : {
@@ -109934,8 +110611,8 @@
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "슬로프를 보여줍니다"
+            "state" : "translated",
+            "value" : "경사도 표시"
           }
         },
         "nl" : {
@@ -110418,8 +111095,8 @@
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Zeigen Sie den Tesla -Batteriestand"
+            "state" : "translated",
+            "value" : "Tesla Batteriestand anzeigen"
           }
         },
         "el" : {
@@ -110472,8 +111149,8 @@
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "테슬라 배터리 레벨을 보여줍니다"
+            "state" : "translated",
+            "value" : "테슬라 배터리 잔량 표시"
           }
         },
         "nl" : {
@@ -110548,8 +111225,8 @@
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Tesla Drive -Informationen anzeigen"
+            "state" : "translated",
+            "value" : "Tesla Fahrinformationen anzeigen"
           }
         },
         "el" : {
@@ -110602,8 +111279,8 @@
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "테슬라 드라이브 정보를 보여줍니다"
+            "state" : "translated",
+            "value" : "테슬라 드라이브 정보 표시"
           }
         },
         "nl" : {
@@ -110678,8 +111355,8 @@
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Zeigen Sie Tesla Media -Informationen"
+            "state" : "translated",
+            "value" : "Tesla Medieninformationen anzeigen"
           }
         },
         "el" : {
@@ -110732,8 +111409,8 @@
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "테슬라 미디어 정보를 보여줍니다"
+            "state" : "translated",
+            "value" : "테슬라 미디어 정보 표시"
           }
         },
         "nl" : {
@@ -110862,8 +111539,8 @@
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "시간 표시 시간 HH:MM"
+            "state" : "translated",
+            "value" : "시간을 HH:MM 형식으로 표시"
           }
         },
         "nl" : {
@@ -110993,7 +111670,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "시간을 HH:MM:SS로 표시합니다."
+            "value" : "시간을 HH:MM:SS 형식으로 표시"
           }
         },
         "nl" : {
@@ -111128,7 +111805,7 @@
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "싱글"
           }
         },
@@ -118307,7 +118984,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "송출"
+            "value" : "스트림"
           }
         },
         "nl" : {
@@ -120453,7 +121130,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "송출"
+            "value" : "스트림"
           }
         },
         "nl" : {
@@ -120724,8 +121401,8 @@
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "끈"
+            "state" : "translated",
+            "value" : "문자열"
           }
         },
         "nl" : {
@@ -121541,7 +122218,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "제안"
+            "value" : "추천"
           }
         },
         "nl" : {
@@ -122433,6 +123110,9 @@
           }
         }
       }
+    },
+    "Switch to given scene." : {
+
     },
     "Switching between mono and stereo mics may not work." : {
       "localizations" : {
@@ -123514,8 +124194,8 @@
       "localizations" : {
         "de" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Tippen Sie unten auf Elemente, um sie an den Widget -Text anzuhängen."
+            "state" : "translated",
+            "value" : "Tippe auf die Elemente unten, um sie an den Text des Widgets anzuhängen."
           }
         },
         "el" : {
@@ -123568,8 +124248,8 @@
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "아래 항목을 탭하여 위젯 텍스트에 추가하십시오."
+            "state" : "translated",
+            "value" : "아래 항목을 탭하면 위젯 텍스트에 추가됩니다."
           }
         },
         "nl" : {
@@ -125331,7 +126011,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "시험"
+            "value" : "테스트"
           }
         },
         "nl" : {
@@ -125739,7 +126419,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "기기가 지원하지 않는 경우 실제 비트 전송률은 더 낮을 수 있습니다."
+            "value" : "기기가 지원하지 않는 경우 실제 비트레이트는 더 낮을 수 있습니다."
           }
         },
         "nl" : {
@@ -125875,7 +126555,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "애플 Log LUT는 애플 Log 색 공간을 선택한 경우에만 적용됩니다."
+            "value" : "Apple Log LUT는 Apple Log 색 공간을 선택한 경우에만 적용됩니다."
           }
         },
         "nl" : {
@@ -126147,7 +126827,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "전송 중인 패킷 수가 이 값을 초과하면 비트 전송률이 빠르게 감소합니다."
+            "value" : "전송 중인 패킷 수가 이 값을 초과하면 비트레이트가 빠르게 감소합니다."
           }
         },
         "nl" : {
@@ -126957,7 +127637,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "비트 전송률을 낮추기 전 허용되는 최대 RTT 스파이크"
+            "value" : "비트레이트를 낮추기 전 허용되는 최대 RTT 스파이크"
           }
         },
         "nl" : {
@@ -127093,7 +127773,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "RTT가 너무 높을 때 최소 비트 전송률 감소 속도입니다."
+            "value" : "RTT가 너무 높을 때 최소 비트레이트 감소 속도입니다."
           }
         },
         "nl" : {
@@ -127229,7 +127909,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "최소 인코더 비트 전송률입니다."
+            "value" : "최소 인코더 비트레이트입니다."
           }
         },
         "nl" : {
@@ -130209,7 +130889,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "세로로 스트리밍하려면 설정 → 스트림 → %@ → 세로를 활성화하세요."
+            "value" : "세로 비율로 스트리밍하려면 설정 → 스트림 → %@ → 세로 모드를 활성화하세요."
           }
         },
         "nl" : {
@@ -130753,7 +131433,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "맨 위"
+            "value" : "상단"
           }
         },
         "nl" : {
@@ -131835,7 +132515,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "송출 갯수"
+            "value" : "스트림 갯수"
           }
         },
         "nl" : {
@@ -132106,8 +132786,8 @@
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "후행"
+            "state" : "translated",
+            "value" : "뒤"
           }
         },
         "nl" : {
@@ -134218,6 +134898,136 @@
         }
       }
     },
+    "Twin" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Twin"
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Δίδυμο"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mellizo"
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kaksois-"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Double"
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "जुड़वां"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kembar"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gemello"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ツイン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "거울"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tweeling"
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bliźniak"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gêmeo"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gêmeo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Двойник"
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Duo"
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "İkiz"
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Близнюк"
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sinh đôi"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "双"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "雙"
+          }
+        }
+      }
+    },
     "Twitch" : {
       "localizations" : {
         "de" : {
@@ -134413,7 +135223,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "트위치 보상"
+            "value" : "트위치 리워드"
           }
         },
         "nl" : {
@@ -137541,7 +138351,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "키보드를 사용해 확대/축소, 장면 설정 등의 작업을 수행하세요."
+            "value" : "키보드를 사용해 확대/축소, 장면 전환 등의 작업을 수행하세요."
           }
         },
         "nl" : {
@@ -137949,7 +138759,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "게임 컨트롤러를 사용하여 멀리서 확대/축소, 장면 설정 등을 수행할 수 있습니다."
+            "value" : "게임 컨트롤러를 사용하여 멀리서 확대/축소, 장면 전환 등을 수행할 수 있습니다."
           }
         },
         "nl" : {
@@ -140391,7 +141201,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "영상이 거무스름하다"
+            "value" : "장면 전환 시간"
           }
         },
         "nl" : {
@@ -142685,7 +143495,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "무게"
+            "value" : "굵기"
           }
         },
         "nl" : {
@@ -143578,6 +144388,136 @@
         }
       }
     },
+    "Widgets in selected scene will be shown on the Moblin device the remote control assistant is connected to." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widgets in der ausgewählten Szene werden auf dem Moblin Gerät angezeigt, mit dem der Fernbedienungsassistent verbunden ist."
+          }
+        },
+        "el" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Τα widgets σε επιλεγμένη σκηνή θα εμφανίζονται στη συσκευή Moblin που συνδέεται με τον βοηθό τηλεχειριστηρίου."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Los widgets en la escena seleccionada se mostrarán en el dispositivo Moblin al que está conectado el Asistente de control remoto."
+          }
+        },
+        "fi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Valittujen kohtausten widgetit näytetään Moblin -laitteessa, johon kaukosäätimen avustaja on kytketty."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Les widgets de la scène sélectionnés seront affichés sur le périphérique Mobblin auquel l'assistant de télécommande est connecté."
+          }
+        },
+        "hi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "चयनित दृश्य में विजेट्स को MOBLIN डिवाइस पर दिखाया जाएगा जो रिमोट कंट्रोल असिस्टेंट से जुड़ा है।"
+          }
+        },
+        "id" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Widget dalam adegan yang dipilih akan ditampilkan pada perangkat Moblin yang terhubung dengan asisten remote control."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "I widget nella scena selezionata verranno mostrati sul dispositivo Moblin a cui è collegato l'assistente di controllo remoto."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "選択したシーンのウィジェットは、リモートコントロールアシスタントが接続されているモブリンデバイスに表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "선택한 장면의 위젯이 원격 제어 어시스턴트가 연결된 Moblin 기기에 표시됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Widgets in geselecteerde scène worden getoond op het Moblin -apparaat waarmee de afstandsbedieningsassistent is verbonden."
+          }
+        },
+        "pl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Widżety w wybranej scenie zostaną pokazane na urządzeniu Moblin, do którego podłączony jest asystent zdalnego sterowania."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Os widgets na cena selecionada serão mostrados no dispositivo MOBLIN ao qual o Assistente de Controle Remoto está conectado."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Os widgets na cena selecionada serão mostrados no dispositivo MOBLIN ao qual o Assistente de Controle Remoto está conectado."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Виджеты в выбранной сцене будут показаны на устройстве Moblin, к которому подключен помощник дистанционного управления."
+          }
+        },
+        "sv" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Widgets i vald scen kommer att visas på Moblin-enheten fjärrkontrollen är ansluten till."
+          }
+        },
+        "tr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seçilen sahnedeki widget'lar, uzaktan kumanda asistanının bağlı olduğu Moblin cihazında gösterilecektir."
+          }
+        },
+        "uk" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Віджети у вибраній сцені будуть показані на пристрої Мобліна, до якого підключений асистент дистанційного керування."
+          }
+        },
+        "vi" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Các tiện ích trong cảnh được chọn sẽ được hiển thị trên thiết bị Moblin Trợ lý điều khiển từ xa được kết nối."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "选定场景中的小部件将显示在遥控助手已连接到的软木布设备上。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "選定場景中的小部件將顯示在遙控助手已連接到的軟木佈設備上。"
+          }
+        }
+      }
+    },
     "Width" : {
       "localizations" : {
         "de" : {
@@ -144181,7 +145121,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "운동 시작"
+            "value" : "운동"
           }
         },
         "nl" : {
@@ -145807,7 +146747,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "0초 또는 매우 짧은 초단위. URL에 주어진 모든 대기 시간 매개 변수는이 값을 대체합니다."
+            "value" : "0ms 이상. URL에 지정된 모든 지연 시간 매개변수는 이 값을 대체합니다."
           }
         },
         "nl" : {

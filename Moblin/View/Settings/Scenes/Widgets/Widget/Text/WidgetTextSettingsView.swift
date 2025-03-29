@@ -268,10 +268,14 @@ private struct TextSelectionView: View {
                 FormatView(title: "{subtitles}", description: String(localized: "Show subtitles"), text: $value)
                 FormatView(title: "{lapTimes}", description: String(localized: "Show lap times"), text: $value)
                 FormatView(title: "{muted}", description: String(localized: "Show muted"), text: $value)
+                FormatView(title: "{browserTitle}", description: String(localized: "Show browser title"), text: $value)
             } header: {
                 Text("General")
             }
             Section {
+                FormatView(title: "{country}", description: String(localized: "Show country"), text: $value)
+                FormatView(title: "{countryFlag}", description: String(localized: "Show country flag"), text: $value)
+                FormatView(title: "{city}", description: String(localized: "Show city"), text: $value)
                 FormatView(title: "{speed}", description: String(localized: "Show speed"), text: $value)
                 FormatView(title: "{averageSpeed}", description: String(localized: "Show average speed"), text: $value)
                 FormatView(title: "{altitude}", description: String(localized: "Show altitude"), text: $value)
@@ -458,6 +462,7 @@ struct WidgetTextSettingsView: View {
                     }
                     widget.text.backgroundColor = color
                     model.getTextEffect(id: widget.id)?.setBackgroundColor(color: color)
+                    model.remoteSceneSettingsUpdated()
                 }
             ColorPicker("Foreground", selection: $foregroundColor, supportsOpacity: true)
                 .onChange(of: foregroundColor) { _ in
@@ -466,6 +471,7 @@ struct WidgetTextSettingsView: View {
                     }
                     widget.text.foregroundColor = color
                     model.getTextEffect(id: widget.id)?.setForegroundColor(color: color)
+                    model.remoteSceneSettingsUpdated()
                 }
         } header: {
             Text("Colors")
@@ -483,6 +489,7 @@ struct WidgetTextSettingsView: View {
                         }
                         widget.text.fontSize = Int(fontSize)
                         model.getTextEffect(id: widget.id)?.setFontSize(size: CGFloat(fontSize))
+                        model.remoteSceneSettingsUpdated()
                     }
                 )
                 Text(String(Int(fontSize)))
@@ -500,6 +507,7 @@ struct WidgetTextSettingsView: View {
                     widget.text.fontDesign = SettingsFontDesign.fromString(value: $0)
                     model.getTextEffect(id: widget.id)?
                         .setFontDesign(design: widget.text.fontDesign!.toSystem())
+                    model.remoteSceneSettingsUpdated()
                 }
             }
             HStack {
@@ -514,7 +522,17 @@ struct WidgetTextSettingsView: View {
                     widget.text.fontWeight = SettingsFontWeight.fromString(value: $0)
                     model.getTextEffect(id: widget.id)?
                         .setFontWeight(weight: widget.text.fontWeight!.toSystem())
+                    model.remoteSceneSettingsUpdated()
                 }
+            }
+            Toggle(isOn: Binding(get: {
+                widget.text.fontMonospacedDigits!
+            }, set: { value in
+                widget.text.fontMonospacedDigits = value
+                model.getTextEffect(id: widget.id)?.setFontMonospacedDigits(enabled: widget.text.fontMonospacedDigits!)
+                model.remoteSceneSettingsUpdated()
+            })) {
+                Text("Monospaced digits")
             }
         } header: {
             Text("Font")
@@ -532,6 +550,7 @@ struct WidgetTextSettingsView: View {
                     widget.text.horizontalAlignment = SettingsHorizontalAlignment.fromString(value: $0)
                     model.getTextEffect(id: widget.id)?
                         .setHorizontalAlignment(alignment: widget.text.horizontalAlignment!.toSystem())
+                    model.remoteSceneSettingsUpdated()
                 }
             }
             HStack {
@@ -546,6 +565,7 @@ struct WidgetTextSettingsView: View {
                     widget.text.verticalAlignment = SettingsVerticalAlignment.fromString(value: $0)
                     model.getTextEffect(id: widget.id)?
                         .setVerticalAlignment(alignment: widget.text.verticalAlignment!.toSystem())
+                    model.remoteSceneSettingsUpdated()
                 }
             }
         } header: {

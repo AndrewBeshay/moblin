@@ -3,7 +3,6 @@ import CryptoKit
 import Foundation
 import Network
 import SwiftUI
-import Telegraph
 import UIKit
 
 protocol MoblinkStreamerDelegate: AnyObject {
@@ -17,7 +16,7 @@ private struct RequestResponse {
 }
 
 private class Relay {
-    let webSocket: Telegraph.WebSocket
+    let webSocket: NWConnectionWithId
     private var nextId: Int = 0
     private var identified = false
     private var challenge = ""
@@ -32,9 +31,9 @@ private class Relay {
     var name = ""
     var batteryPercentage: Int?
 
-    init(websocket: Telegraph.WebSocket, password: String, streamer: MoblinkStreamer) {
+    init(webSocket: NWConnectionWithId, password: String, streamer: MoblinkStreamer) {
         self.password = password
-        webSocket = websocket
+        self.webSocket = webSocket
         self.streamer = streamer
     }
 
@@ -49,13 +48,13 @@ private class Relay {
     }
 
     func stop() {
-        webSocket.close(immediately: true)
+        webSocket.connection.cancel()
         reportTunnelRemoved()
         requests.removeAll()
     }
 
     func handleStringMessage(message: String) {
-        // logger.info("moblink-server: Received \(message)")
+        // logger.info("moblink-streamer: Received \(message)")
         do {
             let message = try MoblinkMessageToStreamer.fromJson(data: message)
             switch message {
@@ -65,8 +64,8 @@ private class Relay {
                 try handleResponse(id: id, result: result, data: data)
             }
         } catch {
-            logger.info("moblink-server: Failed to process message with error \(error)")
-            webSocket.close(immediately: false)
+            logger.info("moblink-streamer: Failed to process message with error \(error)")
+            webSocket.connection.cancel()
         }
     }
 
@@ -87,7 +86,7 @@ private class Relay {
             }
             self.batteryPercentage = batteryPercentage
         } onError: { error in
-            logger.info("moblink-server: Status failed with \(error)")
+            logger.info("moblink-streamer: Status failed with \(error)")
         }
     }
 
@@ -97,16 +96,17 @@ private class Relay {
         }
         reportTunnelRemoved()
         executeStartTunnel(address: address, port: port) { id, name, port in
-            guard let host = self.webSocket.remoteEndpoint?.host else {
-                logger.info("moblink-server: Missing relay host")
-                return
+            switch self.webSocket.connection.endpoint {
+            case let .hostPort(host: host, port: _):
+                let endpoint = NWEndpoint.hostPort(
+                    host: host,
+                    port: NWEndpoint.Port(integerLiteral: port)
+                )
+                self.tunnelEndpoint = endpoint
+                self.streamer?.delegate?.moblinkStreamerTunnelAdded(endpoint: endpoint, relayId: id, relayName: name)
+            default:
+                logger.info("moblink-streamer: Missing relay host")
             }
-            let endpoint = NWEndpoint.hostPort(
-                host: NWEndpoint.Host(host),
-                port: NWEndpoint.Port(integerLiteral: port)
-            )
-            self.tunnelEndpoint = endpoint
-            self.streamer?.delegate?.moblinkStreamerTunnelAdded(endpoint: endpoint, relayId: id, relayName: name)
         }
     }
 
@@ -120,14 +120,14 @@ private class Relay {
     private func executeStartTunnel(address: String, port: UInt16,
                                     onSuccess: @escaping (UUID, String, UInt16) -> Void)
     {
-        logger.info("moblink-server: Starting tunnel to destination \(address):\(port)")
+        logger.info("moblink-streamer: Starting tunnel to destination \(address):\(port)")
         performRequest(data: .startTunnel(address: address, port: port)) { response in
             guard case let .startTunnel(port: port) = response else {
                 return
             }
             onSuccess(self.relayId, self.name, port)
         } onError: { error in
-            logger.info("moblink-server: Start tunnel failed with \(error)")
+            logger.info("moblink-streamer: Start tunnel failed with \(error)")
         }
     }
 
@@ -154,7 +154,7 @@ private class Relay {
             throw "Streamer not identified"
         }
         guard let request = requests[id] else {
-            logger.info("moblink-server: Unexpected id in response")
+            logger.info("moblink-streamer: Unexpected id in response")
             return
         }
         switch result {
@@ -163,11 +163,11 @@ private class Relay {
         case .wrongPassword:
             request.onError("Wrong password")
         case .notIdentified:
-            logger.info("moblink-server: Not identified")
+            logger.info("moblink-streamer: Not identified")
         case .alreadyIdentified:
-            logger.info("moblink-server: Already identified")
+            logger.info("moblink-streamer: Already identified")
         case .unknownRequest:
-            logger.info("moblink-server: Unknown request")
+            logger.info("moblink-streamer: Unknown request")
         }
     }
 
@@ -190,32 +190,32 @@ private class Relay {
         guard let text = message.toJson() else {
             return
         }
-        // logger.info("moblink-server: Sending \(text)")
-        webSocket.send(text: text)
+        // logger.info("moblink-streamer: Sending \(text)")
+        let metadata = NWProtocolWebSocket.Metadata(opcode: .text)
+        let context = NWConnection.ContentContext(identifier: "context", metadata: [metadata])
+        webSocket.connection.send(content: text.data(using: .utf8),
+                                  contentContext: context,
+                                  isComplete: true,
+                                  completion: .idempotent)
     }
 }
 
 class MoblinkStreamer: NSObject {
     private let port: UInt16
     private let password: String
-    private var server: Server
+    private var server: NWListener?
     var connectionErrorMessage = ""
     private var retryStartTimer = SimpleTimer(queue: .main)
     fileprivate weak var delegate: (any MoblinkStreamerDelegate)?
     private var relays: [Relay] = []
     private var destinationAddress: String?
     private var destinationPort: UInt16?
-    private var bonjourService: NetService?
     @AppStorage("moblinkServerId") var id = ""
 
     init(port: UInt16, password: String) {
         self.port = port
         self.password = password
-        server = Server()
         super.init()
-        server.webSocketConfig.pingInterval = 10
-        server.webSocketConfig.readTimeout = 20
-        server.webSocketDelegate = self
         if id.isEmpty {
             id = UUID().uuidString
         }
@@ -223,22 +223,21 @@ class MoblinkStreamer: NSObject {
 
     func start(delegate: MoblinkStreamerDelegate) {
         stop()
-        logger.info("moblink-server: start")
+        logger.debug("moblink-streamer: start")
         self.delegate = delegate
         startInternal()
     }
 
     func stop() {
-        logger.info("moblink-server: stop")
-        server.stop(immediately: false)
+        logger.debug("moblink-streamer: stop")
+        server?.cancel()
+        server = nil
         stopRetryStartTimer()
         for relay in relays {
             relay.stop()
         }
         relays.removeAll()
         delegate = nil
-        bonjourService?.stop()
-        bonjourService = nil
     }
 
     func startTunnels(address: String, port: UInt16) {
@@ -269,21 +268,25 @@ class MoblinkStreamer: NSObject {
 
     private func startInternal() {
         do {
-            try server.start(port: Endpoint.Port(port))
+            let parameters = NWParameters.tcp
+            let options = NWProtocolWebSocket.Options()
+            options.autoReplyPing = true
+            parameters.defaultProtocolStack.applicationProtocols.append(options)
+            server = try NWListener(using: parameters, on: NWEndpoint.Port(rawValue: port)!)
+            server?.service = NWListener.Service(
+                name: id,
+                type: moblinkBonjourType,
+                domain: moblinkBonjourDomain,
+                txtRecord: NWTXTRecord(["name": UIDevice.current.name])
+            )
+            server?.newConnectionHandler = handleNewConnection
+            server?.start(queue: .main)
             stopRetryStartTimer()
         } catch {
-            logger.debug("moblink-server: Failed to start server with error \(error)")
+            logger.debug("moblink-streamer: Failed to start server with error \(error)")
             connectionErrorMessage = error.localizedDescription
             startRetryStartTimer()
         }
-        bonjourService?.stop()
-        bonjourService = NetService(domain: moblinkBonjourDomain,
-                                    type: moblinkBonjourType,
-                                    name: id,
-                                    port: Int32(port))
-        let data = NetService.data(fromTXTRecord: ["name": UIDevice.current.name.utf8Data])
-        bonjourService?.setTXTRecord(data)
-        bonjourService?.publish(options: .noAutoRename)
     }
 
     private func startRetryStartTimer() {
@@ -296,9 +299,12 @@ class MoblinkStreamer: NSObject {
         retryStartTimer.stop()
     }
 
-    private func handleConnected(webSocket: Telegraph.WebSocket) {
-        logger.info("moblink-server: Relay connected")
-        let relay = Relay(websocket: webSocket, password: password, streamer: self)
+    private func handleNewConnection(connection: NWConnection) {
+        logger.debug("moblink-streamer: Relay connected")
+        let webSocket = NWConnectionWithId(connection: connection)
+        connection.start(queue: .main)
+        receivePacket(webSocket: webSocket)
+        let relay = Relay(webSocket: webSocket, password: password, streamer: self)
         relay.start()
         relays.append(relay)
         guard let destinationAddress, let destinationPort else {
@@ -307,56 +313,33 @@ class MoblinkStreamer: NSObject {
         relay.startTunnel(address: destinationAddress, port: destinationPort)
     }
 
-    private func handleDisconnected(webSocket: Telegraph.WebSocket, error: Error?) {
-        if let error {
-            logger.info("moblink-server: Relay disconnected \(error)")
-        } else {
-            logger.info("moblink-server: Relay disconnected")
-        }
-        if let relay = relays.first(where: { $0.webSocket.isSame(other: webSocket) }) {
+    private func handleDisconnected(webSocket: NWConnectionWithId) {
+        logger.debug("moblink-streamer: Relay disconnected")
+        if let relay = relays.first(where: { $0.webSocket == webSocket }) {
             relay.stop()
         }
-        relays.removeAll(where: { $0.webSocket.isSame(other: webSocket) })
+        relays.removeAll(where: { $0.webSocket == webSocket })
     }
 
-    private func handleMessage(webSocket: Telegraph.WebSocket, message: Telegraph.WebSocketMessage) {
-        switch message.payload {
-        case let .text(data):
-            // logger.info("moblink-server: Got \(data)")
-            guard let relay = relays.first(where: { $0.webSocket.isSame(other: webSocket) }) else {
+    private func receivePacket(webSocket: NWConnectionWithId) {
+        webSocket.connection.receiveMessage { data, context, _, _ in
+            if let data, !data.isEmpty {
+                if context?.webSocketOperation() == .text {
+                    self.handleMessage(webSocket: webSocket, packet: data)
+                }
+                self.receivePacket(webSocket: webSocket)
+            } else {
+                self.handleDisconnected(webSocket: webSocket)
+            }
+        }
+    }
+
+    private func handleMessage(webSocket: NWConnectionWithId, packet: Data) {
+        if let text = String(bytes: packet, encoding: .utf8) {
+            guard let relay = relays.first(where: { $0.webSocket == webSocket }) else {
                 return
             }
-            relay.handleStringMessage(message: data)
-        default:
-            break
-        }
-    }
-}
-
-extension MoblinkStreamer: ServerWebSocketDelegate {
-    func server(
-        _: Telegraph.Server,
-        webSocketDidConnect webSocket: Telegraph.WebSocket,
-        handshake _: Telegraph.HTTPRequest
-    ) {
-        DispatchQueue.main.async {
-            self.handleConnected(webSocket: webSocket)
-        }
-    }
-
-    func server(_: Telegraph.Server, webSocketDidDisconnect webSocket: Telegraph.WebSocket, error: Error?) {
-        DispatchQueue.main.async {
-            self.handleDisconnected(webSocket: webSocket, error: error)
-        }
-    }
-
-    func server(
-        _: Telegraph.Server,
-        webSocket: Telegraph.WebSocket,
-        didReceiveMessage message: Telegraph.WebSocketMessage
-    ) {
-        DispatchQueue.main.async {
-            self.handleMessage(webSocket: webSocket, message: message)
+            relay.handleStringMessage(message: text)
         }
     }
 }

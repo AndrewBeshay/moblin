@@ -1,3 +1,4 @@
+import Collections
 import CoreBluetooth
 import Foundation
 
@@ -21,7 +22,7 @@ let cyclingPowerScanner = BluetoothScanner(serviceIds: [cyclingPowerServiceId])
 
 private let measurementCharacteristicId = CBUUID(string: "2A63")
 private let vectorCharacteristicId = CBUUID(string: "2A64")
-private let featureCharacteristicId = CBUUID(string: "2A65")
+// private let featureCharacteristicId = CBUUID(string: "2A65")
 
 private let measurementPedalPowerBalanceFlagIndex = 0
 // periphery:ignore
@@ -182,17 +183,45 @@ struct CyclingPowerVector {
     }
 }
 
+private let averageSampleCount = 3
+
+private class AverageMeasurementCalculator {
+    private var values = Array(repeating: 0, count: averageSampleCount)
+    private var nextIndex = 0
+
+    func update(value: Int) {
+        values[nextIndex] = value
+        nextIndex += 1
+        nextIndex %= averageSampleCount
+    }
+
+    func average() -> Int {
+        return values.reduce(0, +) / averageSampleCount
+    }
+
+    func averageIngoreZeros() -> Int {
+        let numberOfNonZeroValues = values.filter { $0 != 0 }.count
+        guard numberOfNonZeroValues > 0 else {
+            return 0
+        }
+        return values.reduce(0, +) / numberOfNonZeroValues
+    }
+}
+
 class CyclingPowerDevice: NSObject {
     private var state: CyclingPowerDeviceState = .disconnected
     private var centralManager: CBCentralManager?
     private var peripheral: CBPeripheral?
     private var measurementCharacteristic: CBCharacteristic?
-    private var vectorCharacteristic: CBCharacteristic?
-    private var featureCharacteristic: CBCharacteristic?
+    // private var vectorCharacteristic: CBCharacteristic?
+    // private var featureCharacteristic: CBCharacteristic?
     private var deviceId: UUID?
     weak var delegate: (any CyclingPowerDeviceDelegate)?
     private var previousRevolutions: UInt16?
     private var previousRevolutionsTime: UInt16?
+    private var averagePower = AverageMeasurementCalculator()
+    private var averageCadence = AverageMeasurementCalculator()
+    private var latestAverageCadenceUpdateTime = ContinuousClock.now
 
     func start(deviceId: UUID?) {
         cyclingPowerDeviceDispatchQueue.async {
@@ -224,8 +253,8 @@ class CyclingPowerDevice: NSObject {
         centralManager = nil
         peripheral = nil
         measurementCharacteristic = nil
-        vectorCharacteristic = nil
-        featureCharacteristic = nil
+        // vectorCharacteristic = nil
+        // featureCharacteristic = nil
         previousRevolutions = nil
         previousRevolutionsTime = nil
         setState(state: .disconnected)
@@ -304,16 +333,11 @@ extension CyclingPowerDevice: CBPeripheralDelegate {
             case measurementCharacteristicId:
                 measurementCharacteristic = characteristic
                 peripheral?.setNotifyValue(true, for: characteristic)
-            case vectorCharacteristicId:
-                vectorCharacteristic = characteristic
-                peripheral?.setNotifyValue(true, for: characteristic)
-            case featureCharacteristicId:
-                featureCharacteristic = characteristic
             default:
                 break
             }
         }
-        if measurementCharacteristic != nil && vectorCharacteristic != nil && featureCharacteristic != nil {
+        if measurementCharacteristic != nil {
             setState(state: .connected)
         }
     }
@@ -341,7 +365,7 @@ extension CyclingPowerDevice: CBPeripheralDelegate {
 
     private func handlePowerMeasurement(value: Data) throws {
         let measurement = try CyclingPowerMeasurement(value: value)
-        var cadence = 0.0
+        var cadence = -1.0
         if let revolutions = measurement.cumulativeCrankRevolutions,
            let time = measurement.lastCrankEventTime
         {
@@ -363,7 +387,15 @@ extension CyclingPowerDevice: CBPeripheralDelegate {
             previousRevolutions = revolutions
             previousRevolutionsTime = time
         }
-        delegate?.cyclingPowerStatus(self, power: Int(measurement.instantaneousPower), cadence: Int(cadence))
+        averagePower.update(value: Int(measurement.instantaneousPower))
+        let now = ContinuousClock.now
+        if cadence != -1.0 {
+            averageCadence.update(value: Int(cadence))
+            latestAverageCadenceUpdateTime = now
+        } else if latestAverageCadenceUpdateTime.duration(to: now) > .seconds(3) {
+            averageCadence.update(value: 0)
+        }
+        delegate?.cyclingPowerStatus(self, power: averagePower.average(), cadence: averageCadence.averageIngoreZeros())
     }
 
     private func handlePowerVector(value: Data) throws {

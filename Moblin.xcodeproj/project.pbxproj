@@ -24,7 +24,6 @@
 		030621E92D8608E1001EE50B /* DjiGimbalDeviceScannerSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 030621E82D8608DF001EE50B /* DjiGimbalDeviceScannerSettingsView.swift */; };
 		030621EC2D862989001EE50B /* DjiDeviceMessage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 030621EB2D862983001EE50B /* DjiDeviceMessage.swift */; };
 		0307869A2AEC23FB0061FDE2 /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 030786992AEC23FB0061FDE2 /* StoreKit.framework */; };
-		0307EBCA2B59B239006F7B2A /* Telegraph in Frameworks */ = {isa = PBXBuildFile; productRef = 0307EBC92B59B239006F7B2A /* Telegraph */; };
 		03085C082B4865D10009DAB6 /* GameControllersSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03085C072B4865D10009DAB6 /* GameControllersSettingsView.swift */; };
 		03085C0F2B487D950009DAB6 /* PixellateEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03085C0E2B487D950009DAB6 /* PixellateEffect.swift */; };
 		030947C32A9C0496003FC387 /* StreamOverlayChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 030947C22A9C0496003FC387 /* StreamOverlayChatView.swift */; };
@@ -441,6 +440,7 @@
 		03CFF9CB2CA82EEF00FEC614 /* StrokeModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03CFF9CA2CA82EDF00FEC614 /* StrokeModifier.swift */; };
 		03D10E7A2B64099500B1E436 /* TextEditNavigationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03D10E792B64099500B1E436 /* TextEditNavigationView.swift */; };
 		03D151AF2BFA73C100D29D8E /* MetalPetal in Frameworks */ = {isa = PBXBuildFile; productRef = 03D151AE2BFA73C100D29D8E /* MetalPetal */; };
+		03D278742D9050C900BB0502 /* TwinEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03D278732D9050C600BB0502 /* TwinEffect.swift */; };
 		03D2B0E02C11BD9D0051BFB5 /* SrtlaServerSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03D2B0DF2C11BD9D0051BFB5 /* SrtlaServerSettingsView.swift */; };
 		03D2B0E32C11BDEA0051BFB5 /* SrtlaServerStreamSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03D2B0E22C11BDEA0051BFB5 /* SrtlaServerStreamSettingsView.swift */; };
 		03D37EE02CE0892B006D14C2 /* UrlSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03D37EDF2CE08921006D14C2 /* UrlSession.swift */; };
@@ -1029,6 +1029,7 @@
 		03CBFC742BFD3C7E0029A888 /* MirrorFrontCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MirrorFrontCameraView.swift; sourceTree = "<group>"; };
 		03CFF9CA2CA82EDF00FEC614 /* StrokeModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrokeModifier.swift; sourceTree = "<group>"; };
 		03D10E792B64099500B1E436 /* TextEditNavigationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextEditNavigationView.swift; sourceTree = "<group>"; };
+		03D278732D9050C600BB0502 /* TwinEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TwinEffect.swift; sourceTree = "<group>"; };
 		03D2B0DF2C11BD9D0051BFB5 /* SrtlaServerSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SrtlaServerSettingsView.swift; sourceTree = "<group>"; };
 		03D2B0E22C11BDEA0051BFB5 /* SrtlaServerStreamSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SrtlaServerStreamSettingsView.swift; sourceTree = "<group>"; };
 		03D37EDF2CE08921006D14C2 /* UrlSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UrlSession.swift; sourceTree = "<group>"; };
@@ -1117,7 +1118,6 @@
 				03AE56142BEA74D500FE8427 /* Rist in Frameworks */,
 				03F465EC2C441D1400630708 /* CrcSwift in Frameworks */,
 				0359F9092BD3DA61005BFDA8 /* libsrt.xcframework in Frameworks */,
-				0307EBCA2B59B239006F7B2A /* Telegraph in Frameworks */,
 				03B279832D45EB9C007DEDB2 /* SwiftCube in Frameworks */,
 				03D151AF2BFA73C100D29D8E /* MetalPetal in Frameworks */,
 				03A974282AC137A000610E21 /* Collections in Frameworks */,
@@ -2507,6 +2507,7 @@
 				037FE02F2C594CE40067B5AC /* AlertsEffect.swift */,
 				03EBEA622ACB4A17000DF427 /* BrowserEffect.swift */,
 				03A599192B66A94B002E7EE8 /* DrawOnStreamEffect.swift */,
+				03D278732D9050C600BB0502 /* TwinEffect.swift */,
 				030499672C404812003488F4 /* EffectUtils.swift */,
 				03559E7D2BDCEB14002D0886 /* FaceEffect.swift */,
 				0324ECA72C1EADAB007CB0B3 /* FourThreeEffect.swift */,
@@ -2989,7 +2990,6 @@
 				03BC11662AE5654700C38FC4 /* SDWebImageSwiftUI */,
 				03BC116A2AE56C2200C38FC4 /* SDWebImageWebPCoder */,
 				0320D8752AED36860030418F /* WrappingHStack */,
-				0307EBC92B59B239006F7B2A /* Telegraph */,
 				03B7DAB42BA640C100CEFC1B /* XMLCoder */,
 				03AE56132BEA74D500FE8427 /* Rist */,
 				03D151AE2BFA73C100D29D8E /* MetalPetal */,
@@ -3107,7 +3107,6 @@
 				03BC11652AE5654700C38FC4 /* XCRemoteSwiftPackageReference "SDWebImageSwiftUI" */,
 				03BC11692AE56C2200C38FC4 /* XCRemoteSwiftPackageReference "SDWebImageWebPCoder" */,
 				0320D8742AED36860030418F /* XCRemoteSwiftPackageReference "WrappingHStack" */,
-				0307EBC82B59B239006F7B2A /* XCRemoteSwiftPackageReference "Telegraph" */,
 				03B7DAB32BA6409800CEFC1B /* XCRemoteSwiftPackageReference "XMLCoder" */,
 				03AE56122BEA74D500FE8427 /* XCRemoteSwiftPackageReference "Rist" */,
 				03D151AD2BFA73C100D29D8E /* XCRemoteSwiftPackageReference "MetalPetal" */,
@@ -3501,6 +3500,7 @@
 				035F24422CB76835008288C7 /* TwitchCommon.swift in Sources */,
 				03C357482D081CF200B8B29F /* RtmpWindowAcknowledgementSizeMessage.swift in Sources */,
 				03C2C2832B5F906E00E2F30B /* SliderView.swift in Sources */,
+				03D278742D9050C900BB0502 /* TwinEffect.swift in Sources */,
 				03DEA1F92BFA66DC00154631 /* MetalPetal.swift in Sources */,
 				0359F8DB2BD3DA61005BFDA8 /* Crc32.swift in Sources */,
 				03987B3C2C82859C00226C03 /* QuickButtonMicView.swift in Sources */,
@@ -3959,7 +3959,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.396.0;
+				MARKETING_VERSION = 0.397.0;
 				MTL_HEADER_SEARCH_PATHS = "$(HEADER_SEARCH_PATHS)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.andrewbeshay.Mobs;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4017,7 +4017,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.396.0;
+				MARKETING_VERSION = 0.397.0;
 				MTL_HEADER_SEARCH_PATHS = "$(HEADER_SEARCH_PATHS)";
 				PRODUCT_BUNDLE_IDENTIFIER = com.andrewbeshay.Mobs;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4255,14 +4255,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		0307EBC82B59B239006F7B2A /* XCRemoteSwiftPackageReference "Telegraph" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/Building42/Telegraph";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 0.30.0;
-			};
-		};
 		0318D3682CF51D6900E12F3B /* XCRemoteSwiftPackageReference "swift-protobuf" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/apple/swift-protobuf.git";
@@ -4394,11 +4386,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		0307EBC92B59B239006F7B2A /* Telegraph */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 0307EBC82B59B239006F7B2A /* XCRemoteSwiftPackageReference "Telegraph" */;
-			productName = Telegraph;
-		};
 		0318D3692CF51D6900E12F3B /* SwiftProtobuf */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 0318D3682CF51D6900E12F3B /* XCRemoteSwiftPackageReference "swift-protobuf" */;

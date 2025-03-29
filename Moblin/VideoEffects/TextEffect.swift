@@ -46,6 +46,7 @@ struct TextEffectStats {
     let teslaMedia: String
     let cyclingPower: String
     let cyclingCadence: String
+    let browserTitle: String
 }
 
 private enum PartData: Equatable {
@@ -161,6 +162,8 @@ private class Formatter {
                 formatCyclingCadence(stats: stats)
             case .lapTimes:
                 formatLapTimes()
+            case .browserTitle:
+                formatBrowserTitle(stats: stats)
             }
             partId += 1
         }
@@ -420,6 +423,10 @@ private class Formatter {
         }
         lapTimesIndex += 1
     }
+
+    private func formatBrowserTitle(stats: TextEffectStats) {
+        parts.append(.init(id: partId, data: .text(stats.browserTitle)))
+    }
 }
 
 final class TextEffect: VideoEffect {
@@ -429,6 +436,7 @@ final class TextEffect: VideoEffect {
     private var fontSize: CGFloat
     private var fontDesign: Font.Design
     private var fontWeight: Font.Weight
+    private var fontMonospacedDigits: Bool
     private var horizontalAlignment: HorizontalAlignment
     private var verticalAlignment: VerticalAlignment
     private var x: Double
@@ -457,6 +465,7 @@ final class TextEffect: VideoEffect {
         fontSize: CGFloat,
         fontDesign: Font.Design,
         fontWeight: Font.Weight,
+        fontMonospacedDigits: Bool,
         horizontalAlignment: HorizontalAlignment,
         verticalAlignment: VerticalAlignment,
         settingName: String,
@@ -472,6 +481,7 @@ final class TextEffect: VideoEffect {
         self.fontSize = fontSize
         self.fontDesign = fontDesign
         self.fontWeight = fontWeight
+        self.fontMonospacedDigits = fontMonospacedDigits
         self.horizontalAlignment = horizontalAlignment
         self.verticalAlignment = verticalAlignment
         self.settingName = settingName
@@ -522,6 +532,11 @@ final class TextEffect: VideoEffect {
 
     func setFontWeight(weight: Font.Weight) {
         fontWeight = weight
+        forceImageUpdate()
+    }
+
+    func setFontMonospacedDigits(enabled: Bool) {
+        fontMonospacedDigits = enabled
         forceImageUpdate()
     }
 
@@ -771,8 +786,14 @@ final class TextEffect: VideoEffect {
                 weight: self.fontWeight,
                 design: self.fontDesign
             ))
-            let renderer = ImageRenderer(content: text)
-            let image = renderer.uiImage
+            let image: UIImage?
+            if self.fontMonospacedDigits {
+                let renderer = ImageRenderer(content: text.monospacedDigit())
+                image = renderer.uiImage
+            } else {
+                let renderer = ImageRenderer(content: text)
+                image = renderer.uiImage
+            }
             textQueue.sync {
                 self.image = image
                 self.newImagePresent = true

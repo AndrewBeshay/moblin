@@ -111,7 +111,7 @@ struct QuickButtonsInnerView: View {
     private func videoEffectAction(state: ButtonState, type: SettingsButtonType) {
         state.button.isOn.toggle()
         model.setGlobalButtonState(type: type, isOn: state.button.isOn)
-        model.sceneUpdated()
+        model.sceneUpdated(updateRemoteScene: false)
         model.updateButtonStates()
     }
 
@@ -135,6 +135,10 @@ struct QuickButtonsInnerView: View {
         videoEffectAction(state: state, type: .triple)
     }
 
+    private func twinAction(state: ButtonState) {
+        videoEffectAction(state: state, type: .twin)
+    }
+
     private func pixellateAction(state: ButtonState) {
         videoEffectAction(state: state, type: .pixellate)
         model.showingPixellate.toggle()
@@ -147,7 +151,7 @@ struct QuickButtonsInnerView: View {
     private func gridAction(state: ButtonState) {
         state.button.isOn.toggle()
         model.showingGrid.toggle()
-        model.sceneUpdated()
+        model.sceneUpdated(updateRemoteScene: false)
         model.updateButtonStates()
     }
 
@@ -387,6 +391,12 @@ struct QuickButtonsInnerView: View {
             case .triple:
                 Button(action: {
                     tripleAction(state: state)
+                }, label: {
+                    QuickButtonImage(state: state, buttonSize: size)
+                })
+            case .twin:
+                Button(action: {
+                    twinAction(state: state)
                 }, label: {
                     QuickButtonImage(state: state, buttonSize: size)
                 })

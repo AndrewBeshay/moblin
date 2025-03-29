@@ -762,6 +762,12 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
 
     var externalDisplayPreview = false
 
+    private var remoteSceneScenes: [SettingsScene] = []
+    private var remoteSceneWidgets: [SettingsWidget] = []
+    private var remoteSceneData = RemoteControlRemoteSceneData(textStats: nil, location: nil)
+    private var remoteSceneSettingsUpdateRequested = false
+    private var remoteSceneSettingsUpdating = false
+
     override init() {
         super.init()
         showLoadSettingsFailed = !settings.load()
@@ -827,6 +833,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     private var grayScaleEffect = GrayScaleEffect()
     private var sepiaEffect = SepiaEffect()
     private var tripleEffect = TripleEffect()
+    private var twinEffect = TwinEffect()
     private var pixellateEffect = PixellateEffect(strength: 0.0)
     private var pollEffect = PollEffect()
     private var locationManager = Location()
@@ -1568,6 +1575,11 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         return cameraDevice != nil
     }
 
+    func stopMoblinkStreamer() {
+        moblinkStreamer?.stop()
+        moblinkStreamer = nil
+    }
+
     func reloadMoblinkStreamer() {
         stopMoblinkStreamer()
         if isMoblinkStreamerConfigured() {
@@ -1577,11 +1589,6 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             )
             moblinkStreamer?.start(delegate: self)
         }
-    }
-
-    func stopMoblinkStreamer() {
-        moblinkStreamer?.stop()
-        moblinkStreamer = nil
     }
 
     func isMoblinkStreamerConfigured() -> Bool {
@@ -2217,8 +2224,9 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             return
         }
         if !shouldStreamInBackground() {
+            clearRemoteSceneSettingsAndData()
             reloadStream(continueRecording: isRecording)
-            sceneUpdated(attachCamera: true)
+            sceneUpdated(attachCamera: true, updateRemoteScene: false)
             setupAudioSession()
             media.attachDefaultAudioDevice()
             reloadRtmpServer()
@@ -3442,6 +3450,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         media.unregisterEffect(grayScaleEffect)
         media.unregisterEffect(sepiaEffect)
         media.unregisterEffect(tripleEffect)
+        media.unregisterEffect(twinEffect)
         media.unregisterEffect(pixellateEffect)
         media.unregisterEffect(pollEffect)
         faceEffect = FaceEffect(fps: Float(stream.fps), onFindFaceChanged: handleFindFaceChanged(value:))
@@ -3450,6 +3459,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         grayScaleEffect = GrayScaleEffect()
         sepiaEffect = SepiaEffect()
         tripleEffect = TripleEffect()
+        twinEffect = TwinEffect()
         pixellateEffect = PixellateEffect(strength: database.pixellateStrength!)
         pollEffect = PollEffect()
     }
@@ -3486,6 +3496,9 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         }
         if isGlobalButtonOn(type: .triple) {
             effects.append(tripleEffect)
+        }
+        if isGlobalButtonOn(type: .twin) {
+            effects.append(twinEffect)
         }
         if isGlobalButtonOn(type: .pixellate) {
             pixellateEffect = PixellateEffect(strength: database.pixellateStrength!)
@@ -3583,7 +3596,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         }
     }
 
-    func resetSlope() {
+    private func resetSlope() {
         slopePercent = 0.0
         previousSlopeAltitude = nil
         previousSlopeDistance = database.location!.distance!
@@ -3603,7 +3616,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         slopePercent = 0.7 * slopePercent + 0.3 * (100 * deltaAltitude / deltaDistance)
     }
 
-    func resetAverageSpeed() {
+    private func resetAverageSpeed() {
         averageSpeed = 0.0
         averageSpeedStartTime = .now
         averageSpeedStartDistance = database.location!.distance!
@@ -3640,39 +3653,54 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         guard !textEffects.isEmpty else {
             return
         }
-        updateTextWidgetsLapTimes(now: now)
-        let location = locationManager.getLatestKnownLocation()
-        let weather = weatherManager.getLatestWeather()
-        let placemark = geographyManager.getLatestPlacemark()
-        let stats = TextEffectStats(
-            timestamp: timestamp,
-            bitrateAndTotal: speedAndTotal,
-            date: now,
-            debugOverlayLines: debugLines,
-            speed: format(speed: location?.speed ?? 0),
-            averageSpeed: format(speed: averageSpeed),
-            altitude: format(altitude: location?.altitude ?? 0),
-            distance: getDistance(),
-            slope: "\(Int(slopePercent)) %",
-            conditions: weather?.currentWeather.symbolName,
-            temperature: weather?.currentWeather.temperature,
-            country: placemark?.country ?? "",
-            countryFlag: emojiFlag(country: placemark?.isoCountryCode ?? ""),
-            city: placemark?.locality,
-            muted: isMuteOn,
-            heartRates: heartRates,
-            activeEnergyBurned: workoutActiveEnergyBurned,
-            workoutDistance: workoutDistance,
-            power: workoutPower,
-            stepCount: workoutStepCount,
-            teslaBatteryLevel: textEffectTeslaBatteryLevel(),
-            teslaDrive: textEffectTeslaDrive(),
-            teslaMedia: textEffectTeslaMedia(),
-            cyclingPower: "\(cyclingPower) W",
-            cyclingCadence: "\(cyclingCadence)"
-        )
+        var stats: TextEffectStats
+        if let textStats = remoteSceneData.textStats {
+            stats = textStats.toStats()
+        } else {
+            updateTextWidgetsLapTimes(now: now)
+            let location = locationManager.getLatestKnownLocation()
+            let weather = weatherManager.getLatestWeather()
+            let placemark = geographyManager.getLatestPlacemark()
+            stats = TextEffectStats(
+                timestamp: timestamp,
+                bitrateAndTotal: speedAndTotal,
+                date: now,
+                debugOverlayLines: debugLines,
+                speed: format(speed: location?.speed ?? 0),
+                averageSpeed: format(speed: averageSpeed),
+                altitude: format(altitude: location?.altitude ?? 0),
+                distance: getDistance(),
+                slope: "\(Int(slopePercent)) %",
+                conditions: weather?.currentWeather.symbolName,
+                temperature: weather?.currentWeather.temperature,
+                country: placemark?.country ?? "",
+                countryFlag: emojiFlag(country: placemark?.isoCountryCode ?? ""),
+                city: placemark?.locality,
+                muted: isMuteOn,
+                heartRates: heartRates,
+                activeEnergyBurned: workoutActiveEnergyBurned,
+                workoutDistance: workoutDistance,
+                power: workoutPower,
+                stepCount: workoutStepCount,
+                teslaBatteryLevel: textEffectTeslaBatteryLevel(),
+                teslaDrive: textEffectTeslaDrive(),
+                teslaMedia: textEffectTeslaMedia(),
+                cyclingPower: "\(cyclingPower) W",
+                cyclingCadence: "\(cyclingCadence)",
+                browserTitle: getBrowserTitle()
+            )
+            remoteControlAssistantSetRemoteSceneDataTextStats(stats: stats)
+        }
         for textEffect in textEffects.values {
             textEffect.updateStats(stats: stats)
+        }
+    }
+
+    private func getBrowserTitle() -> String {
+        if showBrowser {
+            return getWebBrowser().title ?? ""
+        } else {
+            return ""
         }
     }
 
@@ -3743,11 +3771,18 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         guard !mapEffects.isEmpty else {
             return
         }
-        guard var location = locationManager.getLatestKnownLocation() else {
-            return
-        }
-        if isLocationInPrivacyRegion(location: location) {
-            location = .init()
+        let location: CLLocation
+        if let remoteSceneLocation = remoteSceneData.location {
+            location = remoteSceneLocation.toLocation()
+        } else {
+            guard var latestKnownLocation = locationManager.getLatestKnownLocation() else {
+                return
+            }
+            if isLocationInPrivacyRegion(location: latestKnownLocation) {
+                latestKnownLocation = .init()
+            }
+            remoteControlAssistantSetRemoteSceneDataLocation(location: latestKnownLocation)
+            location = latestKnownLocation
         }
         for mapEffect in mapEffects.values {
             mapEffect.updateLocation(location: location)
@@ -3795,17 +3830,13 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         }
     }
 
-    func resetSelectedScene(changeScene: Bool = true) {
-        if !enabledScenes.isEmpty, changeScene {
-            setSceneId(id: enabledScenes[0].id)
-            sceneIndex = 0
-        }
+    private func resetVideoEffects(widgets: [SettingsWidget]) {
         unregisterGlobalVideoEffects()
         for textEffect in textEffects.values {
             media.unregisterEffect(textEffect)
         }
         textEffects.removeAll()
-        for widget in database.widgets where widget.type == .text {
+        for widget in widgets where widget.type == .text {
             textEffects[widget.id] = TextEffect(
                 format: widget.text.formatString,
                 backgroundColor: widget.text.backgroundColor!,
@@ -3813,6 +3844,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
                 fontSize: CGFloat(widget.text.fontSize!),
                 fontDesign: widget.text.fontDesign!.toSystem(),
                 fontWeight: widget.text.fontWeight!.toSystem(),
+                fontMonospacedDigits: widget.text.fontMonospacedDigits!,
                 horizontalAlignment: widget.text.horizontalAlignment!.toSystem(),
                 verticalAlignment: widget.text.verticalAlignment!.toSystem(),
                 settingName: widget.name,
@@ -3830,7 +3862,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             browserEffect.stop()
         }
         browserEffects.removeAll()
-        for widget in database.widgets where widget.type == .browser {
+        for widget in widgets where widget.type == .browser {
             let videoSize = media.getVideoSize()
             guard let url = URL(string: widget.browser.url) else {
                 continue
@@ -3847,35 +3879,35 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             media.unregisterEffect(mapEffect)
         }
         mapEffects.removeAll()
-        for widget in database.widgets where widget.type == .map {
+        for widget in widgets where widget.type == .map {
             mapEffects[widget.id] = MapEffect(widget: widget.map!)
         }
         for qrCodeEffect in qrCodeEffects.values {
             media.unregisterEffect(qrCodeEffect)
         }
         qrCodeEffects.removeAll()
-        for widget in database.widgets where widget.type == .qrCode {
+        for widget in widgets where widget.type == .qrCode {
             qrCodeEffects[widget.id] = QrCodeEffect(widget: widget.qrCode!)
         }
         for videoSourceEffect in videoSourceEffects.values {
             media.unregisterEffect(videoSourceEffect)
         }
         videoSourceEffects.removeAll()
-        for widget in database.widgets where widget.type == .videoSource {
+        for widget in widgets where widget.type == .videoSource {
             videoSourceEffects[widget.id] = VideoSourceEffect()
         }
         for padelScoreboardEffect in padelScoreboardEffects.values {
             media.unregisterEffect(padelScoreboardEffect)
         }
         padelScoreboardEffects.removeAll()
-        for widget in database.widgets where widget.type == .scoreboard {
+        for widget in widgets where widget.type == .scoreboard {
             padelScoreboardEffects[widget.id] = PadelScoreboardEffect()
         }
         for alertsEffect in alertsEffects.values {
             media.unregisterEffect(alertsEffect)
         }
         alertsEffects.removeAll()
-        for widget in database.widgets where widget.type == .alerts {
+        for widget in widgets where widget.type == .alerts {
             alertsEffects[widget.id] = AlertsEffect(
                 settings: widget.alerts!.clone(),
                 delegate: self,
@@ -3887,6 +3919,42 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         browsers = browserEffects.map { _, browser in
             Browser(browserEffect: browser)
         }
+    }
+
+    func remoteSceneSettingsUpdated() {
+        remoteSceneSettingsUpdateRequested = true
+        updateRemoteSceneSettings()
+    }
+
+    private func updateRemoteSceneSettings() {
+        guard !remoteSceneSettingsUpdating else {
+            return
+        }
+        remoteSceneSettingsUpdating = true
+        remoteControlAssistantSetRemoteSceneSettings()
+        DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(1)) {
+            self.remoteSceneSettingsUpdating = false
+            if self.remoteSceneSettingsUpdateRequested {
+                self.remoteSceneSettingsUpdateRequested = false
+                self.updateRemoteSceneSettings()
+            }
+        }
+    }
+
+    private func getLocalAndRemoteScenes() -> [SettingsScene] {
+        return database.scenes + remoteSceneScenes
+    }
+
+    private func getLocalAndRemoteWidgets() -> [SettingsWidget] {
+        return database.widgets + remoteSceneWidgets
+    }
+
+    func resetSelectedScene(changeScene: Bool = true) {
+        if !enabledScenes.isEmpty, changeScene {
+            setSceneId(id: enabledScenes[0].id)
+            sceneIndex = 0
+        }
+        resetVideoEffects(widgets: getLocalAndRemoteWidgets())
         drawOnStreamEffect.updateOverlay(
             videoSize: media.getVideoSize(),
             size: drawOnStreamSize,
@@ -4153,6 +4221,9 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
                 )
             )
             return
+        }
+        if database.location!.resetWhenGoingLive! {
+            resetLocationData()
         }
         streamLog.removeAll()
         setIsLive(value: true)
@@ -4427,7 +4498,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         store()
         if stream.enabled {
             reloadStream()
-            sceneUpdated(attachCamera: true)
+            sceneUpdated(attachCamera: true, updateRemoteScene: false)
         }
     }
 
@@ -5274,6 +5345,10 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
                 handleChatBotMessageTesla(command: command)
             case "snapshot":
                 handleChatBotMessageSnapshotWithMessage(command: command)
+            case "reaction":
+                handleChatBotMessageReaction(command: command)
+            case "scene":
+                handleChatBotMessageScene(command: command)
             default:
                 break
             }
@@ -5429,6 +5504,50 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         }
     }
 
+    private func handleChatBotMessageReaction(command: ChatBotCommand) {
+        guard #available(iOS 17, *) else {
+            return
+        }
+        executeIfUserAllowedToUseChatBot(
+            permissions: database.chat.botCommandPermissions!.reaction!,
+            command: command
+        ) {
+            let reaction: AVCaptureReactionType
+            switch command.popFirst() {
+            case "fireworks":
+                reaction = .fireworks
+            case "balloons":
+                reaction = .balloons
+            case "hearts":
+                reaction = .heart
+            case "confetti":
+                reaction = .confetti
+            case "lasers":
+                reaction = .lasers
+            case "rain":
+                reaction = .rain
+            default:
+                return
+            }
+            guard self.cameraDevice?.availableReactionTypes.contains(reaction) == true else {
+                return
+            }
+            self.cameraDevice?.performEffect(for: reaction)
+        }
+    }
+
+    private func handleChatBotMessageScene(command: ChatBotCommand) {
+        guard let sceneName = command.popFirst() else {
+            return
+        }
+        executeIfUserAllowedToUseChatBot(
+            permissions: database.chat.botCommandPermissions!.scene!,
+            command: command
+        ) {
+            self.selectSceneByName(name: sceneName)
+        }
+    }
+
     private func handleChatBotMessageAlert(command: ChatBotCommand) {
         executeIfUserAllowedToUseChatBot(
             permissions: database.chat.botCommandPermissions!.alert!,
@@ -5479,6 +5598,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
                 type = .sepia
             case "triple":
                 type = .triple
+            case "twin":
+                type = .twin
             case "pixellate":
                 type = .pixellate
             case "4:3":
@@ -5487,7 +5608,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
                 return
             }
             self.setGlobalButtonState(type: type, isOn: state == "on")
-            self.sceneUpdated()
+            self.sceneUpdated(updateRemoteScene: false)
             self.updateButtonStates()
         }
     }
@@ -5723,7 +5844,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     func findWidget(id: UUID) -> SettingsWidget? {
-        for widget in database.widgets where widget.id == id {
+        for widget in getLocalAndRemoteWidgets() where widget.id == id {
             return widget
         }
         return nil
@@ -5777,16 +5898,16 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             attachCamera(scene: scene, position: .front)
             isFrontCameraSelected = true
         case .rtmp:
-            attachReplaceCamera(cameraId: scene.rtmpCameraId!)
+            attachReplaceCamera(cameraId: scene.rtmpCameraId!, scene: scene)
         case .srtla:
-            attachReplaceCamera(cameraId: scene.srtlaCameraId!)
+            attachReplaceCamera(cameraId: scene.srtlaCameraId!, scene: scene)
         case .mediaPlayer:
             mediaPlayers[scene.mediaPlayerCameraId!]?.activate()
-            attachReplaceCamera(cameraId: scene.mediaPlayerCameraId!)
+            attachReplaceCamera(cameraId: scene.mediaPlayerCameraId!, scene: scene)
         case .external:
             attachExternalCamera(scene: scene)
         case .screenCapture:
-            attachReplaceCamera(cameraId: screenCaptureCameraId)
+            attachReplaceCamera(cameraId: screenCaptureCameraId, scene: scene)
         case .backTripleLowEnergy:
             attachBackTripleLowEnergyCamera()
         case .backDualLowEnergy:
@@ -6051,6 +6172,11 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         var addedScenes: [SettingsScene] = []
         var needsSpeechToText = false
         enabledAlertsEffects = []
+        var scene = scene
+        if let remoteSceneWidget = remoteSceneWidgets.first {
+            scene = scene.clone()
+            scene.widgets.append(SettingsSceneWidget(widgetId: remoteSceneWidget.id))
+        }
         addSceneEffects(
             scene,
             &effects,
@@ -6153,9 +6279,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             case .videoEffect:
                 break
             case .browser:
-                if let browserEffect = browserEffects[widget.id],
-                   !usedBrowserEffects.contains(browserEffect)
-                {
+                if let browserEffect = browserEffects[widget.id], !usedBrowserEffects.contains(browserEffect) {
                     browserEffect.setSceneWidget(
                         sceneWidget: sceneWidget,
                         crops: findWidgetCrops(scene: scene, sourceWidgetId: widget.id)
@@ -6185,7 +6309,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
                     usedMapEffects.append(mapEffect)
                 }
             case .scene:
-                if let sceneWidgetScene = database.scenes.first(where: { $0.id == widget.scene!.sceneId }) {
+                if let sceneWidgetScene = getLocalAndRemoteScenes().first(where: { $0.id == widget.scene!.sceneId }) {
                     addSceneEffects(
                         sceneWidgetScene,
                         &effects,
@@ -6301,7 +6425,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         return crops
     }
 
-    func setSceneId(id: UUID) {
+    private func setSceneId(id: UUID) {
         selectedSceneId = id
         remoteControlStreamer?.stateChanged(state: RemoteControlState(scene: id))
         if isWatchLocal() {
@@ -6316,12 +6440,22 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         return findEnabledScene(id: selectedSceneId)
     }
 
-    private func selectScene(id: UUID) {
+    private func selectSceneByName(name: String) {
+        if let scene = enabledScenes.first(where: { $0.name.lowercased() == name.lowercased() }) {
+            selectScene(id: scene.id)
+        }
+    }
+
+    func selectScene(id: UUID) {
+        guard id != selectedSceneId else {
+            return
+        }
         if let index = enabledScenes.firstIndex(where: { scene in
             scene.id == id
         }) {
             sceneIndex = index
             setSceneId(id: id)
+            sceneUpdated(attachCamera: true, updateRemoteScene: false)
         }
     }
 
@@ -6334,7 +6468,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         sceneUpdated()
     }
 
-    func sceneUpdated(imageEffectChanged: Bool = false, attachCamera: Bool = false) {
+    func sceneUpdated(imageEffectChanged: Bool = false, attachCamera: Bool = false, updateRemoteScene: Bool = true) {
         if imageEffectChanged {
             reloadImageEffects()
         }
@@ -6345,6 +6479,9 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         sceneUpdatedOn(scene: scene, attachCamera: attachCamera)
         startWeatherManager()
         startGeographyManager()
+        if updateRemoteScene {
+            remoteSceneSettingsUpdated()
+        }
     }
 
     private func updateStreamUptime(now: ContinuousClock.Instant) {
@@ -6604,7 +6741,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             externalDisplayPreview: false,
             videoStabilizationMode: .off,
             videoMirrored: false,
-            ignoreFramesAfterAttachSeconds: 0.0
+            ignoreFramesAfterAttachSeconds: 0.0,
+            fillFrame: false
         )
     }
 
@@ -6811,6 +6949,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             videoStabilizationMode: getVideoStabilizationMode(scene: scene),
             videoMirrored: getVideoMirroredOnStream(),
             ignoreFramesAfterAttachSeconds: getIgnoreFramesAfterAttachSeconds(),
+            fillFrame: getFillFrame(scene: scene),
             onSuccess: {
                 self.streamPreviewView.isMirrored = isMirrored
                 self.externalDisplayStreamPreviewView.isMirrored = isMirrored
@@ -6836,6 +6975,10 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         return Double(database.debug.cameraSwitchRemoveBlackish!)
     }
 
+    private func getFillFrame(scene: SettingsScene) -> Bool {
+        return scene.fillFrame!
+    }
+
     private func getIgnoreFramesAfterAttachSecondsReplaceCamera() -> Double {
         if database.forceSceneSwitchTransition! {
             return Double(database.debug.cameraSwitchRemoveBlackish!)
@@ -6844,7 +6987,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         }
     }
 
-    private func attachReplaceCamera(cameraId: UUID) {
+    private func attachReplaceCamera(cameraId: UUID, scene: SettingsScene) {
         cameraDevice = nil
         cameraPosition = nil
         streamPreviewView.isMirrored = false
@@ -6854,7 +6997,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             device: getVideoSourceBuiltinCameraDevice(),
             cameraPreviewLayer: cameraPreviewLayer,
             cameraId: cameraId,
-            ignoreFramesAfterAttachSeconds: getIgnoreFramesAfterAttachSecondsReplaceCamera()
+            ignoreFramesAfterAttachSeconds: getIgnoreFramesAfterAttachSecondsReplaceCamera(),
+            fillFrame: getFillFrame(scene: scene)
         )
         media.usePendingAfterAttachEffects()
     }
@@ -7159,7 +7303,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         }) {
             backZoomPresetId = database.zoom.back[0].id
         }
-        sceneUpdated()
+        sceneUpdated(updateRemoteScene: false)
     }
 
     func frontZoomUpdated() {
@@ -7168,7 +7312,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         }) {
             frontZoomPresetId = database.zoom.front[0].id
         }
-        sceneUpdated()
+        sceneUpdated(updateRemoteScene: false)
     }
 
     private func makeConnectFailureToast(subTitle: String) {
@@ -7819,12 +7963,35 @@ extension Model: RemoteControlStreamerDelegate {
     }
 
     func remoteControlStreamerSetRemoteSceneSettings(data: RemoteControlRemoteSceneSettings) {
-        let (scenes, widgets) = data.toSettings()
-        logger.info("remote-control-streamer: Got setRemoteSceneSettings \(data) \(scenes) \(widgets)")
+        let (scenes, widgets, selectedSceneId) = data.toSettings()
+        if let selectedSceneId {
+            let widget = SettingsWidget(name: "")
+            widget.type = .scene
+            widget.scene!.sceneId = selectedSceneId
+            remoteSceneScenes = scenes
+            remoteSceneWidgets = [widget] + widgets
+            resetSelectedScene(changeScene: false)
+        } else if !remoteSceneScenes.isEmpty {
+            remoteSceneScenes = []
+            remoteSceneWidgets = []
+            resetSelectedScene(changeScene: false)
+        }
     }
 
     func remoteControlStreamerSetRemoteSceneData(data: RemoteControlRemoteSceneData) {
-        logger.info("remote-control-streamer: Got setRemoteSceneData \(data)")
+        if let textStats = data.textStats {
+            remoteSceneData.textStats = textStats
+        }
+        if let location = data.location {
+            remoteSceneData.location = location
+        }
+    }
+
+    private func clearRemoteSceneSettingsAndData() {
+        remoteSceneScenes = []
+        remoteSceneWidgets = []
+        remoteSceneData.textStats = nil
+        remoteSceneData.location = nil
     }
 }
 
@@ -7979,9 +8146,33 @@ extension Model {
         return client.enabled && client.port > 0 && !database.remoteControl!.password!.isEmpty
     }
 
-    func remoteControlAssistantSetRemoteSceneSettings() {
-        let data = RemoteControlRemoteSceneSettings(scenes: database.scenes, widgets: database.widgets)
+    private func remoteControlAssistantSetRemoteSceneSettings() {
+        let data = RemoteControlRemoteSceneSettings(
+            scenes: database.scenes,
+            widgets: database.widgets,
+            selectedSceneId: database.remoteSceneId
+        )
         remoteControlAssistant?.setRemoteSceneSettings(data: data) {}
+    }
+
+    private func shouldSendRemoteScene() -> Bool {
+        return database.remoteSceneId != nil && remoteControlAssistant?.isConnected() == true
+    }
+
+    func remoteControlAssistantSetRemoteSceneDataTextStats(stats: TextEffectStats) {
+        guard shouldSendRemoteScene() else {
+            return
+        }
+        let data = RemoteControlRemoteSceneData(textStats: RemoteControlRemoteSceneDataTextStats(stats: stats))
+        remoteControlAssistant?.setRemoteSceneData(data: data) {}
+    }
+
+    func remoteControlAssistantSetRemoteSceneDataLocation(location: CLLocation) {
+        guard shouldSendRemoteScene() else {
+            return
+        }
+        let data = RemoteControlRemoteSceneData(location: RemoteControlRemoteSceneDataLocation(location: location))
+        remoteControlAssistant?.setRemoteSceneData(data: data) {}
     }
 
     func remoteControlAssistantSetStream(on: Bool) {
@@ -8106,9 +8297,7 @@ extension Model: RemoteControlAssistantDelegate {
         makeToast(title: String(localized: "Remote control streamer connected"))
         updateRemoteControlStatus()
         updateRemoteControlAssistantStatus()
-        if false {
-            remoteControlAssistantSetRemoteSceneSettings()
-        }
+        remoteControlAssistantSetRemoteSceneSettings()
     }
 
     func remoteControlAssistantDisconnected() {
@@ -8913,7 +9102,7 @@ extension Model {
         database.streams.append(stream)
         setCurrentStream(stream: stream)
         reloadStream()
-        sceneUpdated(attachCamera: true)
+        sceneUpdated(attachCamera: true, updateRemoteScene: false)
     }
 
     func resetWizard() {
@@ -9294,9 +9483,15 @@ extension Model {
         reloadRealtimeIrl()
     }
 
-    func resetDistance() {
+    private func resetDistance() {
         database.location!.distance = 0.0
         latestKnownLocation = nil
+    }
+
+    func resetLocationData() {
+        resetDistance()
+        resetAverageSpeed()
+        resetSlope()
     }
 
     func isLocationEnabled() -> Bool {

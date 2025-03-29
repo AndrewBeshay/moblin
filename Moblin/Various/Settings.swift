@@ -667,6 +667,7 @@ class SettingsScene: Codable, Identifiable, Equatable {
     var videoSourceRotation: Double? = 0.0
     var videoStabilizationMode: SettingsVideoStabilizationMode? = .off
     var overrideVideoStabilizationMode: Bool? = false
+    var fillFrame: Bool? = false
 
     init(name: String) {
         self.name = name
@@ -969,6 +970,7 @@ class SettingsWidgetText: Codable {
     var fontSize: Int? = 30
     var fontDesign: SettingsFontDesign? = .default
     var fontWeight: SettingsFontWeight? = .regular
+    var fontMonospacedDigits: Bool? = false
     var alignment: SettingsHorizontalAlignment? = .leading
     var horizontalAlignment: SettingsHorizontalAlignment? = .leading
     var verticalAlignment: SettingsVerticalAlignment? = .top
@@ -1559,6 +1561,7 @@ enum SettingsButtonType: String, Codable, CaseIterable {
     case grayScale = "Gray scale"
     case sepia = "Sepia"
     case triple = "Triple"
+    case twin = "Twin"
     case pixellate = "Pixellate"
     case stream = "Stream"
     case grid = "Grid"
@@ -1826,6 +1829,8 @@ class SettingsChatBotPermissions: Codable {
     var filter: SettingsChatBotPermissionsCommand? = .init()
     var tesla: SettingsChatBotPermissionsCommand? = .init()
     var audio: SettingsChatBotPermissionsCommand? = .init()
+    var reaction: SettingsChatBotPermissionsCommand? = .init()
+    var scene: SettingsChatBotPermissionsCommand? = .init()
 }
 
 class SettingsChat: Codable {
@@ -2727,6 +2732,7 @@ class SettingsLocation: Codable {
     var enabled: Bool = false
     var privacyRegions: [SettingsPrivacyRegion] = []
     var distance: Double? = 0.0
+    var resetWhenGoingLive: Bool? = false
 }
 
 class SettingsAudioOutputToInputChannelsMap: Codable {
@@ -2909,6 +2915,7 @@ class Database: Codable {
     var cyclingPowerDevices: SettingsCyclingPowerDevices? = .init()
     var heartRateDevices: SettingsHeartRateDevices? = .init()
     var djiGimbalDevices: SettingsDjiGimbalDevices? = .init()
+    var remoteSceneId: UUID?
 
     static func fromString(settings: String) throws -> Database {
         let database = try JSONDecoder().decode(
@@ -3233,6 +3240,14 @@ private func addMissingGlobalButtons(database: Database) {
     button.imageType = "System name"
     button.systemImageNameOn = "person.3.fill"
     button.systemImageNameOff = "person.3"
+    updateGlobalButton(database: database, button: button)
+
+    button = SettingsButton(name: String(localized: "Twin"))
+    button.id = UUID()
+    button.type = .twin
+    button.imageType = "System name"
+    button.systemImageNameOn = "person.2.fill"
+    button.systemImageNameOff = "person.2"
     updateGlobalButton(database: database, button: button)
 
     button = SettingsButton(name: String(localized: "Pixellate"))
@@ -4915,6 +4930,26 @@ final class Settings {
         }
         for widget in database.widgets where widget.text.lapTimes == nil {
             widget.text.lapTimes = []
+            store()
+        }
+        for widget in realDatabase.widgets where widget.text.fontMonospacedDigits == nil {
+            widget.text.fontMonospacedDigits = false
+            store()
+        }
+        for scene in realDatabase.scenes where scene.fillFrame == nil {
+            scene.fillFrame = false
+            store()
+        }
+        if realDatabase.chat.botCommandPermissions!.reaction == nil {
+            realDatabase.chat.botCommandPermissions!.reaction = .init()
+            store()
+        }
+        if realDatabase.chat.botCommandPermissions!.scene == nil {
+            realDatabase.chat.botCommandPermissions!.scene = .init()
+            store()
+        }
+        if realDatabase.location!.resetWhenGoingLive == nil {
+            realDatabase.location!.resetWhenGoingLive = false
             store()
         }
     }
