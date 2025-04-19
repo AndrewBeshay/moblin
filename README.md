@@ -300,41 +300,46 @@ the JSON blob format. Class members are JSON object keys. Members with
 
 # Development environment setup
 
-Roughly the steps to setup Moblin's developement environment.
+## Setup Instructions
 
-1. Install Xcode with iOS and MacOS simulators on your Mac.
+### Prerequisites
+- Xcode 15.0 or later
+- iOS 15.0 or later
+- macOS 12.0 or later
+- Apple Developer Account
 
-2. Open a terminal.
+### Installation
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/moblin.git
+   cd moblin
+   ```
 
-3. Clone Moblin.
+2. Open the project in Xcode:
+   ```bash
+   open Moblin.xcodeproj
+   ```
 
-   `git clone https://github.com/eerimoq/moblin.git`
+3. Configure the project:
+   - Open `Config.xcconfig`
+   - Set your `DEVELOPMENT_TEAM`
+   - Update `BUNDLE_IDENTIFIER` to match your organization
+   - Configure code signing in Xcode project settings
 
-4. Enter Moblins repository.
+4. Build and run the project
 
-   `cd moblin`
+### Project Structure
+- `Moblin/` - Main app source code
+- `Moblin Widget/` - iOS widget extension
+- `Moblin Watch/` - Apple Watch app
+- `Moblin Screen Recording/` - Screen recording extension
+- `Common/` - Shared code between targets
+- `utils/` - Utility scripts and tools
+- `docs/` - Documentation and assets
 
-5. Open the Moblin project in Xcode. Wait for the dependencies to load.
-
-   `open Moblin.xcodeproj`
-
-6. Press `Command + B` to build Moblin.
-
-7. Click on the code signing error and add your account. No Apple
-   developer account is needed.
-
-8. Change the `Bundle Identifier` to anything you want (i.e. `com.whoami.Moblin`).
-
-9. Remove `In-App Purchase` and `Access Wi-Fi Information` by clicking
-   their trash cans.
-
-10. Build again. Hopefully successfully.
-
-11. Enable developer mode in your iPhone/iPad.
-
-12. Select you iPhone/iPad as `Run Destination` in Xcode (at the top
-    in the middle).
-
-13. Build and run by pressing `Command + R`.
-
-14. Done!
+### Configuration
+The project uses `Config.xcconfig` for project-wide settings. Update this file with your specific configuration:
+- Development team
+- Bundle identifier
+- Deployment targets
+- Code signing settings

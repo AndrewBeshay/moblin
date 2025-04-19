@@ -1,0 +1,42 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Documentation
+*.md text diff=markdown
+*.txt text
+*.pdf binary
+
+# Source code
+*.swift text
+*.h text
+*.m text
+*.mm text
+*.c text
+*.cpp text
+*.hpp text
+
+# Xcode project
+*.pbxproj text
+*.xcscheme text
+*.xcworkspace text
+*.xcodeproj/* text
+*.xcodeproj/project.xcworkspace/* text
+*.xcodeproj/xcshareddata/* text
+
+# Resources
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.mov binary
+*.mp4 binary
+*.pdf binary
+*.zip binary
+*.gz binary
+*.tar binary
+*.dmg binary
+
+# Dependencies
+Pods/** linguist-generated=true
+Carthage/Checkouts/** linguist-generated=true 
