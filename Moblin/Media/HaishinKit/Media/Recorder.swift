@@ -1,8 +1,14 @@
 import AVFoundation
 
-var recordSegmentLength = 5.0
+struct RecorderDataSegment {
+    let data: Data
+    let startTime: Double
+    let duration: Double
+}
 
-protocol IORecorderDelegate: AnyObject {
+protocol RecorderDelegate: AnyObject {
+    func recorderInitSegment(data: Data)
+    func recorderDataSegment(segment: RecorderDataSegment)
     func recorderFinished()
 }
 
@@ -17,7 +23,7 @@ class Recorder: NSObject {
     private var audioConverter: AVAudioConverter?
     private var audioOutputFormat: AVAudioFormat?
     private var basePresentationTimeStamp: CMTime = .zero
-    weak var delegate: (any IORecorderDelegate)?
+    weak var delegate: RecorderDelegate?
 
     func setAudioChannelsMap(map: [Int: Int]) {
         mixerLockQueue.async {
@@ -267,7 +273,7 @@ class Recorder: NSObject {
         writer = AVAssetWriter(contentType: UTType(AVFileType.mp4.rawValue)!)
         writer?.shouldOptimizeForNetworkUse = true
         writer?.outputFileTypeProfile = .mpeg4AppleHLS
-        writer?.preferredOutputSegmentInterval = CMTime(seconds: recordSegmentLength, preferredTimescale: 1)
+        writer?.preferredOutputSegmentInterval = CMTime(seconds: 2, preferredTimescale: 1)
         writer?.delegate = self
         writer?.initialSegmentStartTime = .zero
         try? Data().write(to: url)
@@ -312,9 +318,23 @@ class Recorder: NSObject {
 extension Recorder: AVAssetWriterDelegate {
     func assetWriter(_: AVAssetWriter,
                      didOutputSegmentData segmentData: Data,
-                     segmentType _: AVAssetSegmentType,
-                     segmentReport _: AVAssetSegmentReport?)
+                     segmentType: AVAssetSegmentType,
+                     segmentReport: AVAssetSegmentReport?)
     {
         fileHandle.value?.write(segmentData)
+        switch segmentType {
+        case .initialization:
+            delegate?.recorderInitSegment(data: segmentData)
+        case .separable:
+            if let report = segmentReport?.trackReports.first {
+                delegate?.recorderDataSegment(segment: RecorderDataSegment(
+                    data: segmentData,
+                    startTime: report.earliestPresentationTimeStamp.seconds,
+                    duration: report.duration.seconds
+                ))
+            }
+        default:
+            break
+        }
     }
 }
