@@ -476,6 +476,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     @Published var speedAndTotal = noValue
     @Published var speedMbpsOneDecimal = noValue
     @Published var bitrateStatusColor: Color = .white
+    @Published var bitrateStatusIconColor: Color = .clear
     private var previousBitrateStatusColorSrtDroppedPacketsTotal: Int32 = 0
     private var previousBitrateStatusNumberOfFailedEncodings = 0
     @Published var thermalState = ProcessInfo.processInfo.thermalState
@@ -546,6 +547,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     @Published var mediaPlayerSeeking = false
 
     @Published var showingCamera = false
+    @Published var showingReplay = false
     @Published var showingCameraBias = false
     @Published var showingCameraWhiteBalance = false
     @Published var showingCameraIso = false
@@ -758,6 +760,15 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     private var averageSpeedStartTime: ContinuousClock.Instant = .now
     private var averageSpeedStartDistance = 0.0
 
+    private var replayStarted = false
+    private var replay: Replay?
+    @Published var replayImage: UIImage?
+    private var replayHiddenImage: UIImage?
+    private var replayVideo: URL?
+    private var replayOffset: Double?
+    @Published var replayPlaying = false
+    private var replayBuffer = ReplayBuffer()
+
     @Published var remoteControlStatus = noValue
 
     private let sampleBufferReceiver = SampleBufferReceiver()
@@ -847,6 +858,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     private var twinEffect = TwinEffect()
     private var pixellateEffect = PixellateEffect(strength: 0.0)
     private var pollEffect = PollEffect()
+    private var replayEffect: ReplayEffect?
     private var locationManager = Location()
     private var realtimeIrl: RealtimeIrl?
     private var failedVideoEffect: String?
@@ -1155,6 +1167,69 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     func updateShowCameraPreview() -> Bool {
         showCameraPreview = shouldShowCameraPreview()
         return showCameraPreview
+    }
+
+    func startReplay(offset: Double, resetImage: Bool = true) {
+        replay = nil
+        if resetImage {
+            replayImage = nil
+        }
+        guard currentRecording != nil else {
+            makeErrorToast(title: "Replay only works when recording")
+            return
+        }
+        replayStarted = true
+        replayBuffer.createFile { url, duration in
+            guard let url else {
+                return
+            }
+            DispatchQueue.main.async {
+                guard self.replayStarted else {
+                    return
+                }
+                self.replay = Replay(url: url, duration: duration, offset: offset, delegate: self)
+            }
+        }
+    }
+
+    func stopReplay() {
+        replay = nil
+        replayImage = nil
+        replayStarted = false
+    }
+
+    func setReplayPosition(offset: Double) {
+        replay?.seek(offset: offset)
+    }
+
+    func replayPlay() {
+        guard let replayVideo, let replayOffset else {
+            return
+        }
+        replayImageHide()
+        replayEffect = ReplayEffect(video: replayVideo, start: replayOffset, stop: replayOffset + 8, delegate: self)
+        media.registerEffectBack(replayEffect!)
+    }
+
+    func replayStop() {
+        replayImageShow()
+        guard let replayEffect else {
+            return
+        }
+        media.unregisterEffect(replayEffect)
+        self.replayEffect = nil
+    }
+
+    private func replayImageHide() {
+        replayHiddenImage = replayImage
+        replayImage = nil
+    }
+
+    private func replayImageShow() {
+        if replayHiddenImage != nil {
+            replayImage = replayHiddenImage
+            replayHiddenImage = nil
+        }
     }
 
     func takeSnapshot(isChatBot: Bool = false, message: String? = nil, noDelay: Bool = false) {
@@ -1468,9 +1543,9 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         externalDisplayStreamPreviewView.videoGravity = .resizeAspect
         updateDigitalClock(now: Date())
         twitchChat = TwitchChatMoblin(delegate: self)
+        setMic()
         reloadStream()
         resetSelectedScene()
-        setMic()
         setupPeriodicTimers()
         setupThermalState()
         updateButtonStates()
@@ -6772,6 +6847,13 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             let speedString = formatBytesPerSecond(speed: speed)
             let total = sizeFormatter.string(fromByteCount: media.streamTotal())
             speedAndTotal = String(localized: "\(speedString) (\(total))")
+            if speed < stream.bitrate / 5 {
+                bitrateStatusIconColor = .red
+            } else if speed < stream.bitrate / 2 {
+                bitrateStatusIconColor = .orange
+            } else {
+                bitrateStatusIconColor = .clear
+            }
             if isWatchLocal() {
                 sendSpeedAndTotalToWatch(speedAndTotal: speedAndTotal)
             }
@@ -6883,16 +6965,16 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     func detachCamera() {
-        media.attachCamera(
-            devices: CaptureDevices(hasSceneDevice: false, devices: []),
-            cameraPreviewLayer: nil,
-            showCameraPreview: false,
-            externalDisplayPreview: false,
-            videoStabilizationMode: .off,
-            videoMirrored: false,
-            ignoreFramesAfterAttachSeconds: 0.0,
-            fillFrame: false
-        )
+        let params = VideoUnitAttachParams(devices: CaptureDevices(hasSceneDevice: false, devices: []),
+                                           cameraPreviewLayer: cameraPreviewLayer!,
+                                           showCameraPreview: false,
+                                           externalDisplayPreview: false,
+                                           replaceVideo: nil,
+                                           preferredVideoStabilizationMode: .off,
+                                           isVideoMirrored: false,
+                                           ignoreFramesAfterAttachSeconds: 0.0,
+                                           fillFrame: false)
+        media.attachCamera(params: params)
     }
 
     func attachCamera() {
@@ -6960,11 +7042,43 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         return false
     }
 
-    private func attachBackTripleLowEnergyCamera(force: Bool = true) {
+    private func lowEnergyCameraUpdateBackZoom(force: Bool) {
+        if force {
+            updateBackZoomSwitchTo()
+        }
+    }
+
+    private func updateBackZoomPresetId() {
+        for preset in database.zoom.back where preset.x == backZoomX {
+            backZoomPresetId = preset.id
+        }
+    }
+
+    private func updateFrontZoomPresetId() {
+        for preset in database.zoom.front where preset.x == frontZoomX {
+            frontZoomPresetId = preset.id
+        }
+    }
+
+    private func updateBackZoomSwitchTo() {
         if database.zoom.switchToBack.enabled {
             clearZoomId()
             backZoomX = database.zoom.switchToBack.x!
+            updateBackZoomPresetId()
         }
+    }
+
+    private func updateFrontZoomSwitchTo() {
+        if database.zoom.switchToFront.enabled {
+            clearZoomId()
+            frontZoomX = database.zoom.switchToFront.x!
+            updateFrontZoomPresetId()
+        }
+    }
+
+    private func attachBackTripleLowEnergyCamera(force: Bool = true) {
+        cameraPosition = .back
+        lowEnergyCameraUpdateBackZoom(force: force)
         zoomX = backZoomX
         guard let bestDevice = AVCaptureDevice.default(.builtInTripleCamera, for: .video, position: .back),
               let lastZoomFactor = bestDevice.virtualDeviceSwitchOverVideoZoomFactors.last
@@ -6991,15 +7105,12 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         cameraZoomLevelToXScale = device.getZoomFactorScale(hasUltraWideCamera: hasUltraWideBackCamera())
         (cameraZoomXMinimum, cameraZoomXMaximum) = bestDevice
             .getUIZoomRange(hasUltraWideCamera: hasUltraWideBackCamera())
-        cameraPosition = .back
         attachCameraFinalize(scene: scene)
     }
 
     private func attachBackDualLowEnergyCamera(force: Bool = true) {
-        if database.zoom.switchToBack.enabled {
-            clearZoomId()
-            backZoomX = database.zoom.switchToBack.x!
-        }
+        cameraPosition = .back
+        lowEnergyCameraUpdateBackZoom(force: force)
         zoomX = backZoomX
         guard let bestDevice = AVCaptureDevice.default(.builtInDualCamera, for: .video, position: .back),
               let lastZoomFactor = bestDevice.virtualDeviceSwitchOverVideoZoomFactors.last
@@ -7024,15 +7135,12 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         cameraZoomLevelToXScale = device.getZoomFactorScale(hasUltraWideCamera: hasUltraWideBackCamera())
         (cameraZoomXMinimum, cameraZoomXMaximum) = bestDevice
             .getUIZoomRange(hasUltraWideCamera: hasUltraWideBackCamera())
-        cameraPosition = .back
         attachCameraFinalize(scene: scene)
     }
 
     private func attachBackWideDualLowEnergyCamera(force: Bool = true) {
-        if database.zoom.switchToBack.enabled {
-            clearZoomId()
-            backZoomX = database.zoom.switchToBack.x!
-        }
+        cameraPosition = .back
+        lowEnergyCameraUpdateBackZoom(force: force)
         zoomX = backZoomX
         guard let bestDevice = AVCaptureDevice.default(.builtInDualWideCamera, for: .video, position: .back),
               let lastZoomFactor = bestDevice.virtualDeviceSwitchOverVideoZoomFactors.last
@@ -7057,7 +7165,6 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         cameraZoomLevelToXScale = device.getZoomFactorScale(hasUltraWideCamera: hasUltraWideBackCamera())
         (cameraZoomXMinimum, cameraZoomXMaximum) = bestDevice
             .getUIZoomRange(hasUltraWideCamera: hasUltraWideBackCamera())
-        cameraPosition = .back
         attachCameraFinalize(scene: scene)
     }
 
@@ -7070,16 +7177,10 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         cameraPosition = position
         switch position {
         case .back:
-            if database.zoom.switchToBack.enabled {
-                clearZoomId()
-                backZoomX = database.zoom.switchToBack.x!
-            }
+            updateBackZoomSwitchTo()
             zoomX = backZoomX
         case .front:
-            if database.zoom.switchToFront.enabled {
-                clearZoomId()
-                frontZoomX = database.zoom.switchToFront.x!
-            }
+            updateFrontZoomSwitchTo()
             zoomX = frontZoomX
         default:
             break
@@ -7090,15 +7191,17 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     private func attachCameraFinalize(scene: SettingsScene) {
         lastAttachCompletedTime = nil
         let isMirrored = getVideoMirroredOnScreen()
+        let params = VideoUnitAttachParams(devices: getBuiltinCameraDevices(scene: scene, sceneDevice: cameraDevice),
+                                           cameraPreviewLayer: cameraPreviewLayer!,
+                                           showCameraPreview: updateShowCameraPreview(),
+                                           externalDisplayPreview: externalDisplayPreview,
+                                           replaceVideo: nil,
+                                           preferredVideoStabilizationMode: getVideoStabilizationMode(scene: scene),
+                                           isVideoMirrored: getVideoMirroredOnStream(),
+                                           ignoreFramesAfterAttachSeconds: getIgnoreFramesAfterAttachSeconds(),
+                                           fillFrame: getFillFrame(scene: scene))
         media.attachCamera(
-            devices: getBuiltinCameraDevices(scene: scene, sceneDevice: cameraDevice),
-            cameraPreviewLayer: cameraPreviewLayer,
-            showCameraPreview: updateShowCameraPreview(),
-            externalDisplayPreview: externalDisplayPreview,
-            videoStabilizationMode: getVideoStabilizationMode(scene: scene),
-            videoMirrored: getVideoMirroredOnStream(),
-            ignoreFramesAfterAttachSeconds: getIgnoreFramesAfterAttachSeconds(),
-            fillFrame: getFillFrame(scene: scene),
+            params: params,
             onSuccess: {
                 self.streamPreviewView.isMirrored = isMirrored
                 self.externalDisplayStreamPreviewView.isMirrored = isMirrored
@@ -7144,7 +7247,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         hasZoom = false
         media.attachReplaceCamera(
             devices: getBuiltinCameraDevices(scene: scene, sceneDevice: nil),
-            cameraPreviewLayer: cameraPreviewLayer,
+            cameraPreviewLayer: cameraPreviewLayer!,
+            externalDisplayPreview: externalDisplayPreview,
             cameraId: cameraId,
             ignoreFramesAfterAttachSeconds: getIgnoreFramesAfterAttachSecondsReplaceCamera(),
             fillFrame: getFillFrame(scene: scene)
@@ -7157,11 +7261,15 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     func setCameraZoomX(x: Float, rate: Float? = nil) -> Float? {
-        return cameraZoomLevelToX(media.setCameraZoomLevel(level: x / cameraZoomLevelToXScale, rate: rate))
+        return cameraZoomLevelToX(media.setCameraZoomLevel(
+            device: cameraDevice,
+            level: x / cameraZoomLevelToXScale,
+            rate: rate
+        ))
     }
 
     private func stopCameraZoom() -> Float? {
-        return cameraZoomLevelToX(media.stopCameraZoomLevel())
+        return cameraZoomLevelToX(media.stopCameraZoomLevel(device: cameraDevice))
     }
 
     private func cameraZoomLevelToX(_ level: Float?) -> Float? {
@@ -7292,8 +7400,10 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         switch cameraPosition {
         case .back:
             backZoomX = x
+            updateBackZoomPresetId()
         case .front:
             frontZoomX = x
+            updateFrontZoomPresetId()
         default:
             break
         }
@@ -7403,6 +7513,14 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
 
     private func handleCaptureSessionError(message: String) {
         makeErrorToastMain(title: message, subTitle: videoCaptureError())
+    }
+
+    private func handleRecorderInitSegment(data: Data) {
+        replayBuffer.setInitSegment(data: data)
+    }
+
+    private func handleRecorderDataSegment(segment: RecorderDataSegment) {
+        replayBuffer.appendDataSegment(segment: segment)
     }
 
     private func handleRecorderFinished() {}
@@ -9379,7 +9497,6 @@ extension Model {
             makeToast(title: newMic.name)
         }
         if newMic != currentMic {
-            logger.info("Switching to external mic from RTMP/SRT(LA)/... mic")
             selectMicDefault(mic: newMic)
         }
         logger.info("Mic: \(newMic.name)")
@@ -9465,7 +9582,7 @@ extension Model {
     }
 
     func setMic() {
-        var wantedOrientation: AVAudioSession.Orientation
+        let wantedOrientation: AVAudioSession.Orientation
         switch database.mic {
         case .bottom:
             wantedOrientation = .bottom
@@ -9485,12 +9602,8 @@ extension Model {
                 }
                 if let dataSources = inputPort.dataSources, !dataSources.isEmpty {
                     for dataSource in dataSources where dataSource.orientation == wantedOrientation {
-                        do {
-                            try self.setBuiltInMicAudioMode(dataSource: dataSource, preferStereoMic: preferStereoMic)
-                            try inputPort.setPreferredDataSource(dataSource)
-                        } catch {
-                            logger.error("Failed to set mic as preferred with error \(error)")
-                        }
+                        try? self.setBuiltInMicAudioMode(dataSource: dataSource, preferStereoMic: preferStereoMic)
+                        try? inputPort.setPreferredDataSource(dataSource)
                     }
                 }
             }
@@ -10734,6 +10847,9 @@ extension Model: TwitchEventSubDelegate {
 
     func twitchEventSubChannelFollow(event: TwitchEventSubNotificationChannelFollowEvent) {
         DispatchQueue.main.async {
+            guard self.stream.twitchShowFollows! else {
+                return
+            }
             let text = String(localized: "just followed!")
             self.makeToast(title: "\(event.user_name) \(text)")
             self.playAlert(alert: .twitchFollow(event))
@@ -11367,6 +11483,14 @@ extension Model: MediaDelegate {
         handleCaptureSessionError(message: message)
     }
 
+    func mediaOnRecorderInitSegment(data: Data) {
+        handleRecorderInitSegment(data: data)
+    }
+
+    func mediaOnRecorderDataSegment(segment: RecorderDataSegment) {
+        handleRecorderDataSegment(segment: segment)
+    }
+
     func mediaOnRecorderFinished() {
         handleRecorderFinished()
     }
@@ -11503,4 +11627,24 @@ private func videoCaptureError() -> String {
         String(localized: "Try to use single or low-energy cameras."),
         String(localized: "Try to lower stream FPS and resolution."),
     ].joined(separator: "\n")
+}
+
+extension Model: ReplayDelegate {
+    func replayOutputFrame(image: UIImage, video: URL, offset: Double) {
+        DispatchQueue.main.async {
+            self.replayImage = image
+            self.replayVideo = video
+            self.replayOffset = offset
+            self.replayHiddenImage = nil
+        }
+    }
+}
+
+extension Model: ReplayEffectDelegate {
+    func replayEffectCompleted() {
+        DispatchQueue.main.async {
+            self.replayPlaying = false
+            self.replayImageShow()
+        }
+    }
 }

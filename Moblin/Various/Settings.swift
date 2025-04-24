@@ -401,6 +401,7 @@ class SettingsStream: Codable, Identifiable, Equatable {
     var url: String = defaultStreamUrl
     var twitchChannelName: String = ""
     var twitchChannelId: String = ""
+    var twitchShowFollows: Bool? = true
     var twitchAccessToken: String? = ""
     var twitchLoggedIn: Bool? = false
     var twitchRewards: [SettingsStreamTwitchReward]? = []
@@ -1639,6 +1640,7 @@ enum SettingsButtonType: String, Codable, CaseIterable {
     case djiDevices = "DJI devices"
     case portrait = "Portrait"
     case goPro = "GoPro"
+    case replay = "Replay"
 
     public init(from decoder: Decoder) throws {
         var value = try decoder.singleValueContainer().decode(RawValue.self)
@@ -2041,6 +2043,8 @@ class SettingsDebug: Codable {
     var externalDisplayChat: Bool? = false
     var videoSourceWidgetTrackFace: Bool? = false
     var srtlaBatchSendEnabled: Bool? = true
+    var replay: Bool? = false
+    var recordSegmentLength: Double? = 5.0
 }
 
 class SettingsRtmpServerStream: Codable, Identifiable {
@@ -3227,6 +3231,14 @@ private func addMissingGlobalButtons(database: Database) {
     button.imageType = "System name"
     button.systemImageNameOn = "camera.aperture"
     button.systemImageNameOff = "camera.aperture"
+    updateGlobalButton(database: database, button: button)
+
+    button = SettingsButton(name: String(localized: "Replay"))
+    button.id = UUID()
+    button.type = .replay
+    button.imageType = "System name"
+    button.systemImageNameOn = "play.fill"
+    button.systemImageNameOff = "play"
     updateGlobalButton(database: database, button: button)
 
     button = SettingsButton(name: String(localized: "OBS"))
@@ -5162,6 +5174,18 @@ final class Settings {
         }
         if realDatabase.tesla!.enabled == nil {
             realDatabase.tesla!.enabled = true
+            store()
+        }
+        if realDatabase.debug.replay == nil {
+            realDatabase.debug.replay = false
+            store()
+        }
+        if realDatabase.debug.recordSegmentLength == nil {
+            realDatabase.debug.recordSegmentLength = 5.0
+            store()
+        }
+        for stream in realDatabase.streams where stream.twitchShowFollows == nil {
+            stream.twitchShowFollows = true
             store()
         }
     }

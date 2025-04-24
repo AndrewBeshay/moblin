@@ -5,6 +5,7 @@ struct DebugSettingsView: View {
     @EnvironmentObject var model: Model
     @State var cameraSwitchRemoveBlackish: Float
     @State var dataRateLimitFactor: Float
+    @State var recordSegmentLength: Double
 
     private func submitLogLines(value: String) {
         guard let lines = Int(value) else {

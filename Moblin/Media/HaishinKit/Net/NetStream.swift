@@ -9,6 +9,8 @@ protocol NetStreamDelegate: AnyObject {
     func streamVideo(_ stream: NetStream, findVideoFormatError: String, activeFormat: String)
     func streamVideoAttachCameraError(_ stream: NetStream)
     func streamVideoCaptureSessionError(_ stream: NetStream, _ message: String)
+    func streamRecorderInitSegment(data: Data)
+    func streamRecorderDataSegment(segment: RecorderDataSegment)
     func streamRecorderFinished()
     func streamAudio(_ stream: NetStream, sampleBuffer: CMSampleBuffer)
     func streamNoTorch()
@@ -85,31 +87,13 @@ open class NetStream: NSObject {
     }
 
     func attachCamera(
-        _ devices: CaptureDevices,
-        _ cameraPreviewLayer: AVCaptureVideoPreviewLayer?,
-        _ showCameraPreview: Bool,
-        _ externalDisplayPreview: Bool,
-        _ preferredVideoStabilizationMode: AVCaptureVideoStabilizationMode,
-        _ isVideoMirrored: Bool,
-        _ ignoreFramesAfterAttachSeconds: Double,
-        _ fillFrame: Bool,
+        params: VideoUnitAttachParams,
         onError: ((_ error: Error) -> Void)? = nil,
-        onSuccess: (() -> Void)? = nil,
-        replaceVideoCameraId: UUID? = nil
+        onSuccess: (() -> Void)? = nil
     ) {
         netStreamLockQueue.async {
             do {
-                try self.mixer.attachCamera(
-                    devices,
-                    cameraPreviewLayer,
-                    showCameraPreview,
-                    externalDisplayPreview,
-                    replaceVideoCameraId,
-                    preferredVideoStabilizationMode,
-                    isVideoMirrored,
-                    ignoreFramesAfterAttachSeconds,
-                    fillFrame
-                )
+                try self.mixer.attachCamera(params: params)
                 onSuccess?()
             } catch {
                 onError?(error)
@@ -169,12 +153,12 @@ open class NetStream: NSObject {
         mixer.audio.setReplaceAudioTargetLatency(cameraId: cameraId, latency: latency)
     }
 
-    func videoCapture() -> VideoUnit? {
-        return mixer.video
-    }
-
     func registerVideoEffect(_ effect: VideoEffect) {
         mixer.video.registerEffect(effect)
+    }
+
+    func registerVideoEffectBack(_ effect: VideoEffect) {
+        mixer.video.registerEffectBack(effect)
     }
 
     func unregisterVideoEffect(_ effect: VideoEffect) {
@@ -263,6 +247,14 @@ extension NetStream: MixerDelegate {
 
     func mixerCaptureSessionError(message: String) {
         delegate?.streamVideoCaptureSessionError(self, message)
+    }
+
+    func mixerRecorderInitSegment(data: Data) {
+        delegate?.streamRecorderInitSegment(data: data)
+    }
+
+    func mixerRecorderDataSegment(segment: RecorderDataSegment) {
+        delegate?.streamRecorderDataSegment(segment: segment)
     }
 
     func mixerRecorderFinished() {

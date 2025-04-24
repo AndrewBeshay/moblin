@@ -281,6 +281,18 @@ struct QuickButtonsInnerView: View {
         model.toggleShowingPanel(type: .goPro, panel: .goPro)
     }
 
+    private func replayAction(state: ButtonState) {
+        model.showingReplay.toggle()
+        state.button.isOn.toggle()
+        model.setGlobalButtonState(type: .replay, isOn: state.button.isOn)
+        model.updateButtonStates()
+        if model.showingReplay {
+            model.startReplay(offset: 20)
+        } else {
+            model.stopReplay()
+        }
+    }
+
     var body: some View {
         VStack {
             switch state.button.type {
@@ -574,6 +586,12 @@ struct QuickButtonsInnerView: View {
             case .goPro:
                 Button(action: {
                     goProAction(state: state)
+                }, label: {
+                    QuickButtonImage(state: state, buttonSize: size)
+                })
+            case .replay:
+                Button(action: {
+                    replayAction(state: state)
                 }, label: {
                     QuickButtonImage(state: state, buttonSize: size)
                 })

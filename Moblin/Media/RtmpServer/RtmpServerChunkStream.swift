@@ -368,7 +368,7 @@ class RtmpServerChunkStream {
                 audioBuffer = AVAudioCompressedBuffer(
                     format: audioFormat,
                     packetCapacity: 1,
-                    maximumPacketSize: 1024 * Int(audioFormat.channelCount)
+                    maximumPacketSize: 4096 * Int(audioFormat.channelCount)
                 )
                 pcmAudioFormat = AVAudioFormat(
                     commonFormat: .pcmFormatInt16,
@@ -397,6 +397,13 @@ class RtmpServerChunkStream {
             return
         }
         let length = messageBody.count - codec.headerSize
+        guard length > 0 else {
+            return
+        }
+        guard length <= audioBuffer.maximumPacketSize else {
+            logger.info("rtmp-server: Audio packet too long (\(length) > \(audioBuffer.maximumPacketSize))")
+            return
+        }
         messageBody.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) in
             guard let baseAddress = buffer.baseAddress else {
                 return
@@ -422,7 +429,7 @@ class RtmpServerChunkStream {
             return self.audioBuffer
         }
         if let error {
-            logger.info("rtmp-server: client: Error \(error)")
+            logger.info("rtmp-server: client: Audio decode error of packet with length \(length): \(error)")
         } else if let sampleBuffer = makeAudioSampleBuffer(client: client, audioBuffer: outputBuffer) {
             client.targetLatenciesSynchronizer
                 .setLatestAudioPresentationTimeStamp(sampleBuffer.presentationTimeStamp.seconds)

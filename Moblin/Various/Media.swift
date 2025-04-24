@@ -27,6 +27,8 @@ protocol MediaDelegate: AnyObject {
     func mediaOnFindVideoFormatError(_ findVideoFormatError: String, _ activeFormat: String)
     func mediaOnAttachCameraError()
     func mediaOnCaptureSessionError(_ message: String)
+    func mediaOnRecorderInitSegment(data: Data)
+    func mediaOnRecorderDataSegment(segment: RecorderDataSegment)
     func mediaOnRecorderFinished()
     func mediaOnNoTorch()
     func mediaStrlaRelayDestinationAddress(address: String, port: UInt16)
@@ -601,6 +603,10 @@ final class Media: NSObject {
         netStream?.registerVideoEffect(effect)
     }
 
+    func registerEffectBack(_ effect: VideoEffect) {
+        netStream?.registerVideoEffectBack(effect)
+    }
+
     func unregisterEffect(_ effect: VideoEffect) {
         netStream?.unregisterVideoEffect(effect)
     }
@@ -745,8 +751,8 @@ final class Media: NSObject {
         netStream?.setVideoOrientation(value: value)
     }
 
-    func setCameraZoomLevel(level: Float, rate: Float?) -> Float? {
-        guard let device = netStream?.videoCapture()?.device else {
+    func setCameraZoomLevel(device: AVCaptureDevice?, level: Float, rate: Float?) -> Float? {
+        guard let device else {
             logger.warning("Device not ready to zoom")
             return nil
         }
@@ -765,8 +771,8 @@ final class Media: NSObject {
         return level
     }
 
-    func stopCameraZoomLevel() -> Float? {
-        guard let device = netStream?.videoCapture()?.device else {
+    func stopCameraZoomLevel(device: AVCaptureDevice?) -> Float? {
+        guard let device else {
             logger.warning("Device not ready to zoom")
             return nil
         }
@@ -780,28 +786,11 @@ final class Media: NSObject {
         return Float(device.videoZoomFactor)
     }
 
-    func attachCamera(
-        devices: CaptureDevices,
-        cameraPreviewLayer: AVCaptureVideoPreviewLayer?,
-        showCameraPreview: Bool,
-        externalDisplayPreview: Bool,
-        videoStabilizationMode: AVCaptureVideoStabilizationMode,
-        videoMirrored: Bool,
-        ignoreFramesAfterAttachSeconds: Double,
-        fillFrame: Bool,
-        onSuccess: (() -> Void)? = nil
-    ) {
+    func attachCamera(params: VideoUnitAttachParams, onSuccess: (() -> Void)? = nil) {
         netStream?.attachCamera(
-            devices,
-            cameraPreviewLayer,
-            showCameraPreview,
-            externalDisplayPreview,
-            videoStabilizationMode,
-            videoMirrored,
-            ignoreFramesAfterAttachSeconds,
-            fillFrame,
-            onError: { error in
-                logger.error("stream: Attach camera error: \(error)")
+            params: params,
+            onError: {
+                logger.error("stream: Attach camera error: \($0)")
             },
             onSuccess: {
                 DispatchQueue.main.async {
@@ -813,22 +802,22 @@ final class Media: NSObject {
 
     func attachReplaceCamera(
         devices: CaptureDevices,
-        cameraPreviewLayer: AVCaptureVideoPreviewLayer?,
+        cameraPreviewLayer: AVCaptureVideoPreviewLayer,
+        externalDisplayPreview: Bool,
         cameraId: UUID,
         ignoreFramesAfterAttachSeconds: Double,
         fillFrame: Bool
     ) {
-        netStream?.attachCamera(
-            devices,
-            cameraPreviewLayer,
-            false,
-            true,
-            .off,
-            false,
-            ignoreFramesAfterAttachSeconds,
-            fillFrame,
-            replaceVideoCameraId: cameraId
-        )
+        let params = VideoUnitAttachParams(devices: devices,
+                                           cameraPreviewLayer: cameraPreviewLayer,
+                                           showCameraPreview: false,
+                                           externalDisplayPreview: externalDisplayPreview,
+                                           replaceVideo: cameraId,
+                                           preferredVideoStabilizationMode: .off,
+                                           isVideoMirrored: false,
+                                           ignoreFramesAfterAttachSeconds: ignoreFramesAfterAttachSeconds,
+                                           fillFrame: fillFrame)
+        netStream?.attachCamera(params: params)
     }
 
     func attachReplaceAudio(cameraId: UUID?) {
@@ -985,6 +974,14 @@ extension Media: NetStreamDelegate {
 
     func streamAudio(_: NetStream, sampleBuffer: CMSampleBuffer) {
         delegate?.mediaOnAudioBuffer(sampleBuffer)
+    }
+
+    func streamRecorderInitSegment(data: Data) {
+        delegate?.mediaOnRecorderInitSegment(data: data)
+    }
+
+    func streamRecorderDataSegment(segment: RecorderDataSegment) {
+        delegate?.mediaOnRecorderDataSegment(segment: segment)
     }
 
     func streamRecorderFinished() {
