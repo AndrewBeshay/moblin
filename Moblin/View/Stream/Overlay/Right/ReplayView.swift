@@ -2,7 +2,6 @@ import SwiftUI
 
 struct StreamOverlayRightReplayView: View {
     @EnvironmentObject var model: Model
-    @State var position = 20.0
 
     private func playStopImage() -> String {
         if model.replayPlaying {
@@ -14,43 +13,65 @@ struct StreamOverlayRightReplayView: View {
 
     var body: some View {
         VStack(alignment: .trailing) {
-            if let image = model.replayImage {
+            if !model.replayPlaying, let image = model.replayImage {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: 300)
                     .cornerRadius(7)
+                    .onTapGesture {
+                        model.replayImage = nil
+                    }
             }
             HStack {
-                Slider(value: $position,
+                Slider(value: $model.replayPosition,
                        in: 0 ... 30,
                        step: 0.1,
                        onEditingChanged: { _ in
                        })
                        .frame(width: 250)
-                       .onChange(of: position) {
-                           model.setReplayPosition(offset: $0)
+                       .onChange(of: model.replayPosition) {
+                           model.setReplayPosition(offset: 30 - $0)
                        }
+                       .rotationEffect(.degrees(180))
+                Text("\(Int(model.replayPosition))s")
+                    .frame(width: 30)
+                    .font(.body)
+                SegmentedPicker(SettingsReplaySpeed.allCases, selectedItem: $model.replaySpeed) {
+                    Text($0.rawValue)
+                        .font(.subheadline)
+                        .frame(width: 30, height: 35)
+                }
+                .cornerRadius(7)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 7)
+                        .stroke(pickerBorderColor)
+                )
+                .frame(width: 90)
+                .onChange(of: model.replaySpeed) { _ in
+                    model.replaySpeedChanged()
+                }
                 Button {
-                    model.startReplay(offset: position, resetImage: false)
+                    model.startReplay()
                 } label: {
-                    Image(systemName: "arrow.clockwise")
+                    Image(systemName: "arrow.counterclockwise")
                         .frame(width: 30)
-                        .font(.title)
                 }
                 Button {
                     model.replayPlaying.toggle()
                     if model.replayPlaying {
-                        model.replayPlay()
+                        if !model.replayPlay() {
+                            model.replayPlaying = false
+                        }
                     } else {
-                        model.replayStop()
+                        model.replayCancel()
                     }
                 } label: {
                     Image(systemName: playStopImage())
                         .frame(width: 30)
-                        .font(.title)
                 }
             }
+            .font(.title)
             .padding([.top, .bottom], 5)
             .padding([.leading, .trailing], 7)
             .background(backgroundColor)
