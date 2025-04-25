@@ -214,13 +214,13 @@ final class KickPusher: NSObject {
             let emoteId = match.output.1
             let textBeforeEmote = message[startIndex ..< match.range.lowerBound]
             let url = URL(string: "https://files.kick.com/emotes/\(emoteId)/fullsize")
-            segments += makeChatPostTextSegments(text: String(textBeforeEmote), id: &id)
+            segments += message.makeChatPostTextSegments(text: String(textBeforeEmote), id: &id)
             segments.append(ChatPostSegment(id: id, url: url))
             id += 1
             startIndex = match.range.upperBound
         }
         if startIndex != message.endIndex {
-            segments += makeChatPostTextSegments(text: String(message[startIndex...]), id: &id)
+            segments += message.makeChatPostTextSegments(text: String(message[startIndex...]), id: &id)
         }
         return segments
     }

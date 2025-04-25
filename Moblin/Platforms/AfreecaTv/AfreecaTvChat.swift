@@ -286,7 +286,7 @@ final class AfreecaTvChat: NSObject {
     private func createSegments(message: String) -> [ChatPostSegment] {
         var segments: [ChatPostSegment] = []
         var id = 0
-        for var segment in makeChatPostTextSegments(text: message, id: &id) {
+        for var segment in message.makeChatPostTextSegments(id: &id) {
             if let text = segment.text {
                 segments += emotes.createSegments(text: text, id: &id)
                 segment.text = nil

@@ -503,6 +503,8 @@
 		03FBD1812B3B0DE500757CA9 /* RtmpServerClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03FBD1802B3B0DE500757CA9 /* RtmpServerClient.swift */; };
 		03FBD1852B3B0DF300757CA9 /* RtmpServerChunkStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03FBD1842B3B0DF300757CA9 /* RtmpServerChunkStream.swift */; };
 		45E3E780842910145791546F /* DjiDeviceScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45E3EAA92F1B2253BB2ED4FC /* DjiDeviceScanner.swift */; };
+		4909200A2DBB6273009BF061 /* Model+Chat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 490920012DBB6273009BF061 /* Model+Chat.swift */; };
+		4909200F2DBB9ED1009BF061 /* ChatUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4909200C2DBB9ED1009BF061 /* ChatUtils.swift */; };
 		ABF045852C1CEAF800D07696 /* AdaptiveBitrateSrtBela.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABF045842C1CEAF800D07696 /* AdaptiveBitrateSrtBela.swift */; };
 		C7E682562BC2E3FE004EB747 /* ThermalStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03B373FE2A9FCA790028DDD5 /* ThermalStateView.swift */; };
 /* End PBXBuildFile section */
@@ -1090,6 +1092,8 @@
 		03FBD1842B3B0DF300757CA9 /* RtmpServerChunkStream.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RtmpServerChunkStream.swift; sourceTree = "<group>"; };
 		45E3EAA92F1B2253BB2ED4FC /* DjiDeviceScanner.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DjiDeviceScanner.swift; sourceTree = "<group>"; };
 		49091F092DB3E85E009BF061 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		490920012DBB6273009BF061 /* Model+Chat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Model+Chat.swift"; sourceTree = "<group>"; };
+		4909200C2DBB9ED1009BF061 /* ChatUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatUtils.swift; sourceTree = "<group>"; };
 		ABF045842C1CEAF800D07696 /* AdaptiveBitrateSrtBela.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveBitrateSrtBela.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -1919,6 +1923,8 @@
 		035E9E352A9A02D6009D4F5A /* Moblin */ = {
 			isa = PBXGroup;
 			children = (
+				4909200E2DBB9ED1009BF061 /* Common */,
+				490920062DBB6273009BF061 /* Models */,
 				03CDEAA02C0AB8BB006121D0 /* Integrations */,
 				0391D2012CB2FFFC008AB44B /* Intents */,
 				03C3573E2D0818EF00B8B29F /* Media */,
@@ -2970,6 +2976,46 @@
 			path = BitratePresets;
 			sourceTree = "<group>";
 		};
+		490920002DBB6273009BF061 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		490920052DBB6273009BF061 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				490920012DBB6273009BF061 /* Model+Chat.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		490920062DBB6273009BF061 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				490920002DBB6273009BF061 /* Core */,
+				490920052DBB6273009BF061 /* Extensions */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		4909200D2DBB9ED1009BF061 /* Various */ = {
+			isa = PBXGroup;
+			children = (
+				4909200C2DBB9ED1009BF061 /* ChatUtils.swift */,
+			);
+			path = Various;
+			sourceTree = "<group>";
+		};
+		4909200E2DBB9ED1009BF061 /* Common */ = {
+			isa = PBXGroup;
+			children = (
+				4909200D2DBB9ED1009BF061 /* Various */,
+			);
+			path = Common;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -3437,6 +3483,7 @@
 				03085C082B4865D10009DAB6 /* GameControllersSettingsView.swift in Sources */,
 				03987B392C82846F00226C03 /* QuickButtonWidgetsView.swift in Sources */,
 				0359F8D32BD3DA61005BFDA8 /* VideoUnit.swift in Sources */,
+				4909200F2DBB9ED1009BF061 /* ChatUtils.swift in Sources */,
 				03BBAE9A2B2EB4FD0033D425 /* StreamEmotesSettingsView.swift in Sources */,
 				030E066C2D42A63900563457 /* StreamWizardObsSettingsView.swift in Sources */,
 				03B7DAB92BA6EE6200CEFC1B /* StreamOpenStreamingPlatformSettingsView.swift in Sources */,
@@ -3558,6 +3605,7 @@
 				03A22DAC2C0EE45600A59208 /* SrtlaServerClientConnection.swift in Sources */,
 				031F91EB2B38A27D00C898E1 /* StreamWizardObsRemoteControlSettingsView.swift in Sources */,
 				032815DF2AC9885C001F8A85 /* TripleEffect.swift in Sources */,
+				4909200A2DBB6273009BF061 /* Model+Chat.swift in Sources */,
 				03584BED2BE49B1B007E61F6 /* FaceView.swift in Sources */,
 				03B374022AA0354C0028DDD5 /* GrayScaleEffect.swift in Sources */,
 				03E877F72B2DB27800086355 /* QuickButtonsSettingsView.swift in Sources */,

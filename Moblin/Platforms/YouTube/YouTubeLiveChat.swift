@@ -338,7 +338,7 @@ final class YouTubeLiveChat: NSObject {
 
     private func createSegments(message: String, id: inout Int) -> [ChatPostSegment] {
         var segments: [ChatPostSegment] = []
-        for var segment in makeChatPostTextSegments(text: message, id: &id) {
+        for var segment in message.makeChatPostTextSegments(text: message, id: &id) {
             if let text = segment.text {
                 segments += emotes.createSegments(text: text, id: &id)
                 segment.text = nil

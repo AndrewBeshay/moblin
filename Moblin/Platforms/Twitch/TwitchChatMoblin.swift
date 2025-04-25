@@ -349,7 +349,7 @@ final class TwitchChatMoblin {
                 }
             }
             if let text {
-                segments += makeChatPostTextSegments(text: text, id: &id)
+                segments += text.makeChatPostTextSegments(text: text, id: &id)
             }
             segments.append(ChatPostSegment(id: id, url: emote.url))
             id += 1
