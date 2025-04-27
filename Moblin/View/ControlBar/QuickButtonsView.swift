@@ -286,11 +286,10 @@ struct QuickButtonsInnerView: View {
         state.button.isOn.toggle()
         model.setGlobalButtonState(type: .replay, isOn: state.button.isOn)
         model.updateButtonStates()
-        if model.showingReplay {
-            model.startReplay()
-        } else {
-            model.stopReplay()
-        }
+    }
+
+    private func connectionPrioritiesAction(state _: ButtonState) {
+        model.toggleShowingPanel(type: .connectionPriorities, panel: .connectionPriorities)
     }
 
     var body: some View {
@@ -592,6 +591,12 @@ struct QuickButtonsInnerView: View {
             case .replay:
                 Button(action: {
                     replayAction(state: state)
+                }, label: {
+                    QuickButtonImage(state: state, buttonSize: size)
+                })
+            case .connectionPriorities:
+                Button(action: {
+                    connectionPrioritiesAction(state: state)
                 }, label: {
                     QuickButtonImage(state: state, buttonSize: size)
                 })
