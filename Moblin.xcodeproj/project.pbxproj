@@ -134,6 +134,8 @@
 		0339F9162CE1C78A00F8D6FC /* AVAudioPCMBuffer+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0339F9142CE1C78800F8D6FC /* AVAudioPCMBuffer+Extension.swift */; };
 		0339F9172CE1C78A00F8D6FC /* AVAudioPCMBuffer+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0339F9142CE1C78800F8D6FC /* AVAudioPCMBuffer+Extension.swift */; };
 		033A46EF2CD881AE00119CE3 /* CMVideoDimensions+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 033A46EE2CD881A700119CE3 /* CMVideoDimensions+Extension.swift */; };
+		033AB2EF2DC8645100B764A9 /* BitWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 033AB2EE2DC8644D00B764A9 /* BitWriter.swift */; };
+		033AB2F12DC8659400B764A9 /* ByteReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 033AB2F02DC8658F00B764A9 /* ByteReader.swift */; };
 		033BB53D2D50A45D0071662A /* CMFormatDescription+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 033BB53C2D50A4540071662A /* CMFormatDescription+Extension.swift */; };
 		033BB53E2D50A5510071662A /* CMFormatDescription+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 033BB53C2D50A4540071662A /* CMFormatDescription+Extension.swift */; };
 		033BEAC42C0FCC0B005F4E06 /* NWWebSocket in Frameworks */ = {isa = PBXBuildFile; productRef = 033BEAC32C0FCC0B005F4E06 /* NWWebSocket */; };
@@ -144,6 +146,7 @@
 		0342F1A12C627A70004DD3EA /* MirlClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0342F1A02C627A70004DD3EA /* MirlClient.swift */; };
 		0342F1A32C627A87004DD3EA /* MirlServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0342F1A22C627A87004DD3EA /* MirlServer.swift */; };
 		0342F1A52C627A8F004DD3EA /* MirlCommon.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0342F1A42C627A8F004DD3EA /* MirlCommon.swift */; };
+		034517D02DC1FC22006ECA92 /* StreamReplaySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 034517CF2DC1FC1D006ECA92 /* StreamReplaySettingsView.swift */; };
 		0346B5EE2B9AD1BF00999109 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 0346B5ED2B9AD1BF00999109 /* InfoPlist.xcstrings */; };
 		0346B5F02B9AD1BF00999109 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 0346B5EF2B9AD1BF00999109 /* Localizable.xcstrings */; };
 		0346B5F42B9AF4EE00999109 /* ControlBarRemoteControlAssistantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0346B5F32B9AF4EE00999109 /* ControlBarRemoteControlAssistantView.swift */; };
@@ -161,15 +164,18 @@
 		03507F6B2B45DD5A0075648B /* GameControllersControllerButtonSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03507F6A2B45DD5A0075648B /* GameControllersControllerButtonSettingsView.swift */; };
 		03510DDC2C7661A400FD3A27 /* SpeechToText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03510DDB2C7661A400FD3A27 /* SpeechToText.swift */; };
 		035192E02B53EF2C00B09E3B /* QuickButtonsButtonSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 035192DF2B53EF2C00B09E3B /* QuickButtonsButtonSettingsView.swift */; };
+		0351F8F82DD1487E00F37D9C /* BrowserEffectServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0351F8F72DD1486900F37D9C /* BrowserEffectServer.swift */; };
+		0351F8FB2DD2965300F37D9C /* AutoSwitchersSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0351F8FA2DD2964900F37D9C /* AutoSwitchersSettingsView.swift */; };
+		0351F8FD2DD3064400F37D9C /* QuickButtonAutoSceneSwitcherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0351F8FC2DD3063C00F37D9C /* QuickButtonAutoSceneSwitcherView.swift */; };
 		0352679E2B99A00C00B49B72 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 03F853B22B151FA700719B89 /* Localizable.xcstrings */; };
 		03559E7E2BDCEB14002D0886 /* FaceEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03559E7D2BDCEB14002D0886 /* FaceEffect.swift */; };
 		035735802BC62FDC00F4E87D /* WatchLocalOverlaysSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0357357F2BC62FDC00F4E87D /* WatchLocalOverlaysSettingsView.swift */; };
 		035735822BC6303F00F4E87D /* WatchDisplaySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 035735812BC6303F00F4E87D /* WatchDisplaySettingsView.swift */; };
 		03584BED2BE49B1B007E61F6 /* FaceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03584BEC2BE49B1B007E61F6 /* FaceView.swift */; };
 		0358DDD62BE695B70080133B /* DebugVideoSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0358DDD52BE695B70080133B /* DebugVideoSettingsView.swift */; };
-		0359F8AB2BD3DA61005BFDA8 /* AudioCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0359F80D2BD3DA5F005BFDA8 /* AudioCodec.swift */; };
-		0359F8AC2BD3DA61005BFDA8 /* AudioCodecOutputSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0359F80E2BD3DA5F005BFDA8 /* AudioCodecOutputSettings.swift */; };
-		0359F8AD2BD3DA61005BFDA8 /* AudioCodecRingBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0359F80F2BD3DA5F005BFDA8 /* AudioCodecRingBuffer.swift */; };
+		0359F8AB2BD3DA61005BFDA8 /* AudioEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0359F80D2BD3DA5F005BFDA8 /* AudioEncoder.swift */; };
+		0359F8AC2BD3DA61005BFDA8 /* AudioEncoderSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0359F80E2BD3DA5F005BFDA8 /* AudioEncoderSettings.swift */; };
+		0359F8AD2BD3DA61005BFDA8 /* AudioEncoderRingBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0359F80F2BD3DA5F005BFDA8 /* AudioEncoderRingBuffer.swift */; };
 		0359F8AE2BD3DA61005BFDA8 /* VideoDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0359F8102BD3DA5F005BFDA8 /* VideoDecoder.swift */; };
 		0359F8AF2BD3DA61005BFDA8 /* VideoEncoderSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0359F8112BD3DA5F005BFDA8 /* VideoEncoderSettings.swift */; };
 		0359F8B22BD3DA61005BFDA8 /* VTSessionProperty.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0359F8142BD3DA5F005BFDA8 /* VTSessionProperty.swift */; };
@@ -218,7 +224,7 @@
 		0359F8FE2BD3DA61005BFDA8 /* SrtStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0359F8672BD3DA5F005BFDA8 /* SrtStream.swift */; };
 		0359F9002BD3DA61005BFDA8 /* AnyUtil.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0359F86D2BD3DA5F005BFDA8 /* AnyUtil.swift */; };
 		0359F9012BD3DA61005BFDA8 /* Atomic.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0359F86E2BD3DA5F005BFDA8 /* Atomic.swift */; };
-		0359F9022BD3DA61005BFDA8 /* ByteArray.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0359F86F2BD3DA5F005BFDA8 /* ByteArray.swift */; };
+		0359F9022BD3DA61005BFDA8 /* ByteWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0359F86F2BD3DA5F005BFDA8 /* ByteWriter.swift */; };
 		0359F9072BD3DA61005BFDA8 /* MD5.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0359F8742BD3DA5F005BFDA8 /* MD5.swift */; };
 		0359F9082BD3DA61005BFDA8 /* build-xcframework.sh in Resources */ = {isa = PBXBuildFile; fileRef = 0359F8A72BD3DA61005BFDA8 /* build-xcframework.sh */; };
 		0359F9092BD3DA61005BFDA8 /* libsrt.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 0359F8A82BD3DA61005BFDA8 /* libsrt.xcframework */; };
@@ -440,6 +446,8 @@
 		03C656152C02E23900E017B2 /* SampleBufferReceiver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03C656132C02E14600E017B2 /* SampleBufferReceiver.swift */; };
 		03CB8BCD2B5090C700B96530 /* StreamGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03CB8BCC2B5090C700B96530 /* StreamGridView.swift */; };
 		03CBFC752BFD3C7E0029A888 /* MirrorFrontCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03CBFC742BFD3C7E0029A888 /* MirrorFrontCameraView.swift */; };
+		03CD92A72DC9D23700202D49 /* WhirlpoolEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03CD92A62DC9D23100202D49 /* WhirlpoolEffect.swift */; };
+		03CD92A92DC9D76100202D49 /* PinchEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03CD92A82DC9D75E00202D49 /* PinchEffect.swift */; };
 		03CFF9CB2CA82EEF00FEC614 /* StrokeModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03CFF9CA2CA82EDF00FEC614 /* StrokeModifier.swift */; };
 		03D10E7A2B64099500B1E436 /* TextEditNavigationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03D10E792B64099500B1E436 /* TextEditNavigationView.swift */; };
 		03D151AF2BFA73C100D29D8E /* MetalPetal in Frameworks */ = {isa = PBXBuildFile; productRef = 03D151AE2BFA73C100D29D8E /* MetalPetal */; };
@@ -493,7 +501,7 @@
 		03F5A8DF2AD5DACB00F354D2 /* Srt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03F5A8DE2AD5DACB00F354D2 /* Srt.swift */; };
 		03F5A8E52AD6FF8E00F354D2 /* StreamOverlayDebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03F5A8E42AD6FF8E00F354D2 /* StreamOverlayDebugView.swift */; };
 		03F655F02D147C0B0054D73E /* VideoSourceRotationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03F655EF2D147C040054D73E /* VideoSourceRotationView.swift */; };
-		03F655F22D16DFD60054D73E /* BitArray.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03F655F12D16DFD20054D73E /* BitArray.swift */; };
+		03F655F22D16DFD60054D73E /* BitReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03F655F12D16DFD20054D73E /* BitReader.swift */; };
 		03F853B32B151FA700719B89 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 03F853B22B151FA700719B89 /* Localizable.xcstrings */; };
 		03F977602BA5ADD8000F5739 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 03F9775E2BA5A8E8000F5739 /* PrivacyInfo.xcprivacy */; };
 		03FB422A2C68D9A70009FB26 /* MirlStream.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03FB42292C68D9A70009FB26 /* MirlStream.swift */; };
@@ -693,6 +701,8 @@
 		0333322C2C48A31700C87D62 /* DjiDeviceScannerSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DjiDeviceScannerSettingsView.swift; sourceTree = "<group>"; };
 		0339F9142CE1C78800F8D6FC /* AVAudioPCMBuffer+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AVAudioPCMBuffer+Extension.swift"; sourceTree = "<group>"; };
 		033A46EE2CD881A700119CE3 /* CMVideoDimensions+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CMVideoDimensions+Extension.swift"; sourceTree = "<group>"; };
+		033AB2EE2DC8644D00B764A9 /* BitWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BitWriter.swift; sourceTree = "<group>"; };
+		033AB2F02DC8658F00B764A9 /* ByteReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ByteReader.swift; sourceTree = "<group>"; };
 		033BB53C2D50A4540071662A /* CMFormatDescription+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CMFormatDescription+Extension.swift"; sourceTree = "<group>"; };
 		033BEAC92C101B52005F4E06 /* NetworkInterfaceTypeSelector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkInterfaceTypeSelector.swift; sourceTree = "<group>"; };
 		033FD7182CC52E1D0073C6EC /* de */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = de; path = de.lproj/AppShortcuts.strings; sourceTree = "<group>"; };
@@ -702,6 +712,7 @@
 		0342F1A02C627A70004DD3EA /* MirlClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MirlClient.swift; sourceTree = "<group>"; };
 		0342F1A22C627A87004DD3EA /* MirlServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MirlServer.swift; sourceTree = "<group>"; };
 		0342F1A42C627A8F004DD3EA /* MirlCommon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MirlCommon.swift; sourceTree = "<group>"; };
+		034517CF2DC1FC1D006ECA92 /* StreamReplaySettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamReplaySettingsView.swift; sourceTree = "<group>"; };
 		0346B5ED2B9AD1BF00999109 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		0346B5EF2B9AD1BF00999109 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		0346B5F32B9AF4EE00999109 /* ControlBarRemoteControlAssistantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlBarRemoteControlAssistantView.swift; sourceTree = "<group>"; };
@@ -719,6 +730,9 @@
 		03507F6A2B45DD5A0075648B /* GameControllersControllerButtonSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameControllersControllerButtonSettingsView.swift; sourceTree = "<group>"; };
 		03510DDB2C7661A400FD3A27 /* SpeechToText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpeechToText.swift; sourceTree = "<group>"; };
 		035192DF2B53EF2C00B09E3B /* QuickButtonsButtonSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickButtonsButtonSettingsView.swift; sourceTree = "<group>"; };
+		0351F8F72DD1486900F37D9C /* BrowserEffectServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowserEffectServer.swift; sourceTree = "<group>"; };
+		0351F8FA2DD2964900F37D9C /* AutoSwitchersSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoSwitchersSettingsView.swift; sourceTree = "<group>"; };
+		0351F8FC2DD3063C00F37D9C /* QuickButtonAutoSceneSwitcherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickButtonAutoSceneSwitcherView.swift; sourceTree = "<group>"; };
 		0352DDF22BFFCAA60079AC7B /* SampleBufferCommon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleBufferCommon.swift; sourceTree = "<group>"; };
 		03559E7D2BDCEB14002D0886 /* FaceEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceEffect.swift; sourceTree = "<group>"; };
 		0357357F2BC62FDC00F4E87D /* WatchLocalOverlaysSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchLocalOverlaysSettingsView.swift; sourceTree = "<group>"; };
@@ -726,9 +740,9 @@
 		03584BEC2BE49B1B007E61F6 /* FaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FaceView.swift; sourceTree = "<group>"; };
 		0358DDD52BE695B70080133B /* DebugVideoSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugVideoSettingsView.swift; sourceTree = "<group>"; };
 		0358DDD82BE6A7370080133B /* Moblin.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Moblin.entitlements; sourceTree = "<group>"; };
-		0359F80D2BD3DA5F005BFDA8 /* AudioCodec.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AudioCodec.swift; sourceTree = "<group>"; };
-		0359F80E2BD3DA5F005BFDA8 /* AudioCodecOutputSettings.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AudioCodecOutputSettings.swift; sourceTree = "<group>"; };
-		0359F80F2BD3DA5F005BFDA8 /* AudioCodecRingBuffer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AudioCodecRingBuffer.swift; sourceTree = "<group>"; };
+		0359F80D2BD3DA5F005BFDA8 /* AudioEncoder.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AudioEncoder.swift; sourceTree = "<group>"; };
+		0359F80E2BD3DA5F005BFDA8 /* AudioEncoderSettings.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AudioEncoderSettings.swift; sourceTree = "<group>"; };
+		0359F80F2BD3DA5F005BFDA8 /* AudioEncoderRingBuffer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AudioEncoderRingBuffer.swift; sourceTree = "<group>"; };
 		0359F8102BD3DA5F005BFDA8 /* VideoDecoder.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = VideoDecoder.swift; sourceTree = "<group>"; };
 		0359F8112BD3DA5F005BFDA8 /* VideoEncoderSettings.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = VideoEncoderSettings.swift; sourceTree = "<group>"; };
 		0359F8142BD3DA5F005BFDA8 /* VTSessionProperty.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = VTSessionProperty.swift; sourceTree = "<group>"; };
@@ -777,7 +791,7 @@
 		0359F8672BD3DA5F005BFDA8 /* SrtStream.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SrtStream.swift; sourceTree = "<group>"; };
 		0359F86D2BD3DA5F005BFDA8 /* AnyUtil.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnyUtil.swift; sourceTree = "<group>"; };
 		0359F86E2BD3DA5F005BFDA8 /* Atomic.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Atomic.swift; sourceTree = "<group>"; };
-		0359F86F2BD3DA5F005BFDA8 /* ByteArray.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ByteArray.swift; sourceTree = "<group>"; };
+		0359F86F2BD3DA5F005BFDA8 /* ByteWriter.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ByteWriter.swift; sourceTree = "<group>"; };
 		0359F8742BD3DA5F005BFDA8 /* MD5.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MD5.swift; sourceTree = "<group>"; };
 		0359F8772BD3DA61005BFDA8 /* access_control.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = access_control.h; sourceTree = "<group>"; };
 		0359F8782BD3DA61005BFDA8 /* api.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = api.h; sourceTree = "<group>"; };
@@ -1034,6 +1048,8 @@
 		03C656132C02E14600E017B2 /* SampleBufferReceiver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleBufferReceiver.swift; sourceTree = "<group>"; };
 		03CB8BCC2B5090C700B96530 /* StreamGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamGridView.swift; sourceTree = "<group>"; };
 		03CBFC742BFD3C7E0029A888 /* MirrorFrontCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MirrorFrontCameraView.swift; sourceTree = "<group>"; };
+		03CD92A62DC9D23100202D49 /* WhirlpoolEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhirlpoolEffect.swift; sourceTree = "<group>"; };
+		03CD92A82DC9D75E00202D49 /* PinchEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinchEffect.swift; sourceTree = "<group>"; };
 		03CFF9CA2CA82EDF00FEC614 /* StrokeModifier.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrokeModifier.swift; sourceTree = "<group>"; };
 		03D10E792B64099500B1E436 /* TextEditNavigationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextEditNavigationView.swift; sourceTree = "<group>"; };
 		03D15CED2DABD72C007DA935 /* GoPro.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoPro.swift; sourceTree = "<group>"; };
@@ -1082,7 +1098,7 @@
 		03F5A8DE2AD5DACB00F354D2 /* Srt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Srt.swift; sourceTree = "<group>"; };
 		03F5A8E42AD6FF8E00F354D2 /* StreamOverlayDebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamOverlayDebugView.swift; sourceTree = "<group>"; };
 		03F655EF2D147C040054D73E /* VideoSourceRotationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoSourceRotationView.swift; sourceTree = "<group>"; };
-		03F655F12D16DFD20054D73E /* BitArray.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BitArray.swift; sourceTree = "<group>"; };
+		03F655F12D16DFD20054D73E /* BitReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BitReader.swift; sourceTree = "<group>"; };
 		03F6E3042D40267A00942826 /* zh-HK */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = "zh-HK"; path = "zh-HK.lproj/AppShortcuts.strings"; sourceTree = "<group>"; };
 		03F853B22B151FA700719B89 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = Localizable.xcstrings; sourceTree = "<group>"; };
 		03F9775E2BA5A8E8000F5739 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
@@ -1298,6 +1314,7 @@
 				03BDE2242B24654E00DF193A /* ObsRemoteControl */,
 				034CE2EA2B4D2E5A00E2C1BD /* RealtimeIrl */,
 				03D3C04F2B452D14006BAEAC /* Recording */,
+				034517CE2DC1FC0E006ECA92 /* Replay */,
 				03A29A242BECA9F300DAA1B1 /* Rist */,
 				03708D132B83C321009C88AA /* Rtmp */,
 				03B82CBF2D7C22F300909B24 /* Snapshot */,
@@ -1613,6 +1630,14 @@
 			path = Mirl;
 			sourceTree = "<group>";
 		};
+		034517CE2DC1FC0E006ECA92 /* Replay */ = {
+			isa = PBXGroup;
+			children = (
+				034517CF2DC1FC1D006ECA92 /* StreamReplaySettingsView.swift */,
+			);
+			path = Replay;
+			sourceTree = "<group>";
+		};
 		0346B5F22B9AF4D300999109 /* RemoteControlAssistant */ = {
 			isa = PBXGroup;
 			children = (
@@ -1654,6 +1679,23 @@
 				03FBD1842B3B0DF300757CA9 /* RtmpServerChunkStream.swift */,
 			);
 			path = RtmpServer;
+			sourceTree = "<group>";
+		};
+		0351F8F62DD1485B00F37D9C /* BrowserEffect */ = {
+			isa = PBXGroup;
+			children = (
+				03EBEA622ACB4A17000DF427 /* BrowserEffect.swift */,
+				0351F8F72DD1486900F37D9C /* BrowserEffectServer.swift */,
+			);
+			path = BrowserEffect;
+			sourceTree = "<group>";
+		};
+		0351F8F92DD2960700F37D9C /* AutoSwitchers */ = {
+			isa = PBXGroup;
+			children = (
+				0351F8FA2DD2964900F37D9C /* AutoSwitchersSettingsView.swift */,
+			);
+			path = AutoSwitchers;
 			sourceTree = "<group>";
 		};
 		0357357C2BC62FA200F4E87D /* Display */ = {
@@ -1710,6 +1752,7 @@
 				03DAC9382BFE6A1F005EB92C /* AVCaptureColorSpace+Extension.swift */,
 				0359F8192BD3DA5F005BFDA8 /* AVCaptureDevice.Format+Extension.swift */,
 				0359F81C2BD3DA5F005BFDA8 /* AVFrameRateRange+Extension.swift */,
+				032756A22BD81921002DC17F /* Bool+Extension.swift */,
 				033A46EE2CD881A700119CE3 /* CMVideoDimensions+Extension.swift */,
 				03BC90A82BD4F6B000529987 /* CMVideoFormatDescription+Extension.swift */,
 				0359F8212BD3DA5F005BFDA8 /* CVPixelBuffer+Extension.swift */,
@@ -1718,7 +1761,6 @@
 				0359F8252BD3DA5F005BFDA8 /* URL+Extension.swift */,
 				0359F8262BD3DA5F005BFDA8 /* VTCompressionSession+Extension.swift */,
 				0359F8272BD3DA5F005BFDA8 /* VTDecompressionSession+Extension.swift */,
-				032756A22BD81921002DC17F /* Bool+Extension.swift */,
 			);
 			path = Extension;
 			sourceTree = "<group>";
@@ -1807,10 +1849,12 @@
 		0359F8752BD3DA5F005BFDA8 /* Util */ = {
 			isa = PBXGroup;
 			children = (
-				03F655F12D16DFD20054D73E /* BitArray.swift */,
 				0359F86D2BD3DA5F005BFDA8 /* AnyUtil.swift */,
 				0359F86E2BD3DA5F005BFDA8 /* Atomic.swift */,
-				0359F86F2BD3DA5F005BFDA8 /* ByteArray.swift */,
+				03F655F12D16DFD20054D73E /* BitReader.swift */,
+				033AB2EE2DC8644D00B764A9 /* BitWriter.swift */,
+				033AB2F02DC8658F00B764A9 /* ByteReader.swift */,
+				0359F86F2BD3DA5F005BFDA8 /* ByteWriter.swift */,
 				0359F8742BD3DA5F005BFDA8 /* MD5.swift */,
 			);
 			path = Util;
@@ -2062,6 +2106,7 @@
 		0379BB972AAD802C00B718B6 /* Scenes */ = {
 			isa = PBXGroup;
 			children = (
+				0351F8F92DD2960700F37D9C /* AutoSwitchers */,
 				0379BBB32AAD9B4000B718B6 /* Widgets */,
 				0315A34C2AA3217500295443 /* Scene */,
 				03A9835B2A9A05D7008FF0DB /* ScenesSettingsView.swift */,
@@ -2270,6 +2315,7 @@
 		03987B3A2C8284A500226C03 /* QuickButton */ = {
 			isa = PBXGroup;
 			children = (
+				0351F8FC2DD3063C00F37D9C /* QuickButtonAutoSceneSwitcherView.swift */,
 				035D37362AB230E700045B92 /* QuickButtonBitrateView.swift */,
 				0318B4122C845214002B4F58 /* QuickButtonChatView.swift */,
 				03FC65CA2DBE0BE500743C80 /* QuickButtonConnectionPrioritiesView.swift */,
@@ -2512,10 +2558,10 @@
 		03B374052AA0EA370028DDD5 /* VideoEffects */ = {
 			isa = PBXGroup;
 			children = (
+				0351F8F62DD1485B00F37D9C /* BrowserEffect */,
 				033235442BFBB71C00B897A5 /* MetalPetal */,
 				033FD7192CC622A60073C6EC /* Scoreboards */,
 				037FE02F2C594CE40067B5AC /* AlertsEffect.swift */,
-				03EBEA622ACB4A17000DF427 /* BrowserEffect.swift */,
 				03A599192B66A94B002E7EE8 /* DrawOnStreamEffect.swift */,
 				03D278732D9050C600BB0502 /* TwinEffect.swift */,
 				030499672C404812003488F4 /* EffectUtils.swift */,
@@ -2526,6 +2572,7 @@
 				038F42EC2B6849D400E68752 /* LutEffect.swift */,
 				03828C2B2C3AEF6D00F5A8AC /* MapEffect.swift */,
 				03B374062AA0EA650028DDD5 /* MovieEffect.swift */,
+				03CD92A82DC9D75E00202D49 /* PinchEffect.swift */,
 				03085C0E2B487D950009DAB6 /* PixellateEffect.swift */,
 				038C0F682C312C3900A258C6 /* PollEffect.swift */,
 				030499642C4039EF003488F4 /* QrCodeEffect.swift */,
@@ -2534,6 +2581,7 @@
 				03F3BF182ADAAA94009A8D3E /* TextEffect.swift */,
 				032815DE2AC9885C001F8A85 /* TripleEffect.swift */,
 				038C76962CAC99D900564200 /* VideoSourceEffect.swift */,
+				03CD92A62DC9D23100202D49 /* WhirlpoolEffect.swift */,
 			);
 			path = VideoEffects;
 			sourceTree = "<group>";
@@ -2709,9 +2757,9 @@
 		03C3573C2D0815AE00B8B29F /* Audio */ = {
 			isa = PBXGroup;
 			children = (
-				0359F80D2BD3DA5F005BFDA8 /* AudioCodec.swift */,
-				0359F80E2BD3DA5F005BFDA8 /* AudioCodecOutputSettings.swift */,
-				0359F80F2BD3DA5F005BFDA8 /* AudioCodecRingBuffer.swift */,
+				0359F80D2BD3DA5F005BFDA8 /* AudioEncoder.swift */,
+				0359F80F2BD3DA5F005BFDA8 /* AudioEncoderRingBuffer.swift */,
+				0359F80E2BD3DA5F005BFDA8 /* AudioEncoderSettings.swift */,
 			);
 			path = Audio;
 			sourceTree = "<group>";
@@ -3285,9 +3333,9 @@
 				0359F8C12BD3DA61005BFDA8 /* ExpressibleByIntegerLiteral+Extension.swift in Sources */,
 				03E972CD2D3AB52700888FAB /* MoblinkScanner.swift in Sources */,
 				0325D0BE2BB3DDD6007EE85B /* KickChannel.swift in Sources */,
-				0359F8AC2BD3DA61005BFDA8 /* AudioCodecOutputSettings.swift in Sources */,
+				0359F8AC2BD3DA61005BFDA8 /* AudioEncoderSettings.swift in Sources */,
 				035D37282AB0EBB500045B92 /* IconAndTextView.swift in Sources */,
-				0359F8AB2BD3DA61005BFDA8 /* AudioCodec.swift in Sources */,
+				0359F8AB2BD3DA61005BFDA8 /* AudioEncoder.swift in Sources */,
 				03BC90B02BD580E300529987 /* StreamWizardNetworkSetupMyServersSrtSettingsView.swift in Sources */,
 				03AD440A2B78A8A700B1B9B9 /* StreamButtonsSettingsView.swift in Sources */,
 				03A9836B2A9A05D7008FF0DB /* StreamOverlayView.swift in Sources */,
@@ -3342,6 +3390,7 @@
 				03161FE22BF308C000E750D6 /* StreamWizardCustomRistSettingsView.swift in Sources */,
 				0359F8ED2BD3DA61005BFDA8 /* RtmpHandshake.swift in Sources */,
 				0391BB3D2B36CAC5004852EA /* AboutVersionHistorySettingsView.swift in Sources */,
+				033AB2F12DC8659400B764A9 /* ByteReader.swift in Sources */,
 				0317646D2DB66CD5000080A5 /* ReplayEffect.swift in Sources */,
 				03A9D1332C0E65A400F0B917 /* SrtlaServer.swift in Sources */,
 				0324CD072BEBFBBA004AA063 /* RistStream.swift in Sources */,
@@ -3371,13 +3420,13 @@
 				030EFE782BDADBC6004208B6 /* SwipeLeftToRemoveHelpView.swift in Sources */,
 				03BA3B432C9019D500DEFA3E /* AtkinsonDithering.swift in Sources */,
 				0318D3642CF4FB3100E12F3B /* TeslaVehicle.swift in Sources */,
-				0359F8AD2BD3DA61005BFDA8 /* AudioCodecRingBuffer.swift in Sources */,
+				0359F8AD2BD3DA61005BFDA8 /* AudioEncoderRingBuffer.swift in Sources */,
 				03D3C0512B452D61006BAEAC /* StreamRecordingSettingsView.swift in Sources */,
 				0342F1A52C627A8F004DD3EA /* MirlCommon.swift in Sources */,
 				0325D0B42BB29713007EE85B /* ChatUsernamesToIgnoreSettingsView.swift in Sources */,
 				03980C552C5E74A9000ED476 /* VoicesView.swift in Sources */,
 				0302F07F2B320B0500B06FF0 /* StreamWizardChatSettingsView.swift in Sources */,
-				03F655F22D16DFD60054D73E /* BitArray.swift in Sources */,
+				03F655F22D16DFD60054D73E /* BitReader.swift in Sources */,
 				03828C2C2C3AEF6D00F5A8AC /* MapEffect.swift in Sources */,
 				033BB53D2D50A45D0071662A /* CMFormatDescription+Extension.swift in Sources */,
 				030621DE2D8605F2001EE50B /* DjiGimbalDeviceModel.swift in Sources */,
@@ -3398,6 +3447,7 @@
 				033235412BFBAFD800B897A5 /* MetalPetal.metal in Sources */,
 				03B373FD2A9F35EF0028DDD5 /* CommonUtils.swift in Sources */,
 				03A707B82B8ED466003BB7BE /* WatchProtocol.swift in Sources */,
+				033AB2EF2DC8645100B764A9 /* BitWriter.swift in Sources */,
 				031839172AF6A03100320FB2 /* DebugAudioSettingsView.swift in Sources */,
 				03487F262B334B63003D9ED9 /* StreamingHistory.swift in Sources */,
 				03941A222C0CDD940061DA81 /* DeepLinkCreatorStreamsSettingsView.swift in Sources */,
@@ -3473,6 +3523,7 @@
 				038605372D7DF97300B9C3CE /* CyclingPowerDeviceSettingsView.swift in Sources */,
 				03C357562D081D9100B8B29F /* RtmpUserControlMessage.swift in Sources */,
 				03B507A72C88B8F6003CDEDF /* CatPrinter.swift in Sources */,
+				03CD92A92DC9D76100202D49 /* PinchEffect.swift in Sources */,
 				035192E02B53EF2C00B09E3B /* QuickButtonsButtonSettingsView.swift in Sources */,
 				0359F8DD2BD3DA61005BFDA8 /* MpegTsVideoConfigHevc.swift in Sources */,
 				03A983692A9A05D7008FF0DB /* CreateButtonView.swift in Sources */,
@@ -3493,6 +3544,7 @@
 				4909200F2DBB9ED1009BF061 /* ChatUtils.swift in Sources */,
 				03BBAE9A2B2EB4FD0033D425 /* StreamEmotesSettingsView.swift in Sources */,
 				030E066C2D42A63900563457 /* StreamWizardObsSettingsView.swift in Sources */,
+				0351F8FD2DD3064400F37D9C /* QuickButtonAutoSceneSwitcherView.swift in Sources */,
 				03B7DAB92BA6EE6200CEFC1B /* StreamOpenStreamingPlatformSettingsView.swift in Sources */,
 				0318D3752CF51DEB00E12F3B /* car_server.pb.swift in Sources */,
 				03C3574E2D081CF500B8B29F /* RtmpDataMessage.swift in Sources */,
@@ -3547,7 +3599,7 @@
 				0359F8DC2BD3DA61005BFDA8 /* ElementaryStreamSpecificData.swift in Sources */,
 				03CFF9CB2CA82EEF00FEC614 /* StrokeModifier.swift in Sources */,
 				03F655F02D147C0B0054D73E /* VideoSourceRotationView.swift in Sources */,
-				0359F9022BD3DA61005BFDA8 /* ByteArray.swift in Sources */,
+				0359F9022BD3DA61005BFDA8 /* ByteWriter.swift in Sources */,
 				0380D5E52C2CB2C80071C12B /* ChatBotSettingsView.swift in Sources */,
 				0359F8F02BD3DA61005BFDA8 /* RtmpObjectEncoding.swift in Sources */,
 				0379BBAD2AAD964000B718B6 /* AboutSettingsView.swift in Sources */,
@@ -3581,6 +3633,7 @@
 				03D278742D9050C900BB0502 /* TwinEffect.swift in Sources */,
 				03DEA1F92BFA66DC00154631 /* MetalPetal.swift in Sources */,
 				0359F8DB2BD3DA61005BFDA8 /* Crc32.swift in Sources */,
+				0351F8F82DD1487E00F37D9C /* BrowserEffectServer.swift in Sources */,
 				03987B3C2C82859C00226C03 /* QuickButtonMicView.swift in Sources */,
 				0359F8FE2BD3DA61005BFDA8 /* SrtStream.swift in Sources */,
 				0391D2032CB3000A008AB44B /* MuteIntent.swift in Sources */,
@@ -3619,6 +3672,7 @@
 				03E877F72B2DB27800086355 /* QuickButtonsSettingsView.swift in Sources */,
 				032FDC022B0B11C5007BE85E /* SizeEditView.swift in Sources */,
 				032B4EDE2C34927C00204547 /* SegmentedPicker.swift in Sources */,
+				034517D02DC1FC22006ECA92 /* StreamReplaySettingsView.swift in Sources */,
 				0359F8AE2BD3DA61005BFDA8 /* VideoDecoder.swift in Sources */,
 				031A4DC72B2CED460053F67D /* StreamAudioSettingsView.swift in Sources */,
 				035735822BC6303F00F4E87D /* WatchDisplaySettingsView.swift in Sources */,
@@ -3653,6 +3707,7 @@
 				0304A50C2B45ADC300310842 /* GameControllersControllerSettingsView.swift in Sources */,
 				03279CE72B4CD245006CEA5A /* Location.swift in Sources */,
 				03A9300C2C14414800BB9679 /* AvcNalUnit.swift in Sources */,
+				0351F8FB2DD2965300F37D9C /* AutoSwitchersSettingsView.swift in Sources */,
 				03A983662A9A05D7008FF0DB /* AddButtonView.swift in Sources */,
 				0359F9012BD3DA61005BFDA8 /* Atomic.swift in Sources */,
 				03A983612A9A05D7008FF0DB /* StreamsSettingsView.swift in Sources */,
@@ -3706,6 +3761,7 @@
 				030399132AE2D0FC00D27530 /* ChatSettingsView.swift in Sources */,
 				0323F3832D21347700A57AC2 /* DnsLookup.swift in Sources */,
 				034844F52B57AB840089B874 /* RemoteControlSettingsView.swift in Sources */,
+				03CD92A72DC9D23700202D49 /* WhirlpoolEffect.swift in Sources */,
 				45E3E780842910145791546F /* DjiDeviceScanner.swift in Sources */,
 				0386053C2D8006CC00B9C3CE /* HeartRateDevice.swift in Sources */,
 			);
@@ -4042,7 +4098,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.398.0;
+				MARKETING_VERSION = 0.399.0;
 				MTL_HEADER_SEARCH_PATHS = "$(HEADER_SEARCH_PATHS)";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_IDENTIFIER_IOS)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4099,7 +4155,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.398.0;
+				MARKETING_VERSION = 0.399.0;
 				MTL_HEADER_SEARCH_PATHS = "$(HEADER_SEARCH_PATHS)";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_IDENTIFIER_IOS)";
 				PRODUCT_NAME = "$(TARGET_NAME)";

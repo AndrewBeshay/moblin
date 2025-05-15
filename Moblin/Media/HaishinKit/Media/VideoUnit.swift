@@ -3,14 +3,16 @@ import Collections
 import CoreImage
 import MetalPetal
 import UIKit
+import VideoToolbox
 import Vision
 
 struct VideoUnitAttachParams {
     var devices: CaptureDevices
+    var builtinDelay: Double
     var cameraPreviewLayer: AVCaptureVideoPreviewLayer
     var showCameraPreview: Bool
     var externalDisplayPreview: Bool
-    var replaceVideo: UUID?
+    var bufferedVideo: UUID?
     var preferredVideoStabilizationMode: AVCaptureVideoStabilizationMode
     var isVideoMirrored: Bool
     var ignoreFramesAfterAttachSeconds: Double
@@ -79,7 +81,7 @@ private class FaceDetectionsCompletion {
     }
 }
 
-private class ReplaceVideo {
+private class BufferedVideo {
     private var sampleBuffers: Deque<CMSampleBuffer> = []
     private var currentSampleBuffer: CMSampleBuffer?
     private var isInitialBuffering = true
@@ -89,11 +91,13 @@ private class ReplaceVideo {
     private weak var mixer: Mixer?
     private let driftTracker: DriftTracker
     private var hasBufferBeenAppended = false
+    let latency: Double
 
     init(cameraId: UUID, name: String, update: Bool, latency: Double, mixer: Mixer?) {
         self.cameraId = cameraId
         self.name = name
         self.update = update
+        self.latency = latency
         self.mixer = mixer
         driftTracker = DriftTracker(media: "video", name: name, targetFillLevel: latency)
     }
@@ -113,8 +117,8 @@ private class ReplaceVideo {
         }
     }
 
-    func updateSampleBuffer(_ outputPresentationTimeStamp: Double) {
-        guard update else {
+    func updateSampleBuffer(_ outputPresentationTimeStamp: Double, _ forceUpdate: Bool = false) {
+        guard update || forceUpdate else {
             return
         }
         var sampleBuffer: CMSampleBuffer?
@@ -126,7 +130,7 @@ private class ReplaceVideo {
             }
             if sampleBuffers.count > 200 {
                 logger.info("""
-                replace-video: \(name): Over 200 frames (\(sampleBuffers.count)) buffered. Dropping \
+                buffered-video: \(name): Over 200 frames (\(sampleBuffers.count)) buffered. Dropping \
                 oldest frame.
                 """)
                 sampleBuffer = inputSampleBuffer
@@ -151,7 +155,7 @@ private class ReplaceVideo {
             let fillLevel = lastPresentationTimeStamp - firstPresentationTimeStamp
             if numberOfBuffersConsumed == 0 {
                 logger.debug("""
-                replace-video: \(name): Duplicating buffer. \
+                buffered-video: \(name): Duplicating buffer. \
                 Output \(formatThreeDecimals(outputPresentationTimeStamp)), \
                 Current \(formatThreeDecimals(currentSampleBuffer?.presentationTimeStamp.seconds ?? 0.0)), \
                 \(formatThreeDecimals(firstPresentationTimeStamp + drift))..\
@@ -161,7 +165,7 @@ private class ReplaceVideo {
                 """)
             } else if numberOfBuffersConsumed > 1 {
                 logger.debug("""
-                replace-video: \(name): Dropping \(numberOfBuffersConsumed - 1) buffer(s). \
+                buffered-video: \(name): Dropping \(numberOfBuffersConsumed - 1) buffer(s). \
                 Output \(formatThreeDecimals(outputPresentationTimeStamp)), \
                 Current \(formatThreeDecimals(currentSampleBuffer?.presentationTimeStamp.seconds ?? 0.0)), \
                 \(formatThreeDecimals(firstPresentationTimeStamp + drift))..\
@@ -177,12 +181,12 @@ private class ReplaceVideo {
         if !isInitialBuffering, hasBufferBeenAppended {
             hasBufferBeenAppended = false
             if let drift = driftTracker.update(outputPresentationTimeStamp, sampleBuffers) {
-                mixer?.setReplaceAudioDrift(cameraId: cameraId, drift: drift)
+                mixer?.setBufferedAudioDrift(cameraId: cameraId, drift: drift)
             }
         }
     }
 
-    func setLatestSampleBuffer(sampleBuffer: CMSampleBuffer?) {
+    func setLatestSampleBuffer(_ sampleBuffer: CMSampleBuffer?) {
         currentSampleBuffer = sampleBuffer
     }
 
@@ -290,9 +294,9 @@ final class VideoUnit: NSObject {
         }
     }
 
-    private var selectedReplaceVideoCameraId: UUID?
-    fileprivate var replaceVideos: [UUID: ReplaceVideo] = [:]
-    fileprivate var replaceVideoBuiltins: [AVCaptureDevice?: ReplaceVideo] = [:]
+    private var selectedBufferedVideoCameraId: UUID?
+    fileprivate var bufferedVideos: [UUID: BufferedVideo] = [:]
+    fileprivate var bufferedVideoBuiltins: [AVCaptureDevice?: BufferedVideo] = [:]
     private var blackImageBuffer: CVPixelBuffer?
     private var blackFormatDescription: CMVideoFormatDescription?
     private var blackPixelBufferPool: CVPixelBufferPool?
@@ -318,11 +322,15 @@ final class VideoUnit: NSObject {
     private var pool: CVPixelBufferPool?
     private var poolColorSpace: CGColorSpace?
     private var poolFormatDescriptionExtension: CFDictionary?
+    private var bufferedPool: CVPixelBufferPool?
+    private var bufferedPoolColorSpace: CGColorSpace?
+    private var bufferedPoolFormatDescriptionExtension: CFDictionary?
     private var cameraControlsEnabled = false
     private var isRunning = false
     private var showCameraPreview = false
     private var externalDisplayPreview = false
     private var sceneSwitchTransition: SceneSwitchTransition = .blur
+    private var pixelTransferSession: VTPixelTransferSession?
 
     override init() {
         if let metalDevice = MTLCreateSystemDefaultDevice() {
@@ -331,6 +339,7 @@ final class VideoUnit: NSObject {
             metalPetalContext = nil
         }
         videoUnitBuiltinDevice = nil
+        VTPixelTransferSessionCreate(allocator: nil, pixelTransferSessionOut: &pixelTransferSession)
         super.init()
         videoUnitBuiltinDevice = VideoUnitBuiltinDevice(videoUnit: self)
         NotificationCenter.default.addObserver(self,
@@ -382,7 +391,7 @@ final class VideoUnit: NSObject {
     }
 
     func getCIImage(_ videoSourceId: UUID, _ presentationTimeStamp: CMTime) -> CIImage? {
-        guard let sampleBuffer = replaceVideos[videoSourceId]?.getSampleBuffer(presentationTimeStamp),
+        guard let sampleBuffer = bufferedVideos[videoSourceId]?.getSampleBuffer(presentationTimeStamp),
               let imageBuffer = sampleBuffer.imageBuffer
         else {
             return nil
@@ -396,29 +405,29 @@ final class VideoUnit: NSObject {
         }
         mixerLockQueue.async {
             self.configuredIgnoreFramesAfterAttachSeconds = params.ignoreFramesAfterAttachSeconds
-            self.selectedReplaceVideoCameraId = params.replaceVideo
+            self.selectedBufferedVideoCameraId = params.bufferedVideo
             self.prepareFirstFrame()
             self.showCameraPreview = params.showCameraPreview
             self.externalDisplayPreview = params.externalDisplayPreview
             self.fillFrame = params.fillFrame
-            if let replaceVideo = params.replaceVideo {
-                self.sceneVideoSourceId = replaceVideo
+            if let bufferedVideo = params.bufferedVideo {
+                self.sceneVideoSourceId = bufferedVideo
             } else if params.devices.hasSceneDevice, let id = params.devices.devices.first?.id {
                 self.sceneVideoSourceId = id
             } else {
                 self.sceneVideoSourceId = UUID()
             }
-            self.replaceVideoBuiltins.removeAll()
+            self.bufferedVideoBuiltins.removeAll()
             for device in params.devices.devices {
-                let replaceVideo = ReplaceVideo(
+                let bufferedVideo = BufferedVideo(
                     cameraId: device.id,
-                    name: "",
+                    name: "builtin",
                     update: false,
-                    latency: 0.0,
+                    latency: params.builtinDelay,
                     mixer: self.mixer
                 )
-                self.replaceVideos[device.id] = replaceVideo
-                self.replaceVideoBuiltins[device.device] = replaceVideo
+                self.bufferedVideos[device.id] = bufferedVideo
+                self.bufferedVideoBuiltins[device.device] = bufferedVideo
             }
             if self.pendingAfterAttachEffects == nil {
                 self.pendingAfterAttachEffects = self.effects
@@ -472,14 +481,14 @@ final class VideoUnit: NSObject {
         }
     }
 
-    private func getReplaceVideoForDevice(device: CaptureDevice?) -> ReplaceVideo? {
+    private func getBufferedVideoForDevice(device: CaptureDevice?) -> BufferedVideo? {
         switch device?.device?.position {
         case .back:
-            return replaceVideos[builtinBackCameraId]!
+            return bufferedVideos[builtinBackCameraId]!
         case .front:
-            return replaceVideos[builtinFrontCameraId]!
+            return bufferedVideos[builtinFrontCameraId]!
         case .unspecified:
-            return replaceVideos[externalCameraId]!
+            return bufferedVideos[externalCameraId]!
         default:
             return nil
         }
@@ -556,42 +565,42 @@ final class VideoUnit: NSObject {
         }
     }
 
-    func addReplaceVideoSampleBuffer(cameraId: UUID, _ sampleBuffer: CMSampleBuffer) {
+    func appendBufferedVideoSampleBuffer(cameraId: UUID, _ sampleBuffer: CMSampleBuffer) {
         mixerLockQueue.async {
-            self.addReplaceVideoSampleBufferInner(cameraId: cameraId, sampleBuffer)
+            self.appendBufferedVideoSampleBufferInner(cameraId: cameraId, sampleBuffer)
         }
     }
 
-    func addReplaceVideo(cameraId: UUID, name: String, latency: Double) {
+    func addBufferedVideo(cameraId: UUID, name: String, latency: Double) {
         mixerLockQueue.async {
-            self.addReplaceVideoInner(cameraId: cameraId, name: name, latency: latency)
+            self.addBufferedVideoInner(cameraId: cameraId, name: name, latency: latency)
         }
     }
 
-    func removeReplaceVideo(cameraId: UUID) {
+    func removeBufferedVideo(cameraId: UUID) {
         mixerLockQueue.async {
-            self.removeReplaceVideoInner(cameraId: cameraId)
+            self.removeBufferedVideoInner(cameraId: cameraId)
         }
     }
 
-    func setReplaceVideoDrift(cameraId: UUID, drift: Double) {
+    func setBufferedVideoDrift(cameraId: UUID, drift: Double) {
         mixerLockQueue.async {
-            self.setReplaceVideoDriftInner(cameraId: cameraId, drift: drift)
+            self.setBufferedVideoDriftInner(cameraId: cameraId, drift: drift)
         }
     }
 
-    private func setReplaceVideoDriftInner(cameraId: UUID, drift: Double) {
-        replaceVideos[cameraId]?.setDrift(drift: drift)
+    private func setBufferedVideoDriftInner(cameraId: UUID, drift: Double) {
+        bufferedVideos[cameraId]?.setDrift(drift: drift)
     }
 
-    func setReplaceVideoTargetLatency(cameraId: UUID, latency: Double) {
+    func setBufferedVideoTargetLatency(cameraId: UUID, latency: Double) {
         mixerLockQueue.async {
-            self.setReplaceVideoTargetLatencyInner(cameraId: cameraId, latency: latency)
+            self.setBufferedVideoTargetLatencyInner(cameraId: cameraId, latency: latency)
         }
     }
 
-    private func setReplaceVideoTargetLatencyInner(cameraId: UUID, latency: Double) {
-        replaceVideos[cameraId]?.setTargetLatency(latency: latency)
+    private func setBufferedVideoTargetLatencyInner(cameraId: UUID, latency: Double) {
+        bufferedVideos[cameraId]?.setTargetLatency(latency: latency)
     }
 
     func startEncoding(_ delegate: any VideoEncoderDelegate) {
@@ -629,18 +638,18 @@ final class VideoUnit: NSObject {
 
     private func handleFrameTimer() {
         let presentationTimeStamp = currentPresentationTimeStamp()
-        handleReplaceVideo(presentationTimeStamp)
+        handleBufferedVideo(presentationTimeStamp)
         handleGapFillerTimer()
     }
 
-    private func handleReplaceVideo(_ presentationTimeStamp: CMTime) {
-        for replaceVideo in replaceVideos.values {
-            replaceVideo.updateSampleBuffer(presentationTimeStamp.seconds)
+    private func handleBufferedVideo(_ presentationTimeStamp: CMTime) {
+        for bufferedVideo in bufferedVideos.values {
+            bufferedVideo.updateSampleBuffer(presentationTimeStamp.seconds)
         }
-        guard let selectedReplaceVideoCameraId else {
+        guard let selectedBufferedVideoCameraId else {
             return
         }
-        if let sampleBuffer = replaceVideos[selectedReplaceVideoCameraId]?
+        if let sampleBuffer = bufferedVideos[selectedBufferedVideoCameraId]?
             .getSampleBuffer(presentationTimeStamp)
         {
             appendNewSampleBuffer(sampleBuffer: sampleBuffer)
@@ -651,7 +660,7 @@ final class VideoUnit: NSObject {
         ) {
             appendNewSampleBuffer(sampleBuffer: sampleBuffer)
         } else {
-            logger.info("replace-video: Failed to output frame")
+            logger.info("buffered-video: Failed to output frame")
         }
     }
 
@@ -744,6 +753,79 @@ final class VideoUnit: NSObject {
 
     private func createPixelBuffer(sampleBuffer: CMSampleBuffer) -> CVPixelBuffer? {
         guard let pool = getBufferPool(formatDescription: sampleBuffer.formatDescription!) else {
+            return nil
+        }
+        var outputImageBuffer: CVPixelBuffer?
+        guard CVPixelBufferPoolCreatePixelBuffer(nil, pool, &outputImageBuffer) == kCVReturnSuccess else {
+            return nil
+        }
+        return outputImageBuffer
+    }
+
+    private func getBufferedBufferPool(sampleBuffer: CMSampleBuffer) -> CVPixelBufferPool? {
+        guard let formatDescription = sampleBuffer.formatDescription else {
+            return nil
+        }
+        let formatDescriptionExtension = formatDescription.extensions()
+        if let bufferedPool, formatDescriptionExtension == bufferedPoolFormatDescriptionExtension {
+            return bufferedPool
+        }
+        var attributes: [NSString: AnyObject] = [:]
+        if let imageBuffer = sampleBuffer.imageBuffer {
+            NSDictionary(dictionary: CVPixelBufferCopyCreationAttributes(imageBuffer))
+                .enumerateKeysAndObjects { key, value, _ in
+                    attributes[key as! CFString] = value as AnyObject
+                }
+        }
+        attributes[kCVPixelBufferPixelFormatTypeKey] = NSNumber(value: pixelFormatType)
+        attributes[kCVPixelBufferIOSurfacePropertiesKey] = NSDictionary()
+        attributes[kCVPixelBufferMetalCompatibilityKey] = kCFBooleanTrue
+        attributes[kCVPixelBufferWidthKey] = NSNumber(value: outputSize.width)
+        attributes[kCVPixelBufferHeightKey] = NSNumber(value: outputSize.height)
+        bufferedPoolColorSpace = nil
+        // This is not correct, I'm sure. Colors are not always correct. At least for Apple Log.
+        if let formatDescriptionExtension = formatDescriptionExtension as Dictionary? {
+            let colorPrimaries = formatDescriptionExtension[kCVImageBufferColorPrimariesKey]
+            if let colorPrimaries {
+                var colorSpaceProperties: [NSString: AnyObject] =
+                    [kCVImageBufferColorPrimariesKey: colorPrimaries]
+                if let yCbCrMatrix = formatDescriptionExtension[kCVImageBufferYCbCrMatrixKey] {
+                    colorSpaceProperties[kCVImageBufferYCbCrMatrixKey] = yCbCrMatrix
+                }
+                if let transferFunction = formatDescriptionExtension[kCVImageBufferTransferFunctionKey] {
+                    colorSpaceProperties[kCVImageBufferTransferFunctionKey] = transferFunction
+                }
+                attributes[kCVBufferPropagatedAttachmentsKey] = colorSpaceProperties as AnyObject
+            }
+            if let colorSpace = formatDescriptionExtension[kCVImageBufferCGColorSpaceKey] {
+                bufferedPoolColorSpace = (colorSpace as! CGColorSpace)
+            } else if let colorPrimaries = colorPrimaries as? String {
+                if colorPrimaries == (kCVImageBufferColorPrimaries_P3_D65 as String) {
+                    bufferedPoolColorSpace = CGColorSpace(name: CGColorSpace.displayP3)
+                } else if #available(iOS 17.2, *),
+                          formatDescriptionExtension[kCVImageBufferLogTransferFunctionKey] as? String ==
+                          kCVImageBufferLogTransferFunction_AppleLog as String
+                {
+                    bufferedPoolColorSpace = CGColorSpace(name: CGColorSpace.itur_2020)
+                    // bufferedPoolColorSpace = CGColorSpace(name: CGColorSpace.extendedITUR_2020)
+                    // bufferedPoolColorSpace = CGColorSpace(name: CGColorSpace.displayP3)
+                    // bufferedPoolColorSpace = nil
+                }
+            }
+        }
+        bufferedPoolFormatDescriptionExtension = formatDescriptionExtension
+        bufferedPool = nil
+        CVPixelBufferPoolCreate(
+            nil,
+            nil,
+            attributes as NSDictionary?,
+            &bufferedPool
+        )
+        return bufferedPool
+    }
+
+    private func createBufferedPixelBuffer(sampleBuffer: CMSampleBuffer) -> CVPixelBuffer? {
+        guard let pool = getBufferedBufferPool(sampleBuffer: sampleBuffer) else {
             return nil
         }
         var outputImageBuffer: CVPixelBuffer?
@@ -1074,15 +1156,15 @@ final class VideoUnit: NSObject {
         lowFpsImageLatest = 0.0
     }
 
-    private func addReplaceVideoSampleBufferInner(cameraId: UUID, _ sampleBuffer: CMSampleBuffer) {
-        guard let replaceVideo = replaceVideos[cameraId] else {
+    private func appendBufferedVideoSampleBufferInner(cameraId: UUID, _ sampleBuffer: CMSampleBuffer) {
+        guard let bufferedVideo = bufferedVideos[cameraId] else {
             return
         }
-        replaceVideo.appendSampleBuffer(sampleBuffer)
+        bufferedVideo.appendSampleBuffer(sampleBuffer)
     }
 
-    private func addReplaceVideoInner(cameraId: UUID, name: String, latency: Double) {
-        replaceVideos[cameraId] = ReplaceVideo(
+    private func addBufferedVideoInner(cameraId: UUID, name: String, latency: Double) {
+        bufferedVideos[cameraId] = BufferedVideo(
             cameraId: cameraId,
             name: name,
             update: true,
@@ -1091,8 +1173,8 @@ final class VideoUnit: NSObject {
         )
     }
 
-    private func removeReplaceVideoInner(cameraId: UUID) {
-        replaceVideos.removeValue(forKey: cameraId)
+    private func removeBufferedVideoInner(cameraId: UUID) {
+        bufferedVideos.removeValue(forKey: cameraId)
     }
 
     private func makeBlackSampleBuffer(
@@ -1430,7 +1512,7 @@ final class VideoUnit: NSObject {
             if videoSourceId == sceneVideoSourceId {
                 videoSourceImageBuffer = imageBuffer
             } else {
-                videoSourceImageBuffer = replaceVideos[videoSourceId]?.getSampleBuffer(presentationTimeStamp)?
+                videoSourceImageBuffer = bufferedVideos[videoSourceId]?.getSampleBuffer(presentationTimeStamp)?
                     .imageBuffer
             }
             guard let videoSourceImageBuffer else {
@@ -1682,6 +1764,24 @@ final class VideoUnit: NSObject {
         }
     }
 
+    private func makeCopy(sampleBuffer: CMSampleBuffer) -> CMSampleBuffer? {
+        guard let imageBufferCopy = createBufferedPixelBuffer(sampleBuffer: sampleBuffer) else {
+            return nil
+        }
+        VTPixelTransferSessionTransferImage(
+            pixelTransferSession!,
+            from: sampleBuffer.imageBuffer!,
+            to: imageBufferCopy
+        )
+        return CMSampleBuffer.create(
+            imageBufferCopy,
+            sampleBuffer.formatDescription!,
+            sampleBuffer.duration,
+            sampleBuffer.presentationTimeStamp,
+            sampleBuffer.decodeTimeStamp
+        )
+    }
+
     private func updateCameraControls() {
         guard #available(iOS 18, *) else {
             return
@@ -1720,6 +1820,25 @@ final class VideoUnit: NSObject {
         }
         session.setControlsDelegate(nil, queue: nil)
     }
+
+    fileprivate func appendBufferedBuiltinVideo(sampleBuffer: CMSampleBuffer,
+                                                device: AVCaptureDevice) -> BufferedVideo?
+    {
+        guard let bufferedVideo = bufferedVideoBuiltins[device] else {
+            return nil
+        }
+        if bufferedVideo.latency > 0, var sampleBufferCopy = makeCopy(sampleBuffer: sampleBuffer) {
+            let latency = CMTime(seconds: bufferedVideo.latency, preferredTimescale: 1000)
+            sampleBufferCopy = sampleBufferCopy
+                .replacePresentationTimeStamp(sampleBufferCopy.presentationTimeStamp + latency) ?? sampleBufferCopy
+            bufferedVideo.appendSampleBuffer(sampleBufferCopy)
+            bufferedVideo.updateSampleBuffer(sampleBuffer.presentationTimeStamp.seconds, true)
+            return bufferedVideo
+        } else {
+            bufferedVideo.setLatestSampleBuffer(sampleBuffer)
+            return nil
+        }
+    }
 }
 
 extension VideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
@@ -1731,8 +1850,11 @@ extension VideoUnit: AVCaptureVideoDataOutputSampleBufferDelegate {
         guard let input = connection.inputPorts.first?.input as? AVCaptureDeviceInput else {
             return
         }
-        replaceVideoBuiltins[input.device]?.setLatestSampleBuffer(sampleBuffer: sampleBuffer)
-        guard selectedReplaceVideoCameraId == nil else {
+        var sampleBuffer = sampleBuffer
+        if let bufferedVideo = appendBufferedBuiltinVideo(sampleBuffer: sampleBuffer, device: input.device) {
+            sampleBuffer = bufferedVideo.getSampleBuffer(sampleBuffer.presentationTimeStamp) ?? sampleBuffer
+        }
+        guard selectedBufferedVideoCameraId == nil else {
             return
         }
         appendNewSampleBuffer(sampleBuffer: sampleBuffer)
@@ -1756,7 +1878,7 @@ extension VideoUnitBuiltinDevice: AVCaptureVideoDataOutputSampleBufferDelegate {
         guard let input = connection.inputPorts.first?.input as? AVCaptureDeviceInput else {
             return
         }
-        videoUnit?.replaceVideoBuiltins[input.device]?.setLatestSampleBuffer(sampleBuffer: sampleBuffer)
+        _ = videoUnit?.appendBufferedBuiltinVideo(sampleBuffer: sampleBuffer, device: input.device)
     }
 }
 

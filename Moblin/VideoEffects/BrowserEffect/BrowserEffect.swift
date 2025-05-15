@@ -46,13 +46,15 @@ final class BrowserEffect: VideoEffect {
     private var crops: [WidgetCrop] = []
     private var cropsMetalPetal: [WidgetCrop] = []
     private let settingName: String
+    private let server: BrowserEffectServer
 
     init(
         url: URL,
         styleSheet: String,
         widget: SettingsWidgetBrowser,
         videoSize: CGSize,
-        settingName: String
+        settingName: String,
+        moblinAccess: Bool
     ) {
         scaleToFitVideo = widget.scaleToFitVideo!
         self.url = url
@@ -81,6 +83,10 @@ final class BrowserEffect: VideoEffect {
                 forMainFrameOnly: false
             ))
         }
+        server = BrowserEffectServer()
+        if moblinAccess {
+            server.addScript(configuration: configuration)
+        }
         webView = WKWebView(frame: CGRect(x: 0, y: 0, width: width, height: height),
                             configuration: configuration)
         webView.isOpaque = false
@@ -89,10 +95,15 @@ final class BrowserEffect: VideoEffect {
         webView.scrollView.showsVerticalScrollIndicator = false
         webView.scrollView.showsHorizontalScrollIndicator = false
         super.init()
+        server.webView = webView
     }
 
     override func getName() -> String {
         return "\(settingName) browser widget"
+    }
+
+    func sendChatMessage(post: ChatPost) {
+        server.sendChatMessage(post: post)
     }
 
     var host: String {

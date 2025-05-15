@@ -107,7 +107,7 @@ private struct CollapsedBitrateView: View {
                     .frame(width: 17, height: 17)
                     .padding([.leading], 2)
                     .foregroundColor(model.bitrateStatusColor)
-                    .background(model.bitrateStatusIconColor)
+                    .background(model.bitrateStatusIconColor ?? .clear)
                 if !model.speedMbpsOneDecimal.isEmpty {
                     Text(model.speedMbpsOneDecimal)
                         .foregroundColor(.white)
@@ -281,7 +281,7 @@ private struct StatusesView: View {
                 text: model.speedAndTotal,
                 textPlacement: textPlacement,
                 color: model.bitrateStatusColor,
-                iconBackgroundColor: model.bitrateStatusIconColor
+                iconBackgroundColor: model.bitrateStatusIconColor ?? backgroundColor
             )
         }
         if textPlacement == .hide {
@@ -301,6 +301,12 @@ private struct StatusesView: View {
             text: model.bondingRtts,
             textPlacement: textPlacement,
             color: netStreamColor(model: model)
+        )
+        StreamOverlayIconAndTextView(
+            show: model.isShowingStatusReplay(),
+            icon: "play",
+            text: String(localized: "Enabled"),
+            textPlacement: textPlacement
         )
         StreamUptimeStatusView(streamUptime: model.streamUptime, textPlacement: textPlacement)
         StreamOverlayIconAndTextView(
@@ -389,7 +395,7 @@ struct RightOverlayBottomView: View {
             Spacer()
             if !(model.showDrawOnStream || model.showFace) {
                 if model.showingReplay {
-                    StreamOverlayRightReplayView()
+                    StreamOverlayRightReplayView(replay: model.replay)
                 } else {
                     if model.showMediaPlayerControls {
                         StreamOverlayRightMediaPlayerControlsView()

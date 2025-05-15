@@ -84,7 +84,7 @@ func packSeiPictureTiming() -> Data {
     let seconds: UInt8 = 3
     let timeOffset: UInt32 = 0xFFFF_FFFF
     let numberOfFrames: UInt8 = 0
-    let writer = BitArray()
+    let writer = BitWriter()
     writer.writeBits(picStruct, count: 4)
     writer.writeBit(clockTimestampFlag)
     writer.writeBits(0, count: 2)
@@ -104,7 +104,7 @@ func packSeiPictureTiming() -> Data {
 }
 
 private func packSei(payloadType: UInt8, payload: Data) -> Data {
-    let writer = ByteArray()
+    let writer = ByteWriter()
     writer.writeUInt8(payloadType)
     writer.writeUInt8(UInt8(payload.count))
     writer.writeBytes(payload)

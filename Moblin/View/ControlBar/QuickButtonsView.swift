@@ -39,6 +39,34 @@ private struct QuickButtonImage: View {
     }
 }
 
+private struct InstantReplayView: View {
+    @EnvironmentObject var model: Model
+    @ObservedObject var replay: ReplayProvider
+    var state: ButtonState
+    var size: CGFloat
+
+    var body: some View {
+        Button(action: {
+            if model.stream.replay!.enabled {
+                model.instantReplay()
+            } else {
+                model.makeReplayIsNotEnabledToast()
+            }
+        }, label: {
+            if replay.isPlaying {
+                Text(String(replay.timeLeft))
+                    .font(.system(size: 25))
+                    .frame(width: size, height: size)
+                    .foregroundColor(.white)
+                    .background(state.button.backgroundColor!.color())
+                    .clipShape(Circle())
+            } else {
+                QuickButtonImage(state: state, buttonSize: size)
+            }
+        })
+    }
+}
+
 struct QuickButtonPlaceholderImage: View {
     var body: some View {
         Button {} label: {
@@ -108,7 +136,7 @@ struct QuickButtonsInnerView: View {
         }
     }
 
-    private func videoEffectAction(state: ButtonState, type: SettingsButtonType) {
+    private func videoEffectAction(state: ButtonState, type: SettingsQuickButtonType) {
         state.button.isOn.toggle()
         model.setGlobalButtonState(type: type, isOn: state.button.isOn)
         model.sceneUpdated(updateRemoteScene: false)
@@ -117,6 +145,14 @@ struct QuickButtonsInnerView: View {
 
     private func movieAction(state: ButtonState) {
         videoEffectAction(state: state, type: .movie)
+    }
+
+    private func whirlpoolAction(state: ButtonState) {
+        videoEffectAction(state: state, type: .whirlpool)
+    }
+
+    private func pinchAction(state: ButtonState) {
+        videoEffectAction(state: state, type: .pinch)
     }
 
     private func fourThreeAction(state: ButtonState) {
@@ -290,6 +326,11 @@ struct QuickButtonsInnerView: View {
 
     private func connectionPrioritiesAction(state _: ButtonState) {
         model.toggleShowingPanel(type: .connectionPriorities, panel: .connectionPriorities)
+    }
+
+    private func autoSceneSwitcherAction(state _: ButtonState) {
+        model.toggleShowingPanel(type: .autoSceneSwitcher, panel: .autoSceneSwitcher)
+        model.updateAutoSceneSwitcherButtonState()
     }
 
     var body: some View {
@@ -574,7 +615,14 @@ struct QuickButtonsInnerView: View {
                 Button(action: {
                     djiDevicesAction(state: state)
                 }, label: {
-                    QuickButtonImage(state: state, buttonSize: size)
+                    ZStack {
+                        QuickButtonImage(state: state, buttonSize: size)
+                        Text("DJI")
+                            .rotationEffect(.degrees(-90))
+                            .offset(CGSize(width: 10, height: 0))
+                            .font(.system(size: 8))
+                            .foregroundColor(.white)
+                    }
                 })
             case .portrait:
                 Button(action: {
@@ -586,7 +634,14 @@ struct QuickButtonsInnerView: View {
                 Button(action: {
                     goProAction(state: state)
                 }, label: {
-                    QuickButtonImage(state: state, buttonSize: size)
+                    ZStack {
+                        QuickButtonImage(state: state, buttonSize: size)
+                        Text("GoPro")
+                            .rotationEffect(.degrees(-90))
+                            .offset(CGSize(width: 10, height: 0))
+                            .font(.system(size: 8))
+                            .foregroundColor(.white)
+                    }
                 })
             case .replay:
                 Button(action: {
@@ -594,14 +649,34 @@ struct QuickButtonsInnerView: View {
                 }, label: {
                     QuickButtonImage(state: state, buttonSize: size)
                 })
+            case .instantReplay:
+                InstantReplayView(replay: model.replay, state: state, size: size)
             case .connectionPriorities:
                 Button(action: {
                     connectionPrioritiesAction(state: state)
                 }, label: {
                     QuickButtonImage(state: state, buttonSize: size)
                 })
+            case .whirlpool:
+                Button(action: {
+                    whirlpoolAction(state: state)
+                }, label: {
+                    QuickButtonImage(state: state, buttonSize: size)
+                })
+            case .pinch:
+                Button(action: {
+                    pinchAction(state: state)
+                }, label: {
+                    QuickButtonImage(state: state, buttonSize: size)
+                })
+            case .autoSceneSwitcher:
+                Button(action: {
+                    autoSceneSwitcherAction(state: state)
+                }, label: {
+                    QuickButtonImage(state: state, buttonSize: size)
+                })
             }
-            if model.database.quickButtons!.showName && !(model.stream.portrait! || model.database.portrait!) {
+            if model.database.quickButtons!.showName && !model.isPortrait() {
                 Text(state.button.name)
                     .multilineTextAlignment(.center)
                     .frame(width: nameWidth, alignment: .center)

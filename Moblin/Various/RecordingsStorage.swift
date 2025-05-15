@@ -2,9 +2,7 @@ import Foundation
 import SwiftUI
 
 private func getRecordingsDirectory() -> URL {
-    let recordingsDirectory = URL.documentsDirectory.appending(component: "Recordings")
-    try? FileManager.default.createDirectory(at: recordingsDirectory, withIntermediateDirectories: true)
-    return recordingsDirectory
+    return createAndGetDirectory(name: "Recordings")
 }
 
 class RecordingSettings: Codable {
@@ -137,6 +135,7 @@ final class RecordingsStorage {
     }
 
     private func cleanup() {
+        database.recordings = database.recordings.filter { FileManager.default.fileExists(atPath: $0.url().path()) }
         guard let enumerator = FileManager.default.enumerator(
             at: getRecordingsDirectory(),
             includingPropertiesForKeys: nil

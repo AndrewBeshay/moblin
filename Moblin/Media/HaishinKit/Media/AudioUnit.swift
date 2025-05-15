@@ -4,28 +4,34 @@ import Collections
 private let deltaLimit = 0.03
 var audioUnitRemoveWindNoise = false
 
+struct AudioUnitAttachParams {
+    var device: AVCaptureDevice?
+    var builtinDelay: Double
+    var bufferedAudio: UUID?
+}
+
 func makeChannelMap(
     numberOfInputChannels: Int,
     numberOfOutputChannels: Int,
     outputToInputChannelsMap: [Int: Int]
 ) -> [NSNumber] {
-    var result = Array(repeating: -1, count: numberOfOutputChannels)
+    var channelMap = Array(repeating: -1, count: numberOfOutputChannels)
     for inputIndex in 0 ..< min(numberOfInputChannels, numberOfOutputChannels) {
-        result[inputIndex] = inputIndex
+        channelMap[inputIndex] = inputIndex
     }
     for outputIndex in 0 ..< numberOfOutputChannels {
         if let inputIndex = outputToInputChannelsMap[outputIndex], inputIndex < numberOfInputChannels {
-            result[outputIndex] = inputIndex
+            channelMap[outputIndex] = inputIndex
         }
     }
-    return result.map { NSNumber(value: $0) }
+    return channelMap.map { NSNumber(value: $0) }
 }
 
-protocol ReplaceAudioSampleBufferDelegate: AnyObject {
-    func didOutputReplaceSampleBuffer(cameraId: UUID, sampleBuffer: CMSampleBuffer)
+protocol BufferedAudioSampleBufferDelegate: AnyObject {
+    func didOutputBufferedSampleBuffer(cameraId: UUID, sampleBuffer: CMSampleBuffer)
 }
 
-private class ReplaceAudio {
+private class BufferedAudio {
     private var cameraId: UUID
     private let name: String
     private weak var mixer: Mixer?
@@ -40,13 +46,18 @@ private class ReplaceAudio {
     private var startPresentationTimeStamp: CMTime = .zero
     private let driftTracker: DriftTracker
     private var isInitialBuffering = true
-    weak var delegate: ReplaceAudioSampleBufferDelegate?
+    weak var delegate: BufferedAudioSampleBufferDelegate?
     private var hasBufferBeenAppended = false
+    let latency: Double
 
-    init(cameraId: UUID, name: String, latency: Double, mixer: Mixer?) {
+    init(cameraId: UUID, name: String, latency: Double, mixer: Mixer?, manualOutput: Bool) {
         self.cameraId = cameraId
         self.name = name
+        self.latency = latency
         self.mixer = mixer
+        if manualOutput {
+            isOutputting = true
+        }
         driftTracker = DriftTracker(media: "audio", name: name, targetFillLevel: latency)
     }
 
@@ -78,7 +89,7 @@ private class ReplaceAudio {
             if sampleBuffers.count > 300 {
                 logger.info(
                     """
-                    replace-audio: \(name): Over 300 buffers (\(sampleBuffers.count)) buffered. Dropping \
+                    buffered-audio: \(name): Over 300 buffers (\(sampleBuffers.count)) buffered. Dropping \
                     oldest buffer.
                     """
                 )
@@ -104,7 +115,7 @@ private class ReplaceAudio {
             let fillLevel = lastPresentationTimeStamp - firstPresentationTimeStamp
             if numberOfBuffersConsumed == 0 {
                 logger.debug("""
-                replace-audio: \(name): Duplicating buffer. \
+                buffered-audio: \(name): Duplicating buffer. \
                 Output \(formatThreeDecimals(outputPresentationTimeStamp)), \
                 \(formatThreeDecimals(firstPresentationTimeStamp + drift))..\
                 \(formatThreeDecimals(lastPresentationTimeStamp + drift)) \
@@ -113,7 +124,7 @@ private class ReplaceAudio {
                 """)
             } else if numberOfBuffersConsumed > 1 {
                 logger.debug("""
-                replace-audio: \(name): Dropping \(numberOfBuffersConsumed - 1) buffer(s). \
+                buffered-audio: \(name): Dropping \(numberOfBuffersConsumed - 1) buffer(s). \
                 Output \(formatThreeDecimals(outputPresentationTimeStamp)), \
                 Current \(formatThreeDecimals(sampleBuffer?.presentationTimeStamp.seconds ?? 0.0)), \
                 \(formatThreeDecimals(firstPresentationTimeStamp + drift))..\
@@ -134,7 +145,7 @@ private class ReplaceAudio {
         if !isInitialBuffering, hasBufferBeenAppended {
             hasBufferBeenAppended = false
             if let drift = driftTracker.update(outputPresentationTimeStamp, sampleBuffers) {
-                mixer?.setReplaceVideoDrift(cameraId: cameraId, drift: drift)
+                mixer?.setBufferedVideoDrift(cameraId: cameraId, drift: drift)
             }
         }
         return sampleBuffer
@@ -153,7 +164,7 @@ private class ReplaceAudio {
 
     private func startOutput() {
         logger.info("""
-        replace-audio: \(name): Start output with sample rate \(sampleRate) and \
+        buffered-audio: \(name): Start output with sample rate \(sampleRate) and \
         frame length \(frameLength)
         """)
         outputTimer.startPeriodic(interval: 1 / (sampleRate / frameLength), initial: 0.0) { [weak self] in
@@ -162,11 +173,11 @@ private class ReplaceAudio {
     }
 
     func stopOutput() {
-        logger.info("replace-audio: \(name): Stopping output.")
+        logger.info("buffered-audio: \(name): Stopping output.")
         outputTimer.stop()
     }
 
-    private func calcPresentationTimeStamp() -> CMTime {
+    private func makePresentationTimeStamp() -> CMTime {
         return CMTime(
             value: Int64(frameLength * Double(outputCounter)),
             timescale: CMTimeScale(sampleRate)
@@ -179,54 +190,46 @@ private class ReplaceAudio {
         if startPresentationTimeStamp == .zero {
             startPresentationTimeStamp = currentPresentationTimeStamp
         }
-        var presentationTimeStamp = calcPresentationTimeStamp()
+        var presentationTimeStamp = makePresentationTimeStamp()
         let deltaFromCalculatedToClock = presentationTimeStamp - currentPresentationTimeStamp
         if abs(deltaFromCalculatedToClock.seconds) > deltaLimit {
             if deltaFromCalculatedToClock > .zero {
                 logger.info("""
-                replace-audio: Adjust PTS back in time. Calculated is \
+                buffered-audio: Adjust PTS back in time. Calculated is \
                 \(presentationTimeStamp.seconds) \
                 and clock is \(currentPresentationTimeStamp.seconds)
                 """)
                 outputCounter -= 1
-                presentationTimeStamp = calcPresentationTimeStamp()
             } else {
                 logger.info("""
-                replace-audio: Adjust PTS forward in time. Calculated is \
+                buffered-audio: Adjust PTS forward in time. Calculated is \
                 \(presentationTimeStamp.seconds) \
                 and clock is \(currentPresentationTimeStamp.seconds)
                 """)
                 outputCounter += 1
-                presentationTimeStamp = calcPresentationTimeStamp()
             }
+            presentationTimeStamp = makePresentationTimeStamp()
         }
-        guard let sampleBuffer = getSampleBuffer(presentationTimeStamp.seconds),
-              let sampleBuffer = sampleBuffer.replacePresentationTimeStamp(presentationTimeStamp)
+        guard let sampleBuffer = getSampleBuffer(presentationTimeStamp.seconds)?
+            .replacePresentationTimeStamp(presentationTimeStamp)
         else {
             return
         }
-        delegate?.didOutputReplaceSampleBuffer(cameraId: cameraId, sampleBuffer: sampleBuffer)
+        delegate?.didOutputBufferedSampleBuffer(cameraId: cameraId, sampleBuffer: sampleBuffer)
     }
-}
-
-private func makeCaptureSession() -> AVCaptureSession {
-    let session = AVCaptureSession()
-    if session.isMultitaskingCameraAccessSupported {
-        session.isMultitaskingCameraAccessEnabled = true
-    }
-    return session
 }
 
 final class AudioUnit: NSObject {
-    private var encoders = [AudioCodec(lockQueue: mixerLockQueue)]
+    private var encoders = [AudioEncoder(lockQueue: mixerLockQueue)]
     private var input: AVCaptureDeviceInput?
     private var output: AVCaptureAudioDataOutput?
     var muted = false
     weak var mixer: Mixer?
-    private var selectedReplaceAudioId: UUID?
-    private var replaceAudios: [UUID: ReplaceAudio] = [:]
-    let session = makeCaptureSession()
+    private var selectedBufferedAudioId: UUID?
+    private var bufferedAudios: [UUID: BufferedAudio] = [:]
+    let session = AVCaptureSession()
     private var speechToTextEnabled = false
+    private var bufferedBuiltinAudio: BufferedAudio?
 
     private var inputSourceFormat: AudioStreamBasicDescription? {
         didSet {
@@ -247,31 +250,24 @@ final class AudioUnit: NSObject {
         session.stopRunning()
     }
 
-    func getEncoders() -> [AudioCodec] {
+    func getEncoders() -> [AudioEncoder] {
         return encoders
     }
 
-    func attach(_ device: AVCaptureDevice?, _ replaceAudio: UUID?) throws {
-        mixerLockQueue.sync {
-            self.selectedReplaceAudioId = replaceAudio
+    func attach(params: AudioUnitAttachParams) throws {
+        mixerLockQueue.async {
+            self.selectedBufferedAudioId = params.bufferedAudio
+            self.bufferedBuiltinAudio = BufferedAudio(
+                cameraId: UUID(),
+                name: "builtin",
+                latency: params.builtinDelay,
+                mixer: self.mixer,
+                manualOutput: true
+            )
         }
-        if let device {
+        if let device = params.device {
             try attachDevice(device)
         }
-    }
-
-    func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, _ presentationTimeStamp: CMTime) {
-        guard let sampleBuffer = sampleBuffer.muted(muted) else {
-            return
-        }
-        if speechToTextEnabled {
-            mixer?.delegate?.mixer(audioSampleBuffer: sampleBuffer)
-        }
-        inputSourceFormat = sampleBuffer.formatDescription?.audioStreamBasicDescription
-        for encoder in encoders {
-            encoder.appendSampleBuffer(sampleBuffer, presentationTimeStamp)
-        }
-        mixer?.recorder.appendAudio(sampleBuffer)
     }
 
     func startEncoding(_ delegate: any AudioCodecDelegate) {
@@ -334,66 +330,98 @@ final class AudioUnit: NSObject {
         session.automaticallyConfiguresApplicationAudioSession = false
     }
 
-    func addReplaceAudioSampleBuffer(cameraId: UUID, _ sampleBuffer: CMSampleBuffer) {
+    func addBufferedAudio(cameraId: UUID, name: String, latency: Double) {
         mixerLockQueue.async {
-            self.addReplaceAudioSampleBufferInner(cameraId: cameraId, sampleBuffer)
+            self.addBufferedAudioInner(cameraId: cameraId, name: name, latency: latency)
         }
     }
 
-    func addReplaceAudioSampleBufferInner(cameraId: UUID, _ sampleBuffer: CMSampleBuffer) {
-        replaceAudios[cameraId]?.appendSampleBuffer(sampleBuffer)
-    }
-
-    func addReplaceAudio(cameraId: UUID, name: String, latency: Double) {
+    func removeBufferedAudio(cameraId: UUID) {
         mixerLockQueue.async {
-            self.addReplaceAudioInner(cameraId: cameraId, name: name, latency: latency)
+            self.removeBufferedAudioInner(cameraId: cameraId)
         }
     }
 
-    func addReplaceAudioInner(cameraId: UUID, name: String, latency: Double) {
-        let replaceAudio = ReplaceAudio(cameraId: cameraId, name: name, latency: latency, mixer: mixer)
-        replaceAudio.delegate = self
-        replaceAudios[cameraId] = replaceAudio
-    }
-
-    func removeReplaceAudio(cameraId: UUID) {
+    func appendBufferedAudioSampleBuffer(cameraId: UUID, _ sampleBuffer: CMSampleBuffer) {
         mixerLockQueue.async {
-            self.removeReplaceAudioInner(cameraId: cameraId)
+            self.appendBufferedAudioSampleBufferInner(cameraId: cameraId, sampleBuffer)
         }
     }
 
-    func removeReplaceAudioInner(cameraId: UUID) {
-        replaceAudios.removeValue(forKey: cameraId)?.stopOutput()
-    }
-
-    func setReplaceAudioDrift(cameraId: UUID, drift: Double) {
+    func setBufferedAudioDrift(cameraId: UUID, drift: Double) {
         mixerLockQueue.async {
-            self.setReplaceAudioDriftInner(cameraId: cameraId, drift: drift)
+            self.setBufferedAudioDriftInner(cameraId: cameraId, drift: drift)
         }
     }
 
-    private func setReplaceAudioDriftInner(cameraId: UUID, drift: Double) {
-        replaceAudios[cameraId]?.setDrift(drift: drift)
-    }
-
-    func setReplaceAudioTargetLatency(cameraId: UUID, latency: Double) {
+    func setBufferedAudioTargetLatency(cameraId: UUID, latency: Double) {
         mixerLockQueue.async {
-            self.setReplaceAudioTargetLatencyInner(cameraId: cameraId, latency: latency)
+            self.setBufferedAudioTargetLatencyInner(cameraId: cameraId, latency: latency)
         }
     }
 
-    private func setReplaceAudioTargetLatencyInner(cameraId: UUID, latency: Double) {
-        replaceAudios[cameraId]?.setTargetLatency(latency: latency)
+    private func addBufferedAudioInner(cameraId: UUID, name: String, latency: Double) {
+        let bufferedAudio = BufferedAudio(
+            cameraId: cameraId,
+            name: name,
+            latency: latency,
+            mixer: mixer,
+            manualOutput: false
+        )
+        bufferedAudio.delegate = self
+        bufferedAudios[cameraId] = bufferedAudio
     }
 
-    func prepareSampleBuffer(sampleBuffer: CMSampleBuffer, audioLevel: Float, numberOfAudioChannels: Int) {
+    private func removeBufferedAudioInner(cameraId: UUID) {
+        bufferedAudios.removeValue(forKey: cameraId)?.stopOutput()
+    }
+
+    private func appendBufferedAudioSampleBufferInner(cameraId: UUID, _ sampleBuffer: CMSampleBuffer) {
+        bufferedAudios[cameraId]?.appendSampleBuffer(sampleBuffer)
+    }
+
+    private func setBufferedAudioDriftInner(cameraId: UUID, drift: Double) {
+        bufferedAudios[cameraId]?.setDrift(drift: drift)
+    }
+
+    private func setBufferedAudioTargetLatencyInner(cameraId: UUID, latency: Double) {
+        bufferedAudios[cameraId]?.setTargetLatency(latency: latency)
+    }
+
+    private func appendNewSampleBuffer(sampleBuffer: CMSampleBuffer, audioLevel: Float, numberOfAudioChannels: Int) {
         guard let mixer else {
             return
         }
         // Workaround for audio drift on iPhone 15 Pro Max running iOS 17. Probably issue on more models.
         let presentationTimeStamp = syncTimeToVideo(mixer: mixer, sampleBuffer: sampleBuffer)
         mixer.delegate?.mixer(audioLevel: audioLevel, numberOfAudioChannels: numberOfAudioChannels)
-        appendSampleBuffer(sampleBuffer, presentationTimeStamp)
+        guard let sampleBuffer = sampleBuffer.muted(muted) else {
+            return
+        }
+        if speechToTextEnabled {
+            mixer.delegate?.mixer(audioSampleBuffer: sampleBuffer)
+        }
+        inputSourceFormat = sampleBuffer.formatDescription?.audioStreamBasicDescription
+        for encoder in encoders {
+            encoder.appendSampleBuffer(sampleBuffer, presentationTimeStamp)
+        }
+        mixer.recorder.appendAudio(sampleBuffer)
+    }
+
+    private func appendBufferedBuiltinAudio(sampleBuffer: CMSampleBuffer) -> BufferedAudio? {
+        guard let bufferedBuiltinAudio, bufferedBuiltinAudio.latency > 0,
+              let sampleBuffer = sampleBuffer.deepCopyAudioSampleBuffer()
+        else {
+            return nil
+        }
+        let latency = CMTime(seconds: bufferedBuiltinAudio.latency, preferredTimescale: 1000)
+        guard let sampleBuffer = sampleBuffer
+            .replacePresentationTimeStamp(sampleBuffer.presentationTimeStamp + latency)
+        else {
+            return nil
+        }
+        bufferedBuiltinAudio.appendSampleBuffer(sampleBuffer)
+        return bufferedBuiltinAudio
     }
 }
 
@@ -403,7 +431,11 @@ extension AudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
         didOutput sampleBuffer: CMSampleBuffer,
         from connection: AVCaptureConnection
     ) {
-        guard selectedReplaceAudioId == nil else {
+        var sampleBuffer = sampleBuffer
+        if let bufferedAudio = appendBufferedBuiltinAudio(sampleBuffer: sampleBuffer) {
+            sampleBuffer = bufferedAudio.getSampleBuffer(sampleBuffer.presentationTimeStamp.seconds) ?? sampleBuffer
+        }
+        guard selectedBufferedAudioId == nil else {
             return
         }
         var audioLevel: Float
@@ -414,7 +446,7 @@ extension AudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
         } else {
             audioLevel = 0.0
         }
-        prepareSampleBuffer(
+        appendNewSampleBuffer(
             sampleBuffer: sampleBuffer,
             audioLevel: audioLevel,
             numberOfAudioChannels: connection.audioChannels.count
@@ -422,13 +454,13 @@ extension AudioUnit: AVCaptureAudioDataOutputSampleBufferDelegate {
     }
 }
 
-extension AudioUnit: ReplaceAudioSampleBufferDelegate {
-    func didOutputReplaceSampleBuffer(cameraId: UUID, sampleBuffer: CMSampleBuffer) {
-        guard selectedReplaceAudioId == cameraId else {
+extension AudioUnit: BufferedAudioSampleBufferDelegate {
+    func didOutputBufferedSampleBuffer(cameraId: UUID, sampleBuffer: CMSampleBuffer) {
+        guard selectedBufferedAudioId == cameraId else {
             return
         }
         let numberOfAudioChannels = Int(sampleBuffer.formatDescription?.numberOfAudioChannels() ?? 0)
-        prepareSampleBuffer(
+        appendNewSampleBuffer(
             sampleBuffer: sampleBuffer,
             audioLevel: .infinity,
             numberOfAudioChannels: numberOfAudioChannels

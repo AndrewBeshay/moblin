@@ -45,7 +45,6 @@ class SrtStream: NetStream {
             case .publishing:
                 logger.info("srt: Start publishing")
                 mixer.startEncoding(writer)
-                mixer.startRunning()
                 writer.startRunning()
             default:
                 break
@@ -63,24 +62,6 @@ class SrtStream: NetStream {
 
     deinit {
         srt_cleanup()
-    }
-
-    override func attachCamera(
-        params: VideoUnitAttachParams,
-        onError: ((Error) -> Void)? = nil,
-        onSuccess: (() -> Void)? = nil
-    ) {
-        writer.expectedMedias.insert(.video)
-        super.attachCamera(params: params, onError: onError, onSuccess: onSuccess)
-    }
-
-    override func attachAudio(
-        _ audio: AVCaptureDevice?,
-        onError: ((Error) -> Void)? = nil,
-        replaceAudioId: UUID? = nil
-    ) {
-        writer.expectedMedias.insert(.audio)
-        super.attachAudio(audio, onError: onError, replaceAudioId: replaceAudioId)
     }
 
     func open(_ uri: URL?, sendHook: @escaping (Data) -> Bool) throws {

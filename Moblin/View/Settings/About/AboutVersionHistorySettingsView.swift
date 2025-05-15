@@ -8,10 +8,30 @@ struct Version {
 
 // swiftlint:disable line_length
 private let versions = [
-    Version(version: "0.398.0", date: "2025-04-26", changes: [
+    Version(version: "0.398.0", date: "2025-05-04", changes: [
         "• Replay speed picker.",
         "  • 0.5x or 1x.",
         "• Replay history.",
+        "• Replay overlay in top right.",
+        "• Connection priorities quick button. 💡 AUTdany",
+        "• Fix error toast when going live on iOS 16(?). 🐛 Kentar75",
+        "• Video position setting when using portrait UI.",
+        "• Instant replay quick button.",
+        "• Allow toggling Low Light Boost when live.",
+        "• Fix zoom when using remote control assistant and low energy camera. 🐛 djandrea.",
+        "  • Will not switch camera anymore. Maybe add a way to do it later.",
+        "• Trigger instant replay with game controller and keyboard.",
+        "• Initial support for displaying reply in Kick and Twitch chats. 💡 iChrisIRL",
+        "• Replay enabled toggle in stream settings.",
+        "• Replay status icon in top right.",
+        "• Fix face tracking in video source widget when streaming in portrait.",
+        "• Hide/show panel button for easier scene editing.",
+        "• Optional replay fade transition.",
+        "• Fix video source widget in scene widget. 🐛 Blazo",
+        "• Updated Apple Watch complication. 💡 Tobi JUMPGEIL",
+        "• DJI and GoPro text on their quick buttons.",
+        "• Show replay time left on instant replay quick button.",
+        "• Make remote control assistant work better in portrait mode.",
     ]),
     Version(version: "0.397.0", date: "2025-04-23", changes: [
         "• New SRT(LA) batch send.",

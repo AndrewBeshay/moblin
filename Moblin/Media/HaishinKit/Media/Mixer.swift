@@ -1,5 +1,4 @@
 import AVFoundation
-import SwiftUI
 
 let mixerLockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.Mixer", qos: .userInteractive)
 
@@ -23,7 +22,6 @@ protocol MixerDelegate: AnyObject {
 
 class Mixer {
     weak var delegate: (any MixerDelegate)?
-
     let audio = AudioUnit()
     let video = VideoUnit()
     let recorder = Recorder()
@@ -38,18 +36,8 @@ class Mixer {
         try video.attach(params: params)
     }
 
-    func attachAudio(_ device: AVCaptureDevice?, _ replaceAudio: UUID?) throws {
-        try audio.attach(device, replaceAudio)
-    }
-
-    func startEncoding(_ delegate: any AudioCodecDelegate & VideoEncoderDelegate) {
-        video.startEncoding(delegate)
-        audio.startEncoding(delegate)
-    }
-
-    func stopEncoding() {
-        video.stopEncoding()
-        audio.stopEncoding()
+    func attachAudio(params: AudioUnitAttachParams) throws {
+        try audio.attach(params: params)
     }
 
     func startRunning() {
@@ -62,12 +50,22 @@ class Mixer {
         audio.stopRunning()
     }
 
-    func setReplaceAudioDrift(cameraId: UUID, drift: Double) {
-        audio.setReplaceAudioDrift(cameraId: cameraId, drift: drift)
+    func startEncoding(_ delegate: any AudioCodecDelegate & VideoEncoderDelegate) {
+        video.startEncoding(delegate)
+        audio.startEncoding(delegate)
     }
 
-    func setReplaceVideoDrift(cameraId: UUID, drift: Double) {
-        video.setReplaceVideoDrift(cameraId: cameraId, drift: drift)
+    func stopEncoding() {
+        video.stopEncoding()
+        audio.stopEncoding()
+    }
+
+    func setBufferedAudioDrift(cameraId: UUID, drift: Double) {
+        audio.setBufferedAudioDrift(cameraId: cameraId, drift: drift)
+    }
+
+    func setBufferedVideoDrift(cameraId: UUID, drift: Double) {
+        video.setBufferedVideoDrift(cameraId: cameraId, drift: drift)
     }
 }
 

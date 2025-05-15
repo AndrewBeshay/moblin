@@ -35,6 +35,7 @@ protocol MediaDelegate: AnyObject {
     func mediaSetZoomX(x: Float)
     func mediaSetExposureBias(bias: Float)
     func mediaSelectedFps(fps: Double, auto: Bool)
+    func mediaError(error: Error)
 }
 
 final class Media: NSObject {
@@ -59,7 +60,7 @@ final class Media: NSObject {
     private var failedVideoEffect: String?
     var srtDroppedPacketsTotal: Int32 = 0
     private var videoEncoderSettings = VideoEncoderSettings()
-    private var audioEncoderSettings = AudioCodecOutputSettings()
+    private var audioEncoderSettings = AudioEncoderSettings()
     private var multiplier: UInt32 = 0
     private var updateTickCount: UInt64 = 0
     private var belaLinesAndActions: ([String], [String])?
@@ -98,7 +99,9 @@ final class Media: NSObject {
         netStream = nil
     }
 
-    func setNetStream(proto: SettingsStreamProtocol, portrait: Bool, timecodesEnabled: Bool) {
+    func setNetStream(proto: SettingsStreamProtocol, portrait: Bool, timecodesEnabled: Bool,
+                      builtinAudioDelay: Double)
+    {
         netStream?.stopMixer()
         srtStopStream()
         rtmpStopStream()
@@ -133,7 +136,7 @@ final class Media: NSObject {
         }
         netStream!.delegate = self
         netStream!.setVideoOrientation(value: portrait ? .portrait : .landscapeRight)
-        attachDefaultAudioDevice()
+        attachDefaultAudioDevice(builtinDelay: builtinAudioDelay)
     }
 
     func getAudioLevel() -> Float {
@@ -728,11 +731,11 @@ final class Media: NSObject {
     }
 
     func setAudioStreamBitrate(bitrate: Int) {
-        audioEncoderSettings.bitRate = bitrate
+        audioEncoderSettings.bitrate = bitrate
         commitAudioEncoderSettings()
     }
 
-    func setAudioStreamFormat(format: AudioCodecOutputSettings.Format) {
+    func setAudioStreamFormat(format: AudioEncoderSettings.Format) {
         audioEncoderSettings.format = format
         commitAudioEncoderSettings()
     }
@@ -790,7 +793,7 @@ final class Media: NSObject {
         netStream?.attachCamera(
             params: params,
             onError: {
-                logger.error("stream: Attach camera error: \($0)")
+                self.delegate?.mediaError(error: $0)
             },
             onSuccess: {
                 DispatchQueue.main.async {
@@ -800,8 +803,9 @@ final class Media: NSObject {
         )
     }
 
-    func attachReplaceCamera(
+    func attachBufferedCamera(
         devices: CaptureDevices,
+        builtinDelay: Double,
         cameraPreviewLayer: AVCaptureVideoPreviewLayer,
         externalDisplayPreview: Bool,
         cameraId: UUID,
@@ -809,10 +813,11 @@ final class Media: NSObject {
         fillFrame: Bool
     ) {
         let params = VideoUnitAttachParams(devices: devices,
+                                           builtinDelay: builtinDelay,
                                            cameraPreviewLayer: cameraPreviewLayer,
                                            showCameraPreview: false,
                                            externalDisplayPreview: externalDisplayPreview,
-                                           replaceVideo: cameraId,
+                                           bufferedVideo: cameraId,
                                            preferredVideoStabilizationMode: .off,
                                            isVideoMirrored: false,
                                            ignoreFramesAfterAttachSeconds: ignoreFramesAfterAttachSeconds,
@@ -820,45 +825,51 @@ final class Media: NSObject {
         netStream?.attachCamera(params: params)
     }
 
-    func attachReplaceAudio(cameraId: UUID?) {
-        netStream?.attachAudio(nil, replaceAudioId: cameraId)
+    func attachBufferedAudio(cameraId: UUID?) {
+        let params = AudioUnitAttachParams(device: nil, builtinDelay: 0, bufferedAudio: cameraId)
+        netStream?.attachAudio(params: params)
     }
 
-    func addReplaceAudio(cameraId: UUID, name: String, latency: Double) {
-        netStream?.addReplaceAudio(cameraId: cameraId, name: name, latency: latency)
+    func addBufferedAudio(cameraId: UUID, name: String, latency: Double) {
+        netStream?.addBufferedAudio(cameraId: cameraId, name: name, latency: latency)
     }
 
-    func removeReplaceAudio(cameraId: UUID) {
-        netStream?.removeReplaceAudio(cameraId: cameraId)
+    func removeBufferedAudio(cameraId: UUID) {
+        netStream?.removeBufferedAudio(cameraId: cameraId)
     }
 
-    func addReplaceAudioSampleBuffer(cameraId: UUID, sampleBuffer: CMSampleBuffer) {
-        netStream?.addReplaceAudioSampleBuffer(cameraId: cameraId, sampleBuffer)
+    func appendBufferedAudioSampleBuffer(cameraId: UUID, sampleBuffer: CMSampleBuffer) {
+        netStream?.appendBufferedAudioSampleBuffer(cameraId: cameraId, sampleBuffer)
     }
 
-    func setReplaceAudioTargetLatency(cameraId: UUID, latency: Double) {
-        netStream?.setReplaceAudioTargetLatency(cameraId: cameraId, latency)
+    func setBufferedAudioTargetLatency(cameraId: UUID, latency: Double) {
+        netStream?.setBufferedAudioTargetLatency(cameraId: cameraId, latency)
     }
 
-    func addReplaceVideo(cameraId: UUID, name: String, latency: Double) {
-        netStream?.addReplaceVideo(cameraId: cameraId, name: name, latency: latency)
+    func addBufferedVideo(cameraId: UUID, name: String, latency: Double) {
+        netStream?.addBufferedVideo(cameraId: cameraId, name: name, latency: latency)
     }
 
-    func removeReplaceVideo(cameraId: UUID) {
-        netStream?.removeReplaceVideo(cameraId: cameraId)
+    func removeBufferedVideo(cameraId: UUID) {
+        netStream?.removeBufferedVideo(cameraId: cameraId)
     }
 
-    func addReplaceVideoSampleBuffer(cameraId: UUID, sampleBuffer: CMSampleBuffer) {
-        netStream?.addReplaceVideoSampleBuffer(cameraId: cameraId, sampleBuffer)
+    func appendBufferedVideoSampleBuffer(cameraId: UUID, sampleBuffer: CMSampleBuffer) {
+        netStream?.appendBufferedVideoSampleBuffer(cameraId: cameraId, sampleBuffer)
     }
 
-    func setReplaceVideoTargetLatency(cameraId: UUID, latency: Double) {
-        netStream?.setReplaceVideoTargetLatency(cameraId: cameraId, latency)
+    func setBufferedVideoTargetLatency(cameraId: UUID, latency: Double) {
+        netStream?.setBufferedVideoTargetLatency(cameraId: cameraId, latency)
     }
 
-    func attachDefaultAudioDevice() {
-        netStream?.attachAudio(AVCaptureDevice.default(for: .audio)) { error in
-            logger.error("stream: Attach audio error: \(error)")
+    func attachDefaultAudioDevice(builtinDelay: Double) {
+        let params = AudioUnitAttachParams(
+            device: AVCaptureDevice.default(for: .audio),
+            builtinDelay: builtinDelay,
+            bufferedAudio: nil
+        )
+        netStream?.attachAudio(params: params) {
+            self.delegate?.mediaError(error: $0)
         }
     }
 
@@ -867,19 +878,28 @@ final class Media: NSObject {
     }
 
     func startRecording(
-        url: URL,
+        url: URL?, replay: Bool,
         videoCodec: SettingsStreamCodec,
         videoBitrate: Int?,
         keyFrameInterval: Int?,
         audioBitrate: Int?
     ) {
         netStream?.startRecording(url: url,
+                                  replay: replay,
                                   audioSettings: makeAudioCompressionSettings(audioBitrate: audioBitrate),
                                   videoSettings: makeVideoCompressionSettings(
                                       videoCodec: videoCodec,
                                       videoBitrate: videoBitrate,
                                       keyFrameInterval: keyFrameInterval
                                   ))
+    }
+
+    func setRecordUrl(url: URL?) {
+        netStream?.setUrl(url: url)
+    }
+
+    func setReplayBuffering(enabled: Bool) {
+        netStream?.setReplayBuffering(enabled: enabled)
     }
 
     private func makeVideoCompressionSettings(videoCodec: SettingsStreamCodec,

@@ -2,7 +2,7 @@ import Accelerate
 import AVFoundation
 import Foundation
 
-final class AudioCodecRingBuffer {
+final class AudioEncoderRingBuffer {
     private(set) var latestPresentationTimeStamp: CMTime = .invalid
     private var index = 0
     private let numSamplesPerBuffer: Int
@@ -14,7 +14,7 @@ final class AudioCodecRingBuffer {
         numSamplesPerBuffer = 1024
         guard
             inputBasicDescription.mFormatID == kAudioFormatLinearPCM,
-            let format = AudioCodec.makeAudioFormat(&inputBasicDescription),
+            let format = AudioEncoder.makeAudioFormat(&inputBasicDescription),
             let outputBuffer = AVAudioPCMBuffer(
                 pcmFormat: format,
                 frameCapacity: UInt32(numSamplesPerBuffer)
@@ -32,7 +32,8 @@ final class AudioCodecRingBuffer {
         self.workingBuffer = workingBuffer
     }
 
-    func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer, _ presentationTimeStamp: CMTime,
+    func appendSampleBuffer(_ sampleBuffer: CMSampleBuffer,
+                            _ presentationTimeStamp: CMTime,
                             _ offset: Int) -> Int
     {
         if latestPresentationTimeStamp == .invalid {

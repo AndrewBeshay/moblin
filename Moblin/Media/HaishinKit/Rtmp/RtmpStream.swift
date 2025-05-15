@@ -8,7 +8,7 @@ private func makeVideoHeader(_ frameType: FlvFrameType,
                              _ avcPacketType: FlvAvcPacketType, // Not part of FLV?
                              _ videoPacketType: FlvVideoPacketType) -> Data
 {
-    let writer = ByteArray()
+    let writer = ByteWriter()
     if trackId == 0 {
         if fourCc == .avc1 {
             writer.writeUInt8((frameType.rawValue << 4) | FlvVideoCodec.avc.rawValue)
@@ -178,7 +178,7 @@ class RtmpStream: NetStream {
         }
     }
 
-    private func createOnMetaDataLegacy(_ audioEncoder: AudioCodec, _ videoEncoder: VideoEncoder) -> AsObject {
+    private func createOnMetaDataLegacy(_ audioEncoder: AudioEncoder, _ videoEncoder: VideoEncoder) -> AsObject {
         var metadata: [String: Any] = [:]
         let settings = videoEncoder.settings.value
         metadata["width"] = settings.videoSize.width
@@ -192,14 +192,14 @@ class RtmpStream: NetStream {
         }
         metadata["videodatarate"] = settings.bitRate / 1000
         metadata["audiocodecid"] = FlvAudioCodec.aac.rawValue
-        metadata["audiodatarate"] = audioEncoder.settings.bitRate / 1000
+        metadata["audiodatarate"] = audioEncoder.settings.bitrate / 1000
         if let sampleRate = audioEncoder.inSourceFormat?.mSampleRate {
             metadata["audiosamplerate"] = sampleRate
         }
         return metadata
     }
 
-    private func createOnMetaDataMultiTrack(_ audioEncoders: [AudioCodec],
+    private func createOnMetaDataMultiTrack(_ audioEncoders: [AudioEncoder],
                                             _ videoEncoders: [VideoEncoder]) -> AsObject
     {
         let metadata = createOnMetaDataLegacy(audioEncoders.first!, videoEncoders.first!)
@@ -273,7 +273,6 @@ class RtmpStream: NetStream {
         baseTimeStamp = -1.0
         prevRebasedAudioTimeStamp = -1.0
         prevRebasedVideoTimeStamp = -1.0
-        mixer.startRunning()
         videoChunkType = .zero
         audioChunkType = .zero
         dataTimeStamps.removeAll()

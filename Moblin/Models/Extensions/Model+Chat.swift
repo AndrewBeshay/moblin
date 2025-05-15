@@ -25,6 +25,7 @@ enum ChatHighlightKind: Codable {
     case other
     case firstMessage
     case newFollower
+    case reply
 }
 
 struct ChatHighlight {
@@ -43,6 +44,8 @@ struct ChatHighlight {
         case .newFollower:
             watchProtocolKind = .redemption
         case .firstMessage:
+            watchProtocolKind = .other
+        case .reply:
             watchProtocolKind = .other
         }
         let color = color.toRgb() ?? .init(red: 0, green: 255, blue: 0)
@@ -66,7 +69,7 @@ struct ChatPost: Identifiable, Equatable {
 
     var id: Int
     var user: String?
-    var userColor: RgbColor?
+    var userColor: RgbColor
     var userBadges: [URL]
     var segments: [ChatPostSegment]
     var timestamp: String
@@ -363,7 +366,8 @@ extension Model: KickOusherDelegate {
         userColor: RgbColor?,
         segments: [ChatPostSegment],
         isSubscriber: Bool,
-        isModerator: Bool
+        isModerator: Bool,
+        highlight: ChatHighlight?
     ) {
         appendChatMessage(platform: .kick,
                           user: user,
@@ -377,7 +381,7 @@ extension Model: KickOusherDelegate {
                           isSubscriber: isSubscriber,
                           isModerator: isModerator,
                           bits: nil,
-                          highlight: nil,
+                          highlight: highlight,
                           live: true)
     }
 }
