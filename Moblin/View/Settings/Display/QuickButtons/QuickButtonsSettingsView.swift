@@ -50,12 +50,15 @@ struct QuickButtonsSettingsView: View {
                         if model.database.showAllSettings! {
                             NavigationLink {
                                 QuickButtonsButtonSettingsView(
-                                    name: button.name,
-                                    background: button.backgroundColor!.color(),
+                                    button: button,
                                     onChange: { color in
                                         onBackgroundColorChange(button: button, color: color)
                                     },
-                                    onSubmit: onBackgroundColorSubmit
+                                    onSubmit: onBackgroundColorSubmit,
+                                    onPage: { page in
+                                        button.page = page
+                                        model.updateButtonStates()
+                                    }
                                 )
                             } label: {
                                 Toggle(isOn: Binding(get: {

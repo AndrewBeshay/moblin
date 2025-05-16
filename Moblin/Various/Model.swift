@@ -55,6 +55,7 @@ enum ShowingPanel {
     case goPro
     case connectionPriorities
     case autoSceneSwitcher
+    case quickButtonSettings
 
     func buttonsBackgroundColor() -> Color {
         if self == .chat {
@@ -422,7 +423,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     var logsStorage = LogsStorage()
     var mediaStorage = MediaPlayerStorage()
     var alertMediaStorage = AlertMediaStorage()
-    @Published var buttonPairs: [ButtonPair] = []
+    @Published var buttonPairs: [[ButtonPair]] = [[], [], [], [], []]
     private var reconnectTimer: Timer?
     private var logId = 1
     @Published var showingToast = false
@@ -589,6 +590,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     @Published var remoteControlBitrate = UUID()
     @Published var remoteControlZoom = ""
     @Published var remoteControlDebugLogging = false
+
+    @Published var quickButtonSettingsButton: SettingsQuickButton?
 
     private var remoteControlStreamer: RemoteControlStreamer?
     private var remoteControlAssistant: RemoteControlAssistant?
@@ -871,13 +874,15 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             showingPanel = panel
         }
         panelHidden = false
-        for pair in buttonPairs {
-            if isShowingPanelGlobalButton(type: pair.first.button.type) {
-                setGlobalButtonState(type: pair.first.button.type, isOn: false)
-            }
-            if let state = pair.second {
-                if isShowingPanelGlobalButton(type: state.button.type) {
-                    setGlobalButtonState(type: state.button.type, isOn: false)
+        for pageButtonPairs in buttonPairs {
+            for pair in pageButtonPairs {
+                if isShowingPanelGlobalButton(type: pair.first.button.type) {
+                    setGlobalButtonState(type: pair.first.button.type, isOn: false)
+                }
+                if let state = pair.second {
+                    if isShowingPanelGlobalButton(type: state.button.type) {
+                        setGlobalButtonState(type: state.button.type, isOn: false)
+                    }
                 }
             }
         }
@@ -1136,24 +1141,30 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     func updateButtonStates() {
-        let states = database.globalButtons!.filter { button in
-            button.enabled!
-        }.map { button in
-            ButtonState(isOn: button.isOn, button: button)
-        }
-        var pairs: [ButtonPair] = []
-        for index in stride(from: 0, to: states.count, by: 2) {
-            if states.count - index > 1 {
-                pairs.append(ButtonPair(
-                    id: UUID(),
-                    first: states[index],
-                    second: states[index + 1]
-                ))
-            } else {
-                pairs.append(ButtonPair(id: UUID(), first: states[index]))
+        for page in 0 ..< 5 {
+            let states = database.globalButtons!.filter { button in
+                button.enabled! && button.page == page + 1
+            }.map { button in
+                ButtonState(isOn: button.isOn, button: button)
             }
+            var pairs: [ButtonPair] = []
+            for index in stride(from: 0, to: states.count, by: 2) {
+                if states.count - index > 1 {
+                    pairs.append(ButtonPair(
+                        id: UUID(),
+                        first: states[index],
+                        second: states[index + 1]
+                    ))
+                } else {
+                    pairs.append(ButtonPair(id: UUID(), first: states[index]))
+                }
+            }
+            buttonPairs[page] = pairs.reversed()
         }
-        buttonPairs = pairs.reversed()
+    }
+
+    func getButtonPairs(page: Int) -> [ButtonPair] {
+        return buttonPairs[page]
     }
 
     func updateShowCameraPreview() -> Bool {
@@ -4354,13 +4365,15 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         for button in database.globalButtons! where button.type == type {
             button.isOn = isOn
         }
-        for pair in buttonPairs {
-            if pair.first.button.type == type {
-                pair.first.isOn = isOn
-            }
-            if let state = pair.second {
-                if state.button.type == type {
-                    state.isOn = isOn
+        for pageButtonPairs in buttonPairs {
+            for pair in pageButtonPairs {
+                if pair.first.button.type == type {
+                    pair.first.isOn = isOn
+                }
+                if let state = pair.second {
+                    if state.button.type == type {
+                        state.isOn = isOn
+                    }
                 }
             }
         }
@@ -4370,17 +4383,25 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         return database.globalButtons!.first(where: { $0.type == type })
     }
 
+    func showQuickButtonSettings(type: SettingsQuickButtonType) {
+        quickButtonSettingsButton = getGlobalButton(type: type)
+        toggleShowingPanel(type: nil, panel: .none)
+        toggleShowingPanel(type: nil, panel: .quickButtonSettings)
+    }
+
     private func toggleGlobalButton(type: SettingsQuickButtonType) {
         for button in database.globalButtons! where button.type == type {
             button.isOn.toggle()
         }
-        for pair in buttonPairs {
-            if pair.first.button.type == type {
-                pair.first.isOn.toggle()
-            }
-            if let state = pair.second {
-                if state.button.type == type {
-                    state.isOn.toggle()
+        for pageButtonPairs in buttonPairs {
+            for pair in pageButtonPairs {
+                if pair.first.button.type == type {
+                    pair.first.isOn.toggle()
+                }
+                if let state = pair.second {
+                    if state.button.type == type {
+                        state.isOn.toggle()
+                    }
                 }
             }
         }
