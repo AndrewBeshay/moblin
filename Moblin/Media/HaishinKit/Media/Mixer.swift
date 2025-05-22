@@ -1,32 +1,14 @@
 import AVFoundation
-import SwiftUI
 
-let mixerLockQueue = DispatchQueue(
-    label: "com.haishinkit.HaishinKit.Mixer",
-    qos: .userInteractive
-)
-
-func makeAudioCaptureSession() -> AVCaptureSession {
-    let session = AVCaptureSession()
-    if session.isMultitaskingCameraAccessSupported {
-        session.isMultitaskingCameraAccessEnabled = true
-    }
-    return session
-}
-
-func makeVideoCaptureSession() -> AVCaptureSession {
-    let session = AVCaptureMultiCamSession()
-    if session.isMultitaskingCameraAccessSupported {
-        session.isMultitaskingCameraAccessEnabled = true
-    }
-    return session
-}
+let mixerLockQueue = DispatchQueue(label: "com.haishinkit.HaishinKit.Mixer", qos: .userInteractive)
 
 protocol MixerDelegate: AnyObject {
     func mixer(audioLevel: Float, numberOfAudioChannels: Int)
     func mixerVideo(presentationTimestamp: Double)
     func mixerVideo(failedEffect: String?)
     func mixerVideo(lowFpsImage: Data?, frameNumber: UInt64)
+    func mixerRecorderInitSegment(data: Data)
+    func mixerRecorderDataSegment(segment: RecorderDataSegment)
     func mixerRecorderFinished()
     func mixer(findVideoFormatError: String, activeFormat: String)
     func mixerAttachCameraError()
@@ -40,7 +22,6 @@ protocol MixerDelegate: AnyObject {
 
 class Mixer {
     weak var delegate: (any MixerDelegate)?
-
     let audio = AudioUnit()
     let video = VideoUnit()
     let recorder = Recorder()
@@ -51,42 +32,12 @@ class Mixer {
         recorder.delegate = self
     }
 
-    func attachCamera(
-        _ devices: CaptureDevices,
-        _ cameraPreviewLayer: AVCaptureVideoPreviewLayer?,
-        _ showCameraPreview: Bool,
-        _ externalDisplayPreview: Bool,
-        _ replaceVideo: UUID?,
-        _ preferredVideoStabilizationMode: AVCaptureVideoStabilizationMode,
-        _ isVideoMirrored: Bool,
-        _ ignoreFramesAfterAttachSeconds: Double,
-        _ fillFrame: Bool
-    ) throws {
-        try video.attach(
-            devices,
-            cameraPreviewLayer,
-            showCameraPreview,
-            externalDisplayPreview,
-            replaceVideo,
-            preferredVideoStabilizationMode,
-            isVideoMirrored,
-            ignoreFramesAfterAttachSeconds,
-            fillFrame
-        )
+    func attachCamera(params: VideoUnitAttachParams) throws {
+        try video.attach(params: params)
     }
 
-    func attachAudio(_ device: AVCaptureDevice?, _ replaceAudio: UUID?) throws {
-        try audio.attach(device, replaceAudio)
-    }
-
-    func startEncoding(_ delegate: any AudioCodecDelegate & VideoEncoderDelegate) {
-        video.startEncoding(delegate)
-        audio.startEncoding(delegate)
-    }
-
-    func stopEncoding() {
-        video.stopEncoding()
-        audio.stopEncoding()
+    func attachAudio(params: AudioUnitAttachParams) throws {
+        try audio.attach(params: params)
     }
 
     func startRunning() {
@@ -99,16 +50,34 @@ class Mixer {
         audio.stopRunning()
     }
 
-    func setReplaceAudioDrift(cameraId: UUID, drift: Double) {
-        audio.setReplaceAudioDrift(cameraId: cameraId, drift: drift)
+    func startEncoding(_ delegate: any AudioCodecDelegate & VideoEncoderDelegate) {
+        video.startEncoding(delegate)
+        audio.startEncoding(delegate)
     }
 
-    func setReplaceVideoDrift(cameraId: UUID, drift: Double) {
-        video.setReplaceVideoDrift(cameraId: cameraId, drift: drift)
+    func stopEncoding() {
+        video.stopEncoding()
+        audio.stopEncoding()
+    }
+
+    func setBufferedAudioDrift(cameraId: UUID, drift: Double) {
+        audio.setBufferedAudioDrift(cameraId: cameraId, drift: drift)
+    }
+
+    func setBufferedVideoDrift(cameraId: UUID, drift: Double) {
+        video.setBufferedVideoDrift(cameraId: cameraId, drift: drift)
     }
 }
 
-extension Mixer: IORecorderDelegate {
+extension Mixer: RecorderDelegate {
+    func recorderInitSegment(data: Data) {
+        delegate?.mixerRecorderInitSegment(data: data)
+    }
+
+    func recorderDataSegment(segment: RecorderDataSegment) {
+        delegate?.mixerRecorderDataSegment(segment: segment)
+    }
+
     func recorderFinished() {
         delegate?.mixerRecorderFinished()
     }

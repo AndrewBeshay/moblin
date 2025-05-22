@@ -99,7 +99,6 @@ private struct CollapsedAdsRemainingTimerView: View {
 private struct CollapsedBitrateView: View {
     @EnvironmentObject var model: Model
     var show: Bool
-    var color: Color
 
     var body: some View {
         if show {
@@ -107,7 +106,8 @@ private struct CollapsedBitrateView: View {
                 Image(systemName: "speedometer")
                     .frame(width: 17, height: 17)
                     .padding([.leading], 2)
-                    .foregroundColor(color)
+                    .foregroundColor(model.bitrateStatusColor)
+                    .background(model.bitrateStatusIconColor ?? .clear)
                 if !model.speedMbpsOneDecimal.isEmpty {
                     Text(model.speedMbpsOneDecimal)
                         .foregroundColor(.white)
@@ -273,14 +273,15 @@ private struct StatusesView: View {
             textPlacement: textPlacement
         )
         if textPlacement == .hide {
-            CollapsedBitrateView(show: model.isShowingStatusBitrate(), color: model.bitrateStatusColor)
+            CollapsedBitrateView(show: model.isShowingStatusBitrate())
         } else {
             StreamOverlayIconAndTextView(
                 show: model.isShowingStatusBitrate(),
                 icon: "speedometer",
                 text: model.speedAndTotal,
                 textPlacement: textPlacement,
-                color: model.bitrateStatusColor
+                color: model.bitrateStatusColor,
+                iconBackgroundColor: model.bitrateStatusIconColor ?? backgroundColor
             )
         }
         if textPlacement == .hide {
@@ -300,6 +301,12 @@ private struct StatusesView: View {
             text: model.bondingRtts,
             textPlacement: textPlacement,
             color: netStreamColor(model: model)
+        )
+        StreamOverlayIconAndTextView(
+            show: model.isShowingStatusReplay(),
+            icon: "play",
+            text: String(localized: "Enabled"),
+            textPlacement: textPlacement
         )
         StreamUptimeStatusView(streamUptime: model.streamUptime, textPlacement: textPlacement)
         StreamOverlayIconAndTextView(
@@ -387,20 +394,24 @@ struct RightOverlayBottomView: View {
         VStack(alignment: .trailing, spacing: 1) {
             Spacer()
             if !(model.showDrawOnStream || model.showFace) {
-                if model.showMediaPlayerControls {
-                    StreamOverlayRightMediaPlayerControlsView()
+                if model.showingReplay {
+                    StreamOverlayRightReplayView(replay: model.replay)
                 } else {
-                    if model.showingPixellate {
-                        StreamOverlayRightPixellateView(strength: model.database.pixellateStrength!)
+                    if model.showMediaPlayerControls {
+                        StreamOverlayRightMediaPlayerControlsView()
+                    } else {
+                        if model.showingPixellate {
+                            StreamOverlayRightPixellateView(strength: model.database.pixellateStrength)
+                        }
+                        if model.showingCamera {
+                            StreamOverlayRightCameraSettingsControlView()
+                        }
+                        if database.show.zoomPresets && model.hasZoom {
+                            StreamOverlayRightZoomPresetSelctorView(width: width)
+                        }
                     }
-                    if model.showingCamera {
-                        StreamOverlayRightCameraSettingsControlView()
-                    }
-                    if database.show.zoomPresets && model.hasZoom {
-                        StreamOverlayRightZoomPresetSelctorView(width: width)
-                    }
+                    StreamOverlayRightSceneSelectorView(width: width)
                 }
-                StreamOverlayRightSceneSelectorView(width: width)
             }
         }
     }

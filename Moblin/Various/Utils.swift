@@ -6,6 +6,8 @@ import SwiftUI
 import Vision
 import WeatherKit
 
+let sliderValuePercentageWidth = 60.0
+
 extension UIImage {
     func scalePreservingAspectRatio(targetSize: CGSize) -> UIImage {
         let widthRatio = targetSize.width / size.width
@@ -289,7 +291,7 @@ extension URL {
 
 private var thumbnails: [URL: UIImage] = [:]
 
-func createThumbnail(path: URL) -> UIImage? {
+func createThumbnail(path: URL, offset: Double = 0) -> UIImage? {
     if let thumbnail = thumbnails[path] {
         return thumbnail
     }
@@ -297,7 +299,10 @@ func createThumbnail(path: URL) -> UIImage? {
         let asset = AVURLAsset(url: path, options: nil)
         let imgGenerator = AVAssetImageGenerator(asset: asset)
         imgGenerator.appliesPreferredTrackTransform = true
-        let cgImage = try imgGenerator.copyCGImage(at: CMTimeMake(value: 0, timescale: 1), actualTime: nil)
+        let cgImage = try imgGenerator.copyCGImage(
+            at: CMTime(seconds: offset, preferredTimescale: 1000),
+            actualTime: nil
+        )
         let thumbnail = UIImage(cgImage: cgImage)
         thumbnails[path] = thumbnail
         return thumbnail
@@ -660,6 +665,28 @@ func rotatePoint(point: CGPoint, alpha: CGFloat) -> CGPoint {
     return CGPoint(x: z * cos(alpha + beta), y: z * sin(alpha + beta))
 }
 
+func getAvailableDiskSpace() -> UInt64? {
+    guard let attributes = try? FileManager.default.attributesOfFileSystem(forPath: URL.homeDirectory.path()) else {
+        return nil
+    }
+    return attributes[.systemFreeSize] as? UInt64
+}
+
+func deleteTrash() {
+    let folders = [
+        URL.temporaryDirectory,
+        URL.documentsDirectory.appending(component: ".Trash"),
+    ]
+    for folder in folders {
+        guard let paths = try? FileManager.default.contentsOfDirectory(atPath: folder.path()) else {
+            continue
+        }
+        for path in paths {
+            try? FileManager.default.removeItem(atPath: path)
+        }
+    }
+}
+
 func generateQrCode(from string: String) -> UIImage? {
     let data = string.data(using: .utf8)
     let filter = CIFilter.qrCodeGenerator()
@@ -674,4 +701,18 @@ func generateQrCode(from string: String) -> UIImage? {
         return nil
     }
     return UIImage(cgImage: cgImage)
+}
+
+func createAndGetDirectory(name: String) -> URL {
+    let directory = URL.documentsDirectory.appending(component: name)
+    try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    return directory
+}
+
+func tryGetToastSubTitle(error: Error) -> String? {
+    if let error = error as? AVError {
+        return error._nsError.localizedFailureReason
+    } else {
+        return nil
+    }
 }

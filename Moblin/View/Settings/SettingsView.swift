@@ -38,15 +38,12 @@ struct SettingsView: View {
                 }
                 NavigationLink {
                     ChatSettingsView(
+                        chat: model.database.chat,
                         timestampColor: chat.timestampColor.color(),
                         usernameColor: chat.usernameColor.color(),
                         messageColor: chat.messageColor.color(),
                         backgroundColor: chat.backgroundColor.color(),
-                        shadowColor: chat.shadowColor.color(),
-                        height: chat.height!,
-                        width: chat.width!,
-                        bottom: chat.bottom!,
-                        fontSize: chat.fontSize
+                        shadowColor: chat.shadowColor.color()
                     )
                 } label: {
                     IconAndTextView(image: "message", text: String(localized: "Chat"))
@@ -64,7 +61,7 @@ struct SettingsView: View {
                 } label: {
                     IconAndTextView(image: "camera", text: String(localized: "Camera"))
                 }
-                if model.database.showAllSettings! {
+                if model.database.showAllSettings {
                     NavigationLink {
                         AudioSettingsView()
                     } label: {
@@ -81,7 +78,7 @@ struct SettingsView: View {
                 } label: {
                     IconAndTextView(image: "location", text: String(localized: "Location"))
                 }
-                if model.database.showAllSettings! {
+                if model.database.showAllSettings {
                     NavigationLink {
                         WebBrowserSettingsView()
                     } label: {
@@ -90,7 +87,7 @@ struct SettingsView: View {
                 }
             }
             Section {
-                if model.database.showAllSettings! {
+                if model.database.showAllSettings {
                     NavigationLink {
                         RtmpServerSettingsView()
                     } label: {
@@ -103,11 +100,11 @@ struct SettingsView: View {
                     }
                 }
                 NavigationLink {
-                    MoblinkSettingsView(streamerEnabled: model.database.moblink!.server.enabled)
+                    MoblinkSettingsView(streamerEnabled: model.database.moblink.server.enabled)
                 } label: {
                     IconAndTextView(image: "app.connected.to.app.below.fill", text: String(localized: "Moblink"))
                 }
-                if model.database.showAllSettings! {
+                if model.database.showAllSettings {
                     NavigationLink {
                         MediaPlayersSettingsView()
                     } label: {
@@ -115,7 +112,7 @@ struct SettingsView: View {
                     }
                 }
             }
-            if model.database.showAllSettings! {
+            if model.database.showAllSettings {
                 Section {
                     NavigationLink {
                         GameControllersSettingsView()
@@ -186,7 +183,7 @@ struct SettingsView: View {
                 } label: {
                     IconAndTextView(image: "photo.on.rectangle.angled", text: String(localized: "Recordings"))
                 }
-                if model.database.showAllSettings! {
+                if model.database.showAllSettings {
                     NavigationLink {
                         StreamingHistorySettingsView()
                     } label: {
@@ -194,7 +191,7 @@ struct SettingsView: View {
                     }
                 }
             }
-            if model.database.showAllSettings! {
+            if model.database.showAllSettings {
                 Section {
                     NavigationLink {
                         WatchSettingsView()
@@ -209,23 +206,20 @@ struct SettingsView: View {
                 } label: {
                     IconAndTextView(image: "questionmark.circle", text: String(localized: "Help and support"))
                 }
-                if model.database.showAllSettings! {
+                if model.database.showAllSettings {
                     NavigationLink {
                         AboutSettingsView()
                     } label: {
                         IconAndTextView(image: "info.circle", text: String(localized: "About"))
                     }
                     NavigationLink {
-                        DebugSettingsView(
-                            cameraSwitchRemoveBlackish: model.database.debug.cameraSwitchRemoveBlackish!,
-                            dataRateLimitFactor: model.database.debug.dataRateLimitFactor!
-                        )
+                        DebugSettingsView(debug: model.database.debug)
                     } label: {
                         IconAndTextView(image: "ladybug", text: String(localized: "Debug"))
                     }
                 }
             }
-            if model.database.showAllSettings! {
+            if model.database.showAllSettings {
                 Section {
                     NavigationLink {
                         ImportExportSettingsView()
@@ -241,7 +235,7 @@ struct SettingsView: View {
             }
             Section {
                 Toggle("Show all settings", isOn: Binding(get: {
-                    model.database.showAllSettings!
+                    model.database.showAllSettings
                 }, set: { value in
                     model.database.showAllSettings = value
                     model.objectWillChange.send()

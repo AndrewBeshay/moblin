@@ -58,15 +58,11 @@ private struct LineView: View {
     var chat: SettingsChat
 
     private func usernameColor() -> Color {
-        if let color = post.userColor {
-            return color.color()
-        } else {
-            return chat.usernameColor.color()
-        }
+        return post.userColor.color()
     }
 
     private func messageColor(usernameColor: Color) -> Color {
-        if post.isAction && chat.meInUsernameColor! {
+        if post.isAction && chat.meInUsernameColor {
             return usernameColor
         } else {
             return chat.messageColor.color()
@@ -104,7 +100,7 @@ private struct LineView: View {
                 Text("\(post.timestamp) ")
                     .foregroundColor(timestampColor)
             }
-            if chat.badges! {
+            if chat.badges {
                 ForEach(post.userBadges, id: \.self) { url in
                     CacheAsyncImage(url: url) { image in
                         image
@@ -183,7 +179,7 @@ struct StreamOverlayChatView: View {
     @State var scrollViewSize: CGSize = .zero
 
     private func getRotation() -> Double {
-        if model.database.chat.newMessagesAtTop! {
+        if model.database.chat.newMessagesAtTop {
             return 0.0
         } else {
             return 180.0
@@ -191,7 +187,7 @@ struct StreamOverlayChatView: View {
     }
 
     private func getScaleX() -> Double {
-        if model.database.chat.newMessagesAtTop! {
+        if model.database.chat.newMessagesAtTop {
             return 1.0
         } else {
             return -1.0
@@ -199,7 +195,7 @@ struct StreamOverlayChatView: View {
     }
 
     private func isCloseToStart(offset: Double) -> Bool {
-        if model.database.chat.newMessagesAtTop! {
+        if model.database.chat.newMessagesAtTop {
             return offset < 50
         } else {
             return offset >= scrollViewSize.height - wholeSize.height - 50.0
@@ -207,7 +203,7 @@ struct StreamOverlayChatView: View {
     }
 
     private func isMirrored() -> CGFloat {
-        if model.database.chat.mirrored! {
+        if model.database.chat.mirrored {
             return -1
         } else {
             return 1
@@ -298,8 +294,8 @@ struct StreamOverlayChatView: View {
                     .rotationEffect(Angle(degrees: rotation))
                     .scaleEffect(x: scaleX * isMirrored(), y: 1.0, anchor: .center)
                     .coordinateSpace(name: spaceName)
-                    .frame(width: metrics.size.width * model.database.chat.width!,
-                           height: metrics.size.height * model.database.chat.height!)
+                    .frame(width: metrics.size.width * model.database.chat.width,
+                           height: metrics.size.height * model.database.chat.height)
                 }
             }
         }

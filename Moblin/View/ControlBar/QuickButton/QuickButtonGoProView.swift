@@ -12,7 +12,7 @@ private struct QuickButtonGoProLaunchLiveStreamView: View {
     @State var entries: [PickerEntry] = []
 
     private var goPro: SettingsGoPro {
-        return model.database.goPro!
+        return model.database.goPro
     }
 
     private func generate() {
@@ -37,8 +37,8 @@ private struct QuickButtonGoProLaunchLiveStreamView: View {
                                 .tag(entry.id as UUID?)
                         }
                     }
-                    .onChange(of: model.goProLaunchLiveStreamSelection) { value in
-                        goPro.selectedLaunchLiveStream = value
+                    .onChange(of: model.goProLaunchLiveStreamSelection) {
+                        goPro.selectedLaunchLiveStream = $0
                         generate()
                     }
                 }
@@ -64,7 +64,7 @@ private struct QuickButtonGoProWifiCredentialsView: View {
     @State var entries: [PickerEntry] = []
 
     private var goPro: SettingsGoPro {
-        return model.database.goPro!
+        return model.database.goPro
     }
 
     private func generate() {
@@ -90,8 +90,8 @@ private struct QuickButtonGoProWifiCredentialsView: View {
                                 .tag(entry.id as UUID?)
                         }
                     }
-                    .onChange(of: model.goProWifiCredentialsSelection) { value in
-                        goPro.selectedWifiCredentials = value
+                    .onChange(of: model.goProWifiCredentialsSelection) {
+                        goPro.selectedWifiCredentials = $0
                         generate()
                     }
                 }
@@ -117,7 +117,7 @@ private struct QuickButtonGoProRtmpUrlView: View {
     @State var entries: [PickerEntry] = []
 
     private var goPro: SettingsGoPro {
-        return model.database.goPro!
+        return model.database.goPro
     }
 
     private func generate() {
@@ -145,8 +145,8 @@ private struct QuickButtonGoProRtmpUrlView: View {
                                 .tag(entry.id as UUID?)
                         }
                     }
-                    .onChange(of: model.goProRtmpUrlSelection) { value in
-                        goPro.selectedRtmpUrl = value
+                    .onChange(of: model.goProRtmpUrlSelection) {
+                        goPro.selectedRtmpUrl = $0
                         generate()
                     }
                 }
@@ -170,7 +170,7 @@ struct QuickButtonGoProView: View {
     @State private var activeIndex: Int? = 0
 
     private var goPro: SettingsGoPro {
-        return model.database.goPro!
+        return model.database.goPro
     }
 
     var body: some View {

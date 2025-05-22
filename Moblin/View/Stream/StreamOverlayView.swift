@@ -51,7 +51,7 @@ private struct ChatOverlayView: View {
     let height: CGFloat
 
     var body: some View {
-        if model.stream.portrait! || model.database.portrait! {
+        if model.isPortrait() {
             VStack {
                 ZStack {
                     StreamOverlayChatView(chat: model.chat)
@@ -72,7 +72,7 @@ private struct ChatOverlayView: View {
                 }
                 Rectangle()
                     .foregroundColor(.clear)
-                    .frame(height: height * model.database.chat.bottom!)
+                    .frame(height: height * model.database.chat.bottom)
             }
         }
     }
@@ -82,7 +82,7 @@ private struct FrontTorchView: View {
     @EnvironmentObject var model: Model
 
     var body: some View {
-        if model.stream.portrait! || model.database.portrait! {
+        if model.isPortrait() {
             VStack(spacing: 0) {
                 Rectangle()
                     .foregroundColor(.white)
@@ -132,9 +132,7 @@ struct StreamOverlayView: View {
     let height: CGFloat
 
     private func leadingPadding() -> CGFloat {
-        if UIDevice.current
-            .userInterfaceIdiom == .pad || (model.stream.portrait! || model.database.portrait!)
-        {
+        if UIDevice.current.userInterfaceIdiom == .pad || model.isPortrait() {
             return 15
         } else {
             return 0
@@ -149,7 +147,7 @@ struct StreamOverlayView: View {
             ZStack {
                 if model.showingPanel != .chat {
                     ChatOverlayView(height: height)
-                        .opacity(model.database.chat.enabled! ? 1 : 0)
+                        .opacity(model.database.chat.enabled ? 1 : 0)
                         .allowsHitTesting(model.interactiveChat)
                 }
                 HStack {
@@ -166,7 +164,7 @@ struct StreamOverlayView: View {
                     RightOverlayTopView()
                 }
                 HStack {
-                    StreamOverlayDebugView()
+                    StreamOverlayDebugView(debugOverlay: model.debugOverlay)
                         .padding([.leading], leadingPadding())
                     Spacer()
                 }

@@ -3,14 +3,13 @@ import WebKit
 
 struct DebugSettingsView: View {
     @EnvironmentObject var model: Model
-    @State var cameraSwitchRemoveBlackish: Float
-    @State var dataRateLimitFactor: Float
+    @ObservedObject var debug: SettingsDebug
 
     private func submitLogLines(value: String) {
         guard let lines = Int(value) else {
             return
         }
-        model.database.debug.maximumLogLines = min(max(1, lines), 100_000)
+        debug.maximumLogLines = min(max(1, lines), 100_000)
     }
 
     var body: some View {
@@ -22,7 +21,7 @@ struct DebugSettingsView: View {
                     Text("Log")
                 }
                 Toggle(isOn: Binding(get: {
-                    model.database.debug.logLevel == .debug
+                    debug.logLevel == .debug
                 }, set: { value in
                     model.setDebugLogging(on: value)
                 })) {
@@ -30,114 +29,96 @@ struct DebugSettingsView: View {
                 }
                 TextEditNavigationView(
                     title: "Maximum log lines",
-                    value: String(model.database.debug.maximumLogLines!),
+                    value: String(debug.maximumLogLines),
                     onSubmit: submitLogLines
                 )
-                Toggle("Debug overlay", isOn: Binding(get: {
-                    model.database.debug.srtOverlay
-                }, set: { value in
-                    model.database.debug.srtOverlay = value
-                }))
+                Toggle("Debug overlay", isOn: $debug.srtOverlay)
             }
             Section {
                 NavigationLink {
-                    DebugAudioSettingsView()
+                    DebugAudioSettingsView(debug: debug)
                 } label: {
                     Text("Audio")
                 }
                 NavigationLink {
-                    DebugVideoSettingsView()
+                    DebugVideoSettingsView(debug: debug)
                 } label: {
                     Text("Video")
                 }
                 HStack {
                     Text("Video blackish")
                     Slider(
-                        value: $cameraSwitchRemoveBlackish,
+                        value: $debug.cameraSwitchRemoveBlackish,
                         in: 0.0 ... 1.0,
-                        step: 0.1,
-                        onEditingChanged: { begin in
-                            guard !begin else {
-                                return
-                            }
-                            model.database.debug.cameraSwitchRemoveBlackish = cameraSwitchRemoveBlackish
-                        }
+                        step: 0.1
                     )
-                    Text("\(formatOneDecimal(cameraSwitchRemoveBlackish)) s")
+                    Text("\(formatOneDecimal(debug.cameraSwitchRemoveBlackish)) s")
                         .frame(width: 40)
                 }
-                Toggle("Bitrate drop fix", isOn: Binding(get: {
-                    model.database.debug.bitrateDropFix!
-                }, set: { value in
-                    model.database.debug.bitrateDropFix = value
-                    model.setBitrateDropFix()
-                }))
+                Toggle("Bitrate drop fix", isOn: $debug.bitrateDropFix)
+                    .onChange(of: debug.bitrateDropFix) { _ in
+                        model.setBitrateDropFix()
+                    }
                 HStack {
                     Text("Data rate limit")
                     Slider(
-                        value: $dataRateLimitFactor,
+                        value: $debug.dataRateLimitFactor,
                         in: 1.2 ... 2.5,
                         step: 0.1,
                         onEditingChanged: { begin in
                             guard !begin else {
                                 return
                             }
-                            model.database.debug.dataRateLimitFactor = dataRateLimitFactor
                             model.setBitrateDropFix()
                         }
                     )
-                    Text(formatOneDecimal(dataRateLimitFactor))
+                    Text(formatOneDecimal(debug.dataRateLimitFactor))
                         .frame(width: 40)
                 }
-                Toggle("Relaxed bitrate decrement after scene switch", isOn: Binding(get: {
-                    model.database.debug.relaxedBitrate!
-                }, set: { value in
-                    model.database.debug.relaxedBitrate = value
-                }))
+                Toggle("Relaxed bitrate decrement after scene switch", isOn: $debug.relaxedBitrate)
                 Toggle("Global tone mapping", isOn: Binding(get: {
                     model.getGlobalToneMappingOn()
                 }, set: { value in
                     model.setGlobalToneMapping(on: value)
                 }))
-                Toggle("MetalPetal filters", isOn: Binding(get: {
-                    model.database.debug.metalPetalFilters!
-                }, set: { value in
-                    model.database.debug.metalPetalFilters = value
-                    model.setMetalPetalFilters()
-                }))
-                Toggle("Twitch rewards", isOn: Binding(get: {
-                    model.database.debug.twitchRewards!
-                }, set: { value in
-                    model.database.debug.twitchRewards = value
-                }))
+                Toggle("MetalPetal filters", isOn: $debug.metalPetalFilters)
+                    .onChange(of: debug.metalPetalFilters) { _ in
+                        model.setMetalPetalFilters()
+                    }
+                Toggle("Twitch rewards", isOn: $debug.twitchRewards)
                 NavigationLink {
                     DebugHttpProxySettingsView()
                 } label: {
                     Text("HTTP proxy")
                 }
-                Toggle("Reliable chat", isOn: Binding(get: {
-                    model.database.debug.reliableChat!
-                }, set: { value in
-                    model.database.debug.reliableChat = value
-                }))
-                Toggle("Timecodes", isOn: Binding(get: {
-                    model.database.debug.timecodesEnabled!
-                }, set: { value in
-                    model.database.debug.timecodesEnabled = value
-                    model.reloadNtpClient()
-                    model.reloadSrtlaServer()
-                }))
-                Toggle("SRT(LA) batch send", isOn: Binding(get: {
-                    model.database.debug.srtlaBatchSendEnabled!
-                }, set: { value in
-                    model.database.debug.srtlaBatchSendEnabled = value
-                    model.setSrtlaBatchSend()
-                }))
+                Toggle("Reliable chat", isOn: $debug.reliableChat)
+                Toggle("Timecodes", isOn: $debug.timecodesEnabled)
+                    .onChange(of: debug.timecodesEnabled) { _ in
+                        model.reloadNtpClient()
+                        model.reloadSrtlaServer()
+                    }
+                Toggle("SRT(LA) batch send", isOn: $debug.srtlaBatchSendEnabled)
+                    .onChange(of: debug.srtlaBatchSendEnabled) { _ in
+                        model.setSrtlaBatchSend()
+                    }
                 NavigationLink {
                     DjiGimbalDevicesSettingsView()
                 } label: {
                     IconAndTextView(image: "appletvremote.gen1", text: String(localized: "DJI gimbals"))
                 }
+                VStack(alignment: .leading) {
+                    Text("Builtin audio and video delay")
+                    HStack {
+                        Slider(
+                            value: $debug.builtinAudioAndVideoDelay,
+                            in: 0.0 ... 4.0,
+                            step: 0.01
+                        )
+                        Text(formatTwoDecimals(debug.builtinAudioAndVideoDelay))
+                            .frame(width: 40)
+                    }
+                }
+                Toggle("Horizon", isOn: $debug.horizon)
             } header: {
                 Text("Experimental")
             }

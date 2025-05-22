@@ -5,34 +5,62 @@ private struct CloseButtonView: View {
     var onClose: () -> Void
 
     var body: some View {
-        HStack {
-            Spacer()
-            VStack(alignment: .trailing) {
-                Button {
-                    onClose()
-                } label: {
-                    Image(systemName: "xmark")
-                        .frame(width: 30, height: 30)
-                        .overlay(
-                            Circle()
-                                .stroke(.gray)
-                        )
-                        .foregroundColor(.gray)
-                        .padding(7)
-                }
-                Spacer()
-            }
+        Button {
+            onClose()
+        } label: {
+            Image(systemName: "xmark")
+                .frame(width: 30, height: 30)
+                .overlay(
+                    Circle()
+                        .stroke(.gray)
+                )
+                .foregroundColor(.gray)
+                .padding(7)
         }
     }
 }
 
-private struct CloseButtonPanelView: View {
+private struct HideShowButtonPanelView: View {
     @EnvironmentObject var model: Model
 
     var body: some View {
-        CloseButtonView {
-            model.toggleShowingPanel(type: nil, panel: .none)
-            model.updateLutsButtonState()
+        Button {
+            model.panelHidden.toggle()
+        } label: {
+            Image(systemName: model.panelHidden ? "eye" : "eye.slash")
+                .frame(width: 30, height: 30)
+                .overlay(
+                    Circle()
+                        .stroke(.gray)
+                )
+                .foregroundColor(.gray)
+                .padding(7)
+        }
+    }
+}
+
+private struct PanelButtonsView: View {
+    @EnvironmentObject var model: Model
+    var backgroundColor: Color
+
+    var body: some View {
+        HStack {
+            Spacer()
+            VStack(alignment: .trailing) {
+                HStack(spacing: 0) {
+                    HideShowButtonPanelView()
+                    CloseButtonView {
+                        model.toggleShowingPanel(type: nil, panel: .none)
+                        model.updateLutsButtonState()
+                        model.updateAutoSceneSwitcherButtonState()
+                    }
+                }
+                .padding(-3)
+                .background(backgroundColor)
+                .cornerRadius(7)
+                .padding(3)
+                Spacer()
+            }
         }
     }
 }
@@ -41,68 +69,85 @@ private struct MenuView: View {
     @EnvironmentObject var model: Model
 
     var body: some View {
-        ZStack {
-            switch model.showingPanel {
-            case .settings:
-                NavigationStack {
-                    SettingsView()
-                }
-            case .bitrate:
-                NavigationStack {
-                    QuickButtonBitrateView(selection: model.stream.bitrate)
-                }
-            case .mic:
-                NavigationStack {
-                    QuickButtonMicView(selectedMic: model.currentMic)
-                }
-            case .streamSwitcher:
-                NavigationStack {
-                    QuickButtonStreamView()
-                }
-            case .luts:
-                NavigationStack {
-                    QuickButtonLutsView()
-                }
-            case .obs:
-                NavigationStack {
-                    QuickButtonObsView()
-                }
-            case .widgets:
-                NavigationStack {
-                    QuickButtonWidgetsView()
-                }
-            case .recordings:
-                NavigationStack {
-                    RecordingsSettingsView()
-                }
-            case .cosmetics:
-                NavigationStack {
-                    CosmeticsSettingsView()
-                }
-            case .chat:
-                NavigationStack {
-                    QuickButtonChatView()
-                }
-            case .djiDevices:
-                NavigationStack {
-                    QuickButtonDjiDevicesView()
-                }
-            case .sceneSettings:
-                NavigationStack {
-                    SceneSettingsView(scene: model.sceneSettingsPanelScene,
-                                      name: model.sceneSettingsPanelScene.name,
-                                      selectedRotation: model.sceneSettingsPanelScene.videoSourceRotation!,
-                                      numericInput: model.database.sceneNumericInput!)
-                }
-                .id(model.sceneSettingsPanelSceneId)
-            case .goPro:
-                NavigationStack {
-                    QuickButtonGoProView()
-                }
-            case .none:
-                EmptyView()
+        switch model.showingPanel {
+        case .settings:
+            NavigationStack {
+                SettingsView()
             }
-            CloseButtonPanelView()
+        case .bitrate:
+            NavigationStack {
+                QuickButtonBitrateView(selection: model.stream.bitrate)
+            }
+        case .mic:
+            NavigationStack {
+                QuickButtonMicView(selectedMic: model.currentMic)
+            }
+        case .streamSwitcher:
+            NavigationStack {
+                QuickButtonStreamView()
+            }
+        case .luts:
+            NavigationStack {
+                QuickButtonLutsView()
+            }
+        case .obs:
+            NavigationStack {
+                QuickButtonObsView()
+            }
+        case .widgets:
+            NavigationStack {
+                QuickButtonWidgetsView()
+            }
+        case .recordings:
+            NavigationStack {
+                RecordingsSettingsView()
+            }
+        case .cosmetics:
+            NavigationStack {
+                CosmeticsSettingsView()
+            }
+        case .chat:
+            NavigationStack {
+                QuickButtonChatView()
+            }
+        case .djiDevices:
+            NavigationStack {
+                QuickButtonDjiDevicesView()
+            }
+        case .sceneSettings:
+            NavigationStack {
+                SceneSettingsView(scene: model.sceneSettingsPanelScene,
+                                  name: model.sceneSettingsPanelScene.name,
+                                  selectedRotation: model.sceneSettingsPanelScene.videoSourceRotation!,
+                                  numericInput: model.database.sceneNumericInput)
+            }
+            .id(model.sceneSettingsPanelSceneId)
+        case .goPro:
+            NavigationStack {
+                QuickButtonGoProView()
+            }
+        case .connectionPriorities:
+            NavigationStack {
+                QuickButtonConnectionPrioritiesView()
+            }
+        case .autoSceneSwitcher:
+            NavigationStack {
+                QuickButtonAutoSceneSwitcherView(
+                    autoSceneSwitcher: model.autoSceneSwitcher,
+                    autoSceneSwitchers: model.database.autoSceneSwitchers!
+                )
+            }
+        case .quickButtonSettings:
+            NavigationStack {
+                if let button = model.quickButtonSettingsButton {
+                    QuickButtonsButtonSettingsView(
+                        button: button,
+                        shortcut: true
+                    )
+                }
+            }
+        case .none:
+            EmptyView()
         }
     }
 }
@@ -111,10 +156,16 @@ private struct CloseButtonRemoteView: View {
     @EnvironmentObject var model: Model
 
     var body: some View {
-        CloseButtonView {
-            model.showingRemoteControl = false
-            model.setGlobalButtonState(type: .remote, isOn: model.showingRemoteControl)
-            model.updateButtonStates()
+        HStack {
+            Spacer()
+            VStack(alignment: .trailing) {
+                CloseButtonView {
+                    model.showingRemoteControl = false
+                    model.setGlobalButtonState(type: .remote, isOn: model.showingRemoteControl)
+                    model.updateQuickButtonStates()
+                }
+                Spacer()
+            }
         }
     }
 }
@@ -174,6 +225,24 @@ private struct SnapshotCountdownView: View {
     }
 }
 
+private struct InstantReplayCountdownView: View {
+    @ObservedObject var replay: ReplayProvider
+
+    var body: some View {
+        VStack {
+            Text("Playing instant replay in")
+            Text(String(replay.instantReplayCountdown))
+                .font(.title)
+        }
+        .foregroundColor(.white)
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: 200, alignment: .center)
+        .padding(10)
+        .background(.black.opacity(0.75))
+        .cornerRadius(10)
+    }
+}
+
 private struct WebBrowserAlertsView: UIViewControllerRepresentable {
     @EnvironmentObject var model: Model
 
@@ -191,6 +260,7 @@ struct MainView: View {
     var webBrowserView: WebBrowserView
     @State var showAreYouReallySure = false
     @FocusState private var focused: Bool
+    @ObservedObject var replay: ReplayProvider
 
     func drawFocus(context: GraphicsContext, metrics: GeometryProxy, focusPoint: CGPoint) {
         let sideLength = 70.0
@@ -248,13 +318,7 @@ struct MainView: View {
     }
 
     private func face() -> some View {
-        FaceView(
-            crop: debug.beautyFilter!,
-            beauty: debug.beautyFilterSettings!.showBeauty!,
-            blur: debug.beautyFilterSettings!.showBlur,
-            blurBackground: debug.beautyFilterSettings!.showBlurBackground!,
-            mouth: debug.beautyFilterSettings!.showMoblin
-        )
+        FaceView(debug: model.database.debug, settings: model.database.debug.beautyFilterSettings)
     }
 
     private func portraitAspectRatio() -> CGFloat {
@@ -265,15 +329,20 @@ struct MainView: View {
         }
     }
 
+    private func portraitVideoOffset() -> Double {
+        if model.stream.portrait! {
+            return 0
+        } else {
+            return model.portraitVideoOffsetFromTop
+        }
+    }
+
     private func portrait() -> some View {
         VStack(spacing: 0) {
             ZStack {
                 HStack {
                     Spacer(minLength: 0)
                     VStack {
-                        if model.stream.portrait! {
-                            Spacer(minLength: 0)
-                        }
                         GeometryReader { metrics in
                             ZStack {
                                 streamView
@@ -290,6 +359,10 @@ struct MainView: View {
                                     StreamGridView()
                                 }
                             }
+                            .offset(CGSize(
+                                width: 0,
+                                height: portraitVideoOffset() * metrics.size.height * 2
+                            ))
                         }
                         .aspectRatio(portraitAspectRatio(), contentMode: .fit)
                         Spacer(minLength: 0)
@@ -319,6 +392,11 @@ struct MainView: View {
                 }
                 if model.showingPanel != .none {
                     MenuView()
+                        .opacity(model.panelHidden ? 0 : 1)
+                    let backgroundColor = model.panelHidden ? model.showingPanel.buttonsBackgroundColor() : .clear
+                    PanelButtonsView(backgroundColor: backgroundColor)
+                        .padding([.trailing], 10)
+                        .padding([.top], -7)
                 }
             }
             .gesture(
@@ -389,6 +467,10 @@ struct MainView: View {
                         CloseButtonRemoteView()
                     }
                 }
+                if model.showingPanel != .none, model.panelHidden {
+                    PanelButtonsView(backgroundColor: model.showingPanel.buttonsBackgroundColor())
+                        .padding([.trailing], -1)
+                }
             }
             .gesture(
                 MagnificationGesture()
@@ -400,8 +482,15 @@ struct MainView: View {
                     }
             )
             if model.showingPanel != .none {
-                MenuView()
-                    .frame(width: settingsHalfWidth)
+                ZStack {
+                    MenuView()
+                        .opacity(model.panelHidden ? 0 : 1)
+                        .background(.black)
+                    if !model.panelHidden {
+                        PanelButtonsView(backgroundColor: .clear)
+                    }
+                }
+                .frame(width: model.panelHidden ? 1 : settingsHalfWidth)
             }
             ControlBarLandscapeView()
         }
@@ -412,7 +501,7 @@ struct MainView: View {
 
     var body: some View {
         let all = ZStack {
-            if model.stream.portrait! || model.database.portrait! {
+            if model.isPortrait() {
                 portrait()
             } else {
                 landscape()
@@ -441,6 +530,9 @@ struct MainView: View {
             if let snapshotJob = model.currentSnapshotJob, model.snapshotCountdown > 0 {
                 SnapshotCountdownView(message: snapshotJob.message)
             }
+            if replay.instantReplayCountdown != 0 {
+                InstantReplayCountdownView(replay: replay)
+            }
         }
         .onAppear {
             model.setup()
@@ -449,11 +541,11 @@ struct MainView: View {
             VStack {
                 HStack {
                     Spacer()
-                    Button(action: {
+                    Button {
                         model.showTwitchAuth = false
-                    }, label: {
+                    } label: {
                         Text("Close").padding()
-                    })
+                    }
                 }
                 ScrollView {
                     TwitchAuthView(twitchAuth: model.twitchAuth)

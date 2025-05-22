@@ -4,10 +4,12 @@ struct StreamPlatformsSettingsView: View {
     var stream: SettingsStream
 
     var body: some View {
-        NavigationLink { StreamTwitchSettingsView(
-            stream: stream,
-            loggedIn: stream.twitchLoggedIn!
-        ) } label: {
+        NavigationLink {
+            StreamTwitchSettingsView(
+                stream: stream,
+                loggedIn: stream.twitchLoggedIn!
+            )
+        } label: {
             Text("Twitch")
         }
         NavigationLink {
@@ -76,7 +78,7 @@ struct StreamSettingsView: View {
                 } label: {
                     Text("Video")
                 }
-                if model.database.showAllSettings! {
+                if model.database.showAllSettings {
                     NavigationLink {
                         StreamAudioSettingsView(
                             stream: stream,
@@ -92,6 +94,11 @@ struct StreamSettingsView: View {
                         )
                     } label: {
                         Text("Recording")
+                    }
+                    NavigationLink {
+                        StreamReplaySettingsView(stream: stream)
+                    } label: {
+                        Text("Replay")
                     }
                     NavigationLink {
                         StreamSnapshotSettingsView(stream: stream)
@@ -116,7 +123,7 @@ struct StreamSettingsView: View {
                     }
                     .disabled(stream.enabled && (model.isLive || model.isRecording))
                 }
-                if model.database.showAllSettings! {
+                if model.database.showAllSettings {
                     if stream.getProtocol() == .srt {
                         NavigationLink {
                             StreamSrtSettingsView(
@@ -160,7 +167,7 @@ struct StreamSettingsView: View {
                         model.setObsRemoteControlEnabled(enabled: $0)
                     }))
                 }
-                if model.database.showAllSettings! {
+                if model.database.showAllSettings {
                     NavigationLink {
                         StreamRealtimeIrlSettingsView(stream: stream)
                     } label: {
@@ -172,7 +179,7 @@ struct StreamSettingsView: View {
                     }
                 }
             }
-            if model.database.showAllSettings! {
+            if model.database.showAllSettings {
                 if !ProcessInfo().isiOSAppOnMac {
                     Section {
                         Toggle("Background streaming", isOn: Binding(get: {

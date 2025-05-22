@@ -8,6 +8,18 @@ let defaultSrtLatency: Int32 = 3000
 private let defaultRtmpLatency: Int32 = 2000
 let minZoomX: Float = 0.5
 
+extension KeyedEncodingContainer {
+    mutating func encode<T>(_ key: KeyedEncodingContainer<K>.Key, _ value: T) throws where T: Encodable {
+        try encode(value, forKey: key)
+    }
+}
+
+extension KeyedDecodingContainer {
+    func decode<T>(_ key: KeyedDecodingContainer<K>.Key, _ type: T.Type, _ defaultValue: T) -> T where T: Decodable {
+        return (try? decode(type, forKey: key)) ?? defaultValue
+    }
+}
+
 enum SettingsStreamCodec: String, Codable, CaseIterable {
     case h265hevc = "H.265/HEVC"
     case h264avc = "H.264/AVC"
@@ -62,23 +74,28 @@ enum SettingsStreamResolution: String, Codable, CaseIterable {
         }
     }
 
-    func dimensions() -> CMVideoDimensions {
+    func dimensions(portrait: Bool) -> CMVideoDimensions {
+        var size: CMVideoDimensions
         switch self {
         case .r3840x2160:
-            return .init(width: 3840, height: 2160)
+            size = .init(width: 3840, height: 2160)
         case .r2560x1440:
-            return .init(width: 2560, height: 1440)
+            size = .init(width: 2560, height: 1440)
         case .r1920x1080:
-            return .init(width: 1920, height: 1080)
+            size = .init(width: 1920, height: 1080)
         case .r1280x720:
-            return .init(width: 1280, height: 720)
+            size = .init(width: 1280, height: 720)
         case .r854x480:
-            return .init(width: 854, height: 480)
+            size = .init(width: 854, height: 480)
         case .r640x360:
-            return .init(width: 640, height: 360)
+            size = .init(width: 640, height: 360)
         case .r426x240:
-            return .init(width: 426, height: 240)
+            size = .init(width: 426, height: 240)
         }
+        if portrait {
+            size = .init(width: size.height, height: size.width)
+        }
+        return size
     }
 }
 
@@ -381,6 +398,18 @@ class SettingsStreamRecording: Codable {
     }
 }
 
+class SettingsStreamReplay: Codable {
+    var enabled: Bool = false
+    var fade: Bool? = true
+
+    func clone() -> SettingsStreamReplay {
+        let new = SettingsStreamReplay()
+        new.enabled = enabled
+        new.fade = fade
+        return new
+    }
+}
+
 class SettingsStreamTwitchReward: Codable, Identifiable {
     var id: UUID = .init()
     // periphery:ignore
@@ -401,6 +430,7 @@ class SettingsStream: Codable, Identifiable, Equatable {
     var url: String = defaultStreamUrl
     var twitchChannelName: String = ""
     var twitchChannelId: String = ""
+    var twitchShowFollows: Bool? = true
     var twitchAccessToken: String? = ""
     var twitchLoggedIn: Bool? = false
     var twitchRewards: [SettingsStreamTwitchReward]? = []
@@ -451,6 +481,7 @@ class SettingsStream: Codable, Identifiable, Equatable {
     var twitchMultiTrackEnabled: Bool? = false
     var ntpPoolAddress: String? = "time.apple.com"
     var timecodesEnabled: Bool? = false
+    var replay: SettingsStreamReplay? = .init()
 
     init(name: String) {
         self.name = name
@@ -506,6 +537,7 @@ class SettingsStream: Codable, Identifiable, Equatable {
         new.twitchMultiTrackEnabled = twitchMultiTrackEnabled
         new.ntpPoolAddress = ntpPoolAddress
         new.timecodesEnabled = timecodesEnabled
+        new.replay = replay!.clone()
         return new
     }
 
@@ -562,6 +594,10 @@ class SettingsStream: Codable, Identifiable, Equatable {
 
     func resolutionString() -> String {
         return resolution.shortString()
+    }
+
+    func dimensions() -> CMVideoDimensions {
+        return resolution.dimensions(portrait: portrait!)
     }
 
     func codecString() -> String {
@@ -751,6 +787,64 @@ class SettingsScene: Codable, Identifiable, Equatable {
         case .backWideDualLowEnergy:
             cameraPosition = .backWideDualLowEnergy
         }
+    }
+}
+
+class SettingsAutoSceneSwitcherScene: Codable, Identifiable {
+    var id: UUID = .init()
+    var sceneId: UUID?
+    var time: Int = 15
+}
+
+class SettingsAutoSceneSwitcher: Codable, Identifiable, ObservableObject {
+    var id: UUID = .init()
+    @Published var name: String = "My switcher"
+    var shuffle: Bool = false
+    var scenes: [SettingsAutoSceneSwitcherScene] = []
+
+    enum CodingKeys: CodingKey {
+        case id, name, shuffle, scenes
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(.id, id)
+        try container.encode(.name, name)
+        try container.encode(.shuffle, shuffle)
+        try container.encode(.scenes, scenes)
+    }
+
+    init() {}
+
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        shuffle = try container.decode(Bool.self, forKey: .shuffle)
+        scenes = try container.decode([SettingsAutoSceneSwitcherScene].self, forKey: .scenes)
+    }
+}
+
+class SettingsAutoSceneSwitchers: Codable, Identifiable, ObservableObject {
+    @Published var switcherId: UUID?
+    @Published var switchers: [SettingsAutoSceneSwitcher] = []
+
+    enum CodingKeys: CodingKey {
+        case switcherId, switchers
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(.switcherId, switcherId)
+        try container.encode(.switchers, switchers)
+    }
+
+    init() {}
+
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        switcherId = try? container.decode(UUID?.self, forKey: .switcherId)
+        switchers = try container.decode([SettingsAutoSceneSwitcher].self, forKey: .switchers)
     }
 }
 
@@ -982,6 +1076,7 @@ class SettingsWidgetText: Codable {
     var checkboxes: [SettingsWidgetTextCheckbox]? = []
     var ratings: [SettingsWidgetTextRating]? = []
     var lapTimes: [SettingsWidgetTextLapTimes]? = []
+    var needsGForce: Bool? = false
 }
 
 class SettingsWidgetCrop: Codable {
@@ -1000,6 +1095,7 @@ class SettingsWidgetBrowser: Codable {
     var scaleToFitVideo: Bool? = false
     var fps: Float? = 5.0
     var styleSheet: String? = ""
+    var moblinAccess: Bool? = false
 }
 
 class SettingsWidgetMap: Codable {
@@ -1572,20 +1668,20 @@ let widgetTypes = SettingsWidgetType.allCases
     .filter { $0 != .videoEffect }
     .map { $0.toString() }
 
-class SettingsWidget: Codable, Identifiable, Equatable {
-    var name: String
+class SettingsWidget: Codable, Identifiable, Equatable, ObservableObject {
+    @Published var name: String
     var id: UUID = .init()
     var type: SettingsWidgetType = .browser
     var text: SettingsWidgetText = .init()
     var browser: SettingsWidgetBrowser = .init()
-    var crop: SettingsWidgetCrop? = .init()
-    var map: SettingsWidgetMap? = .init()
-    var scene: SettingsWidgetScene? = .init()
-    var qrCode: SettingsWidgetQrCode? = .init()
-    var alerts: SettingsWidgetAlerts? = .init()
-    var videoSource: SettingsWidgetVideoSource? = .init()
-    var scoreboard: SettingsWidgetScoreboard? = .init()
-    var enabled: Bool? = true
+    var crop: SettingsWidgetCrop = .init()
+    var map: SettingsWidgetMap = .init()
+    var scene: SettingsWidgetScene = .init()
+    var qrCode: SettingsWidgetQrCode = .init()
+    var alerts: SettingsWidgetAlerts = .init()
+    var videoSource: SettingsWidgetVideoSource = .init()
+    var scoreboard: SettingsWidgetScoreboard = .init()
+    @Published var enabled: Bool = true
 
     init(name: String) {
         self.name = name
@@ -1594,9 +1690,59 @@ class SettingsWidget: Codable, Identifiable, Equatable {
     static func == (lhs: SettingsWidget, rhs: SettingsWidget) -> Bool {
         return lhs.id == rhs.id
     }
+
+    enum CodingKeys: CodingKey {
+        case name,
+             id,
+             type,
+             text,
+             browser,
+             crop,
+             map,
+             scene,
+             qrCode,
+             alerts,
+             videoSource,
+             scoreboard,
+             enabled
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(.name, name)
+        try container.encode(.id, id)
+        try container.encode(.type, type)
+        try container.encode(.text, text)
+        try container.encode(.browser, browser)
+        try container.encode(.crop, crop)
+        try container.encode(.map, map)
+        try container.encode(.scene, scene)
+        try container.encode(.qrCode, qrCode)
+        try container.encode(.alerts, alerts)
+        try container.encode(.videoSource, videoSource)
+        try container.encode(.scoreboard, scoreboard)
+        try container.encode(.enabled, enabled)
+    }
+
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        name = try container.decode(String.self, forKey: .name)
+        id = try container.decode(UUID.self, forKey: .id)
+        type = try container.decode(SettingsWidgetType.self, forKey: .type)
+        text = try container.decode(SettingsWidgetText.self, forKey: .text)
+        browser = try container.decode(SettingsWidgetBrowser.self, forKey: .browser)
+        crop = (try? container.decode(SettingsWidgetCrop.self, forKey: .crop)) ?? .init()
+        map = (try? container.decode(SettingsWidgetMap.self, forKey: .map)) ?? .init()
+        scene = (try? container.decode(SettingsWidgetScene.self, forKey: .scene)) ?? .init()
+        qrCode = (try? container.decode(SettingsWidgetQrCode.self, forKey: .qrCode)) ?? .init()
+        alerts = (try? container.decode(SettingsWidgetAlerts.self, forKey: .alerts)) ?? .init()
+        videoSource = (try? container.decode(SettingsWidgetVideoSource.self, forKey: .videoSource)) ?? .init()
+        scoreboard = (try? container.decode(SettingsWidgetScoreboard.self, forKey: .scoreboard)) ?? .init()
+        enabled = (try? container.decode(Bool.self, forKey: .enabled)) ?? true
+    }
 }
 
-enum SettingsButtonType: String, Codable, CaseIterable {
+enum SettingsQuickButtonType: String, Codable, CaseIterable {
     case unknown = "Unknown"
     case torch = "Torch"
     case mute = "Mute"
@@ -1639,38 +1785,89 @@ enum SettingsButtonType: String, Codable, CaseIterable {
     case djiDevices = "DJI devices"
     case portrait = "Portrait"
     case goPro = "GoPro"
+    case replay = "Replay"
+    case connectionPriorities = "Connection priorities"
+    case instantReplay = "Instant replay"
+    case pinch = "Pinch"
+    case whirlpool = "Whirlpool"
+    case autoSceneSwitcher = "Auto scene switcher"
+    case pauseTts = "Pause TTS"
 
     public init(from decoder: Decoder) throws {
         var value = try decoder.singleValueContainer().decode(RawValue.self)
         if value == "Pause chat" {
             value = "Chat"
         }
-        self = SettingsButtonType(rawValue: value) ?? .unknown
+        self = SettingsQuickButtonType(rawValue: value) ?? .unknown
     }
 }
 
-class SettingsButton: Codable, Identifiable, Equatable, Hashable {
+class SettingsQuickButton: Codable, Identifiable, Equatable, Hashable, ObservableObject {
     var name: String
     var id: UUID = .init()
-    var type: SettingsButtonType = .widget
+    var type: SettingsQuickButtonType = .widget
     // periphery:ignore
     var imageType: String? = "System name"
     var systemImageNameOn: String = "mic.slash"
     var systemImageNameOff: String = "mic"
     var isOn: Bool = false
-    var enabled: Bool? = true
-    var backgroundColor: RgbColor? = defaultQuickButtonColor
+    @Published var enabled: Bool = true
+    var backgroundColor: RgbColor = defaultQuickButtonColor
+    @Published var page: Int? = 1
+    @Published var color: Color = defaultQuickButtonColor.color()
 
     init(name: String) {
         self.name = name
     }
 
-    static func == (lhs: SettingsButton, rhs: SettingsButton) -> Bool {
+    static func == (lhs: SettingsQuickButton, rhs: SettingsQuickButton) -> Bool {
         return lhs.id == rhs.id
     }
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
+    }
+
+    enum CodingKeys: CodingKey {
+        case name,
+             id,
+             type,
+             imageType,
+             systemImageNameOn,
+             systemImageNameOff,
+             isOn,
+             enabled,
+             backgroundColor,
+             page
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(.name, name)
+        try container.encode(.id, id)
+        try container.encode(.type, type)
+        try container.encode(.imageType, imageType)
+        try container.encode(.systemImageNameOn, systemImageNameOn)
+        try container.encode(.systemImageNameOff, systemImageNameOff)
+        try container.encode(.isOn, isOn)
+        try container.encode(.enabled, enabled)
+        try container.encode(.backgroundColor, backgroundColor)
+        try container.encode(.page, page)
+    }
+
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        name = try container.decode(String.self, forKey: .name)
+        id = try container.decode(UUID.self, forKey: .id)
+        type = try container.decode(SettingsQuickButtonType.self, forKey: .type)
+        imageType = try? container.decode(String?.self, forKey: .imageType)
+        systemImageNameOn = try container.decode(String.self, forKey: .systemImageNameOn)
+        systemImageNameOff = try container.decode(String.self, forKey: .systemImageNameOff)
+        isOn = try container.decode(Bool.self, forKey: .isOn)
+        enabled = (try? container.decode(Bool.self, forKey: .enabled)) ?? true
+        backgroundColor = (try? container.decode(RgbColor.self, forKey: .backgroundColor)) ?? defaultQuickButtonColor
+        page = try? container.decode(Int?.self, forKey: .page)
+        color = backgroundColor.color()
     }
 }
 
@@ -1886,8 +2083,8 @@ class SettingsChatBotPermissions: Codable {
     var scene: SettingsChatBotPermissionsCommand? = .init()
 }
 
-class SettingsChat: Codable {
-    var fontSize: Float = 19.0
+class SettingsChat: Codable, ObservableObject {
+    @Published var fontSize: Float = 19.0
     var usernameColor: RgbColor = .init(red: 255, green: 163, blue: 0)
     var messageColor: RgbColor = .init(red: 255, green: 255, blue: 255)
     var backgroundColor: RgbColor = .init(red: 0, green: 0, blue: 0)
@@ -1899,31 +2096,159 @@ class SettingsChat: Codable {
     var animatedEmotes: Bool = false
     var timestampColor: RgbColor = .init(red: 180, green: 180, blue: 180)
     var timestampColorEnabled: Bool = false
-    var height: Double? = 0.7
-    var width: Double? = 1.0
-    var maximumAge: Int? = 30
-    var maximumAgeEnabled: Bool? = false
-    var meInUsernameColor: Bool? = true
-    var enabled: Bool? = true
-    var usernamesToIgnore: [SettingsChatUsername]? = []
-    var textToSpeechEnabled: Bool? = false
-    var textToSpeechDetectLanguagePerMessage: Bool? = false
-    var textToSpeechSayUsername: Bool? = true
-    var textToSpeechRate: Float? = 0.4
-    var textToSpeechSayVolume: Float? = 0.6
-    var textToSpeechLanguageVoices: [String: String]? = .init()
-    var textToSpeechSubscribersOnly: Bool? = false
-    var textToSpeechFilter: Bool? = true
-    var textToSpeechFilterMentions: Bool? = true
-    var mirrored: Bool? = false
-    var botEnabled: Bool? = false
-    var botCommandPermissions: SettingsChatBotPermissions? = .init()
-    var botSendLowBatteryWarning: Bool? = false
-    var badges: Bool? = true
-    var showFirstTimeChatterMessage: Bool? = true
-    var showNewFollowerMessage: Bool? = true
-    var bottom: Double? = 0.0
-    var newMessagesAtTop: Bool? = false
+    @Published var height: Double = 0.7
+    @Published var width: Double = 1.0
+    var maximumAge: Int = 30
+    var maximumAgeEnabled: Bool = false
+    var meInUsernameColor: Bool = true
+    var enabled: Bool = true
+    var usernamesToIgnore: [SettingsChatUsername] = []
+    var textToSpeechEnabled: Bool = false
+    var textToSpeechDetectLanguagePerMessage: Bool = false
+    var textToSpeechSayUsername: Bool = true
+    @Published var textToSpeechRate: Float = 0.4
+    @Published var textToSpeechSayVolume: Float = 0.6
+    var textToSpeechLanguageVoices: [String: String] = .init()
+    var textToSpeechSubscribersOnly: Bool = false
+    var textToSpeechFilter: Bool = true
+    var textToSpeechFilterMentions: Bool = true
+    var mirrored: Bool = false
+    @Published var botEnabled: Bool = false
+    var botCommandPermissions: SettingsChatBotPermissions = .init()
+    var botSendLowBatteryWarning: Bool = false
+    var badges: Bool = true
+    var showFirstTimeChatterMessage: Bool = true
+    var showNewFollowerMessage: Bool = true
+    @Published var bottom: Double = 0.0
+    var newMessagesAtTop: Bool = false
+    @Published var textToSpeechPauseBetweenMessages: Double = 1.0
+
+    enum CodingKeys: CodingKey {
+        case fontSize,
+             usernameColor,
+             messageColor,
+             backgroundColor,
+             backgroundColorEnabled,
+             shadowColor,
+             shadowColorEnabled,
+             boldUsername,
+             boldMessage,
+             animatedEmotes,
+             timestampColor,
+             timestampColorEnabled,
+             height,
+             width,
+             maximumAge,
+             maximumAgeEnabled,
+             meInUsernameColor,
+             enabled,
+             usernamesToIgnore,
+             textToSpeechEnabled,
+             textToSpeechDetectLanguagePerMessage,
+             textToSpeechSayUsername,
+             textToSpeechRate,
+             textToSpeechSayVolume,
+             textToSpeechLanguageVoices,
+             textToSpeechSubscribersOnly,
+             textToSpeechFilter,
+             textToSpeechFilterMentions,
+             mirrored,
+             botEnabled,
+             botCommandPermissions,
+             botSendLowBatteryWarning,
+             badges,
+             showFirstTimeChatterMessage,
+             showNewFollowerMessage,
+             bottom,
+             newMessagesAtTop,
+             textToSpeechPauseBetweenMessages
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(.fontSize, fontSize)
+        try container.encode(.usernameColor, usernameColor)
+        try container.encode(.messageColor, messageColor)
+        try container.encode(.backgroundColor, backgroundColor)
+        try container.encode(.backgroundColorEnabled, backgroundColorEnabled)
+        try container.encode(.shadowColor, shadowColor)
+        try container.encode(.shadowColorEnabled, shadowColorEnabled)
+        try container.encode(.boldUsername, boldUsername)
+        try container.encode(.boldMessage, boldMessage)
+        try container.encode(.animatedEmotes, animatedEmotes)
+        try container.encode(.timestampColor, timestampColor)
+        try container.encode(.timestampColorEnabled, timestampColorEnabled)
+        try container.encode(.height, height)
+        try container.encode(.width, width)
+        try container.encode(.maximumAge, maximumAge)
+        try container.encode(.maximumAgeEnabled, maximumAgeEnabled)
+        try container.encode(.meInUsernameColor, meInUsernameColor)
+        try container.encode(.enabled, enabled)
+        try container.encode(.usernamesToIgnore, usernamesToIgnore)
+        try container.encode(.textToSpeechEnabled, textToSpeechEnabled)
+        try container.encode(.textToSpeechDetectLanguagePerMessage, textToSpeechDetectLanguagePerMessage)
+        try container.encode(.textToSpeechSayUsername, textToSpeechSayUsername)
+        try container.encode(.textToSpeechRate, textToSpeechRate)
+        try container.encode(.textToSpeechSayVolume, textToSpeechSayVolume)
+        try container.encode(.textToSpeechLanguageVoices, textToSpeechLanguageVoices)
+        try container.encode(.textToSpeechSubscribersOnly, textToSpeechSubscribersOnly)
+        try container.encode(.textToSpeechFilter, textToSpeechFilter)
+        try container.encode(.textToSpeechFilterMentions, textToSpeechFilterMentions)
+        try container.encode(.mirrored, mirrored)
+        try container.encode(.botEnabled, botEnabled)
+        try container.encode(.botCommandPermissions, botCommandPermissions)
+        try container.encode(.botSendLowBatteryWarning, botSendLowBatteryWarning)
+        try container.encode(.badges, badges)
+        try container.encode(.showFirstTimeChatterMessage, showFirstTimeChatterMessage)
+        try container.encode(.showNewFollowerMessage, showNewFollowerMessage)
+        try container.encode(.bottom, bottom)
+        try container.encode(.newMessagesAtTop, newMessagesAtTop)
+        try container.encode(.textToSpeechPauseBetweenMessages, textToSpeechPauseBetweenMessages)
+    }
+
+    init() {}
+
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        fontSize = try container.decode(Float.self, forKey: .fontSize)
+        usernameColor = try container.decode(RgbColor.self, forKey: .usernameColor)
+        messageColor = try container.decode(RgbColor.self, forKey: .messageColor)
+        backgroundColor = try container.decode(RgbColor.self, forKey: .backgroundColor)
+        backgroundColorEnabled = try container.decode(Bool.self, forKey: .backgroundColorEnabled)
+        shadowColor = try container.decode(RgbColor.self, forKey: .shadowColor)
+        shadowColorEnabled = try container.decode(Bool.self, forKey: .shadowColorEnabled)
+        boldUsername = try container.decode(Bool.self, forKey: .boldUsername)
+        boldMessage = try container.decode(Bool.self, forKey: .boldMessage)
+        animatedEmotes = try container.decode(Bool.self, forKey: .animatedEmotes)
+        timestampColor = try container.decode(RgbColor.self, forKey: .timestampColor)
+        timestampColorEnabled = try container.decode(Bool.self, forKey: .timestampColorEnabled)
+        height = container.decode(.height, Double.self, 0.7)
+        width = container.decode(.width, Double.self, 1.0)
+        maximumAge = container.decode(.maximumAge, Int.self, 30)
+        maximumAgeEnabled = container.decode(.maximumAgeEnabled, Bool.self, false)
+        meInUsernameColor = container.decode(.meInUsernameColor, Bool.self, true)
+        enabled = container.decode(.enabled, Bool.self, true)
+        usernamesToIgnore = container.decode(.usernamesToIgnore, [SettingsChatUsername].self, [])
+        textToSpeechEnabled = container.decode(.textToSpeechEnabled, Bool.self, false)
+        textToSpeechDetectLanguagePerMessage = container.decode(.textToSpeechDetectLanguagePerMessage, Bool.self, false)
+        textToSpeechSayUsername = container.decode(.textToSpeechSayUsername, Bool.self, true)
+        textToSpeechRate = container.decode(.textToSpeechRate, Float.self, 0.4)
+        textToSpeechSayVolume = container.decode(.textToSpeechSayVolume, Float.self, 0.6)
+        textToSpeechLanguageVoices = container.decode(.textToSpeechLanguageVoices, [String: String].self, .init())
+        textToSpeechSubscribersOnly = container.decode(.textToSpeechSubscribersOnly, Bool.self, false)
+        textToSpeechFilter = container.decode(.textToSpeechFilter, Bool.self, true)
+        textToSpeechFilterMentions = container.decode(.textToSpeechFilterMentions, Bool.self, true)
+        mirrored = container.decode(.mirrored, Bool.self, false)
+        botEnabled = container.decode(.botEnabled, Bool.self, false)
+        botCommandPermissions = container.decode(.botCommandPermissions, SettingsChatBotPermissions.self, .init())
+        botSendLowBatteryWarning = container.decode(.botSendLowBatteryWarning, Bool.self, false)
+        badges = container.decode(.badges, Bool.self, true)
+        showFirstTimeChatterMessage = container.decode(.showFirstTimeChatterMessage, Bool.self, true)
+        showNewFollowerMessage = container.decode(.showNewFollowerMessage, Bool.self, true)
+        bottom = container.decode(.bottom, Double.self, 0.0)
+        newMessagesAtTop = container.decode(.newMessagesAtTop, Bool.self, false)
+        textToSpeechPauseBetweenMessages = container.decode(.textToSpeechPauseBetweenMessages, Double.self, 1.0)
+    }
 }
 
 enum SettingsMic: String, Codable, CaseIterable {
@@ -1960,20 +2285,72 @@ let pixelFormatTypes = [
     kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange,
 ]
 
-class SettingsDebugBeautyFilter: Codable {
-    var showBlur = false
-    var showBlurBackground: Bool? = false
-    var showMoblin = false
-    var showCute: Bool? = false
-    var cuteRadius: Float? = 0.5
-    var cuteScale: Float? = 0.0
-    var cuteOffset: Float? = 0.5
-    var showBeauty: Bool? = false
-    var shapeRadius: Float? = 0.5
-    var shapeScale: Float? = 0.0
-    var shapeOffset: Float? = 0.5
-    var smoothAmount: Float? = 0.65
-    var smoothRadius: Float? = 20.0
+class SettingsDebugBeautyFilter: Codable, ObservableObject {
+    @Published var showBlur = false
+    @Published var showBlurBackground: Bool = false
+    @Published var showMoblin = false
+    @Published var showCute: Bool = false
+    var cuteRadius: Float = 0.5
+    var cuteScale: Float = 0.0
+    var cuteOffset: Float = 0.5
+    var showBeauty: Bool = false
+    var shapeRadius: Float = 0.5
+    var shapeScale: Float = 0.0
+    var shapeOffset: Float = 0.5
+    var smoothAmount: Float = 0.65
+    var smoothRadius: Float = 20.0
+
+    enum CodingKeys: CodingKey {
+        case showBlur,
+             showBlurBackground,
+             showMoblin,
+             showCute,
+             cuteRadius,
+             cuteScale,
+             cuteOffset,
+             showBeauty,
+             shapeRadius,
+             shapeScale,
+             shapeOffset,
+             smoothAmount,
+             smoothRadius
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(.showBlur, showBlur)
+        try container.encode(.showBlurBackground, showBlurBackground)
+        try container.encode(.showMoblin, showMoblin)
+        try container.encode(.showCute, showCute)
+        try container.encode(.cuteRadius, cuteRadius)
+        try container.encode(.cuteScale, cuteScale)
+        try container.encode(.cuteOffset, cuteOffset)
+        try container.encode(.showBeauty, showBeauty)
+        try container.encode(.shapeRadius, shapeRadius)
+        try container.encode(.shapeScale, shapeScale)
+        try container.encode(.shapeOffset, shapeOffset)
+        try container.encode(.smoothAmount, smoothAmount)
+        try container.encode(.smoothRadius, smoothRadius)
+    }
+
+    init() {}
+
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        showBlur = container.decode(.showBlur, Bool.self, false)
+        showBlurBackground = container.decode(.showBlurBackground, Bool.self, false)
+        showMoblin = container.decode(.showMoblin, Bool.self, false)
+        showCute = container.decode(.showCute, Bool.self, false)
+        cuteRadius = container.decode(.cuteRadius, Float.self, 0.5)
+        cuteScale = container.decode(.cuteScale, Float.self, 0.0)
+        cuteOffset = container.decode(.cuteOffset, Float.self, 0.5)
+        showBeauty = container.decode(.showBeauty, Bool.self, false)
+        shapeRadius = container.decode(.shapeRadius, Float.self, 0.5)
+        shapeScale = container.decode(.shapeScale, Float.self, 0.0)
+        shapeOffset = container.decode(.shapeOffset, Float.self, 0.5)
+        smoothAmount = container.decode(.smoothAmount, Float.self, 0.65)
+        smoothRadius = container.decode(.smoothRadius, Float.self, 20.0)
+    }
 }
 
 class SettingsHttpProxy: Codable {
@@ -2010,37 +2387,161 @@ enum SettingsDnsLookupStrategy: String, Codable, CaseIterable {
 
 let dnsLookupStrategies = SettingsDnsLookupStrategy.allCases.map { $0.rawValue }
 
-class SettingsDebug: Codable {
+class SettingsDebug: Codable, ObservableObject {
     var logLevel: SettingsLogLevel = .error
-    var srtOverlay: Bool = false
-    var srtOverheadBandwidth: Int32? = 25
-    var cameraSwitchRemoveBlackish: Float? = 0.3
-    var maximumBandwidthFollowInput: Bool? = true
-    var audioOutputToInputChannelsMap: SettingsDebugAudioOutputToInputChannelsMap? = .init()
-    var bluetoothOutputOnly: Bool? = true
-    var maximumLogLines: Int? = 500
-    var pixelFormat: String? = pixelFormats[1]
-    var beautyFilter: Bool? = false
-    var beautyFilterSettings: SettingsDebugBeautyFilter? = .init()
-    var allowVideoRangePixelFormat: Bool? = false
-    var blurSceneSwitch: Bool? = true
-    var metalPetalFilters: Bool? = false
-    var preferStereoMic: Bool? = false
-    var twitchRewards: Bool? = false
-    var removeWindNoise: Bool? = false
-    var httpProxy: SettingsHttpProxy? = .init()
-    var tesla: SettingsTesla? = .init()
-    var reliableChat: Bool? = false
-    var timecodesEnabled: Bool? = false
-    var dnsLookupStrategy: SettingsDnsLookupStrategy? = .system
-    var srtlaBatchSend: Bool? = false
-    var cameraControlsEnabled: Bool? = true
-    var dataRateLimitFactor: Float? = 2.0
-    var bitrateDropFix: Bool? = false
-    var relaxedBitrate: Bool? = false
-    var externalDisplayChat: Bool? = false
-    var videoSourceWidgetTrackFace: Bool? = false
-    var srtlaBatchSendEnabled: Bool? = true
+    @Published var srtOverlay: Bool = false
+    var srtOverheadBandwidth: Int32 = 25
+    @Published var cameraSwitchRemoveBlackish: Float = 0.3
+    var maximumBandwidthFollowInput: Bool = true
+    var audioOutputToInputChannelsMap: SettingsDebugAudioOutputToInputChannelsMap = .init()
+    var bluetoothOutputOnly: Bool = true
+    var maximumLogLines: Int = 500
+    var pixelFormat: String = pixelFormats[1]
+    @Published var beautyFilter: Bool = false
+    var beautyFilterSettings: SettingsDebugBeautyFilter = .init()
+    @Published var allowVideoRangePixelFormat: Bool = false
+    var blurSceneSwitch: Bool = true
+    @Published var metalPetalFilters: Bool = false
+    var preferStereoMic: Bool = false
+    @Published var twitchRewards: Bool = false
+    @Published var removeWindNoise: Bool = false
+    var httpProxy: SettingsHttpProxy = .init()
+    var tesla: SettingsTesla = .init()
+    @Published var reliableChat: Bool = false
+    @Published var timecodesEnabled: Bool = false
+    var dnsLookupStrategy: SettingsDnsLookupStrategy = .system
+    var srtlaBatchSend: Bool = false
+    var cameraControlsEnabled: Bool = true
+    @Published var dataRateLimitFactor: Float = 2.0
+    @Published var bitrateDropFix: Bool = false
+    @Published var relaxedBitrate: Bool = false
+    var externalDisplayChat: Bool = false
+    var videoSourceWidgetTrackFace: Bool = false
+    @Published var srtlaBatchSendEnabled: Bool = true
+    var replay: Bool = false
+    var recordSegmentLength: Double = 5.0
+    @Published var builtinAudioAndVideoDelay: Double = 0.0
+    @Published var horizon = false
+
+    enum CodingKeys: CodingKey {
+        case logLevel,
+             srtOverlay,
+             srtOverheadBandwidth,
+             cameraSwitchRemoveBlackish,
+             maximumBandwidthFollowInput,
+             audioOutputToInputChannelsMap,
+             bluetoothOutputOnly,
+             maximumLogLines,
+             pixelFormat,
+             beautyFilter,
+             beautyFilterSettings,
+             allowVideoRangePixelFormat,
+             blurSceneSwitch,
+             metalPetalFilters,
+             preferStereoMic,
+             twitchRewards,
+             removeWindNoise,
+             httpProxy,
+             tesla,
+             reliableChat,
+             timecodesEnabled,
+             dnsLookupStrategy,
+             srtlaBatchSend,
+             cameraControlsEnabled,
+             dataRateLimitFactor,
+             bitrateDropFix,
+             relaxedBitrate,
+             externalDisplayChat,
+             videoSourceWidgetTrackFace,
+             srtlaBatchSendEnabled,
+             replay,
+             recordSegmentLength,
+             builtinAudioAndVideoDelay,
+             horizon
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(.logLevel, logLevel)
+        try container.encode(.srtOverlay, srtOverlay)
+        try container.encode(.srtOverheadBandwidth, srtOverheadBandwidth)
+        try container.encode(.cameraSwitchRemoveBlackish, cameraSwitchRemoveBlackish)
+        try container.encode(.maximumBandwidthFollowInput, maximumBandwidthFollowInput)
+        try container.encode(.audioOutputToInputChannelsMap, audioOutputToInputChannelsMap)
+        try container.encode(.bluetoothOutputOnly, bluetoothOutputOnly)
+        try container.encode(.maximumLogLines, maximumLogLines)
+        try container.encode(.pixelFormat, pixelFormat)
+        try container.encode(.beautyFilter, beautyFilter)
+        try container.encode(.beautyFilterSettings, beautyFilterSettings)
+        try container.encode(.allowVideoRangePixelFormat, allowVideoRangePixelFormat)
+        try container.encode(.blurSceneSwitch, blurSceneSwitch)
+        try container.encode(.metalPetalFilters, metalPetalFilters)
+        try container.encode(.preferStereoMic, preferStereoMic)
+        try container.encode(.twitchRewards, twitchRewards)
+        try container.encode(.removeWindNoise, removeWindNoise)
+        try container.encode(.httpProxy, httpProxy)
+        try container.encode(.tesla, tesla)
+        try container.encode(.reliableChat, reliableChat)
+        try container.encode(.timecodesEnabled, timecodesEnabled)
+        try container.encode(.dnsLookupStrategy, dnsLookupStrategy)
+        try container.encode(.srtlaBatchSend, srtlaBatchSend)
+        try container.encode(.cameraControlsEnabled, cameraControlsEnabled)
+        try container.encode(.dataRateLimitFactor, dataRateLimitFactor)
+        try container.encode(.bitrateDropFix, bitrateDropFix)
+        try container.encode(.relaxedBitrate, relaxedBitrate)
+        try container.encode(.externalDisplayChat, externalDisplayChat)
+        try container.encode(.videoSourceWidgetTrackFace, videoSourceWidgetTrackFace)
+        try container.encode(.srtlaBatchSendEnabled, srtlaBatchSendEnabled)
+        try container.encode(.replay, replay)
+        try container.encode(.recordSegmentLength, recordSegmentLength)
+        try container.encode(.builtinAudioAndVideoDelay, builtinAudioAndVideoDelay)
+        try container.encode(.horizon, horizon)
+    }
+
+    init() {}
+
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        logLevel = try container.decode(SettingsLogLevel.self, forKey: .logLevel)
+        srtOverlay = try container.decode(Bool.self, forKey: .srtOverlay)
+        srtOverheadBandwidth = (try? container.decode(Int32.self, forKey: .srtOverheadBandwidth)) ?? 25
+        cameraSwitchRemoveBlackish = (try? container.decode(Float.self, forKey: .cameraSwitchRemoveBlackish)) ?? 0.3
+        maximumBandwidthFollowInput = (try? container.decode(Bool.self, forKey: .maximumBandwidthFollowInput)) ?? true
+        audioOutputToInputChannelsMap = (try? container.decode(
+            SettingsDebugAudioOutputToInputChannelsMap.self,
+            forKey: .audioOutputToInputChannelsMap
+        )) ?? .init()
+        bluetoothOutputOnly = (try? container.decode(Bool.self, forKey: .bluetoothOutputOnly)) ?? true
+        maximumLogLines = (try? container.decode(Int.self, forKey: .maximumLogLines)) ?? 500
+        pixelFormat = (try? container.decode(String.self, forKey: .pixelFormat)) ?? pixelFormats[1]
+        beautyFilter = (try? container.decode(Bool.self, forKey: .beautyFilter)) ?? false
+        beautyFilterSettings = (try? container.decode(SettingsDebugBeautyFilter.self, forKey: .beautyFilterSettings)) ??
+            .init()
+        allowVideoRangePixelFormat = (try? container.decode(Bool.self, forKey: .allowVideoRangePixelFormat)) ?? false
+        blurSceneSwitch = (try? container.decode(Bool.self, forKey: .blurSceneSwitch)) ?? true
+        metalPetalFilters = (try? container.decode(Bool.self, forKey: .metalPetalFilters)) ?? false
+        preferStereoMic = (try? container.decode(Bool.self, forKey: .preferStereoMic)) ?? false
+        twitchRewards = (try? container.decode(Bool.self, forKey: .twitchRewards)) ?? false
+        removeWindNoise = (try? container.decode(Bool.self, forKey: .removeWindNoise)) ?? false
+        httpProxy = (try? container.decode(SettingsHttpProxy.self, forKey: .httpProxy)) ?? .init()
+        tesla = (try? container.decode(SettingsTesla.self, forKey: .tesla)) ?? .init()
+        reliableChat = (try? container.decode(Bool.self, forKey: .reliableChat)) ?? false
+        timecodesEnabled = (try? container.decode(Bool.self, forKey: .timecodesEnabled)) ?? false
+        dnsLookupStrategy = (try? container.decode(SettingsDnsLookupStrategy.self, forKey: .dnsLookupStrategy)) ??
+            .system
+        srtlaBatchSend = (try? container.decode(Bool.self, forKey: .srtlaBatchSend)) ?? false
+        cameraControlsEnabled = (try? container.decode(Bool.self, forKey: .cameraControlsEnabled)) ?? true
+        dataRateLimitFactor = (try? container.decode(Float.self, forKey: .dataRateLimitFactor)) ?? 2.0
+        bitrateDropFix = (try? container.decode(Bool.self, forKey: .bitrateDropFix)) ?? false
+        relaxedBitrate = (try? container.decode(Bool.self, forKey: .relaxedBitrate)) ?? false
+        externalDisplayChat = (try? container.decode(Bool.self, forKey: .externalDisplayChat)) ?? false
+        videoSourceWidgetTrackFace = (try? container.decode(Bool.self, forKey: .videoSourceWidgetTrackFace)) ?? false
+        srtlaBatchSendEnabled = (try? container.decode(Bool.self, forKey: .srtlaBatchSendEnabled)) ?? true
+        replay = (try? container.decode(Bool.self, forKey: .replay)) ?? false
+        recordSegmentLength = (try? container.decode(Double.self, forKey: .recordSegmentLength)) ?? 5.0
+        builtinAudioAndVideoDelay = (try? container.decode(Double.self, forKey: .builtinAudioAndVideoDelay)) ?? 0.0
+        horizon = (try? container.decode(Bool.self, forKey: .horizon)) ?? false
+    }
 }
 
 class SettingsRtmpServerStream: Codable, Identifiable {
@@ -2358,6 +2859,33 @@ class SettingsGoPro: Codable {
     var selectedRtmpUrl: UUID?
 }
 
+enum SettingsReplaySpeed: String, Codable, CaseIterable {
+    case oneHalf = "0.5x"
+    case one = "1x"
+
+    public init(from decoder: Decoder) throws {
+        self = try SettingsReplaySpeed(rawValue: decoder.singleValueContainer().decode(RawValue.self)) ??
+            .one
+    }
+
+    func toNumber() -> Double {
+        switch self {
+        case .oneHalf:
+            return 0.5
+        case .one:
+            return 1.0
+        }
+    }
+}
+
+class SettingsReplay: Codable {
+    // periphery:ignore
+    var position: Double? = 10.0
+    var start: Double? = 20.0
+    var stop: Double? = 30.0
+    var speed: SettingsReplaySpeed = .one
+}
+
 class SettingsCatPrinter: Codable, Identifiable {
     var id: UUID = .init()
     var name: String = ""
@@ -2398,10 +2926,32 @@ class SettingsHeartRateDevices: Codable {
     var devices: [SettingsHeartRateDevice] = []
 }
 
-class SettingsQuickButtons: Codable {
-    var twoColumns: Bool = true
-    var showName: Bool = true
-    var enableScroll: Bool = true
+class SettingsQuickButtons: Codable, ObservableObject {
+    @Published var twoColumns: Bool = true
+    @Published var showName: Bool = true
+    @Published var enableScroll: Bool = true
+
+    enum CodingKeys: CodingKey {
+        case twoColumns,
+             showName,
+             enableScroll
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(.twoColumns, twoColumns)
+        try container.encode(.showName, showName)
+        try container.encode(.enableScroll, enableScroll)
+    }
+
+    init() {}
+
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        twoColumns = try container.decode(Bool.self, forKey: .twoColumns)
+        showName = try container.decode(Bool.self, forKey: .showName)
+        enableScroll = try container.decode(Bool.self, forKey: .enableScroll)
+    }
 }
 
 class SettingsNetworkInterfaceName: Codable, Identifiable {
@@ -2421,6 +2971,8 @@ enum SettingsGameControllerButtonFunction: String, Codable, CaseIterable {
     case blackScreen = "Black screen"
     case chat = "Chat"
     case scene = "Scene"
+    case instantReplay = "Instant replay"
+    case pauseTts = "Pause TTS"
 
     public init(from decoder: Decoder) throws {
         var value = try decoder.singleValueContainer().decode(RawValue.self)
@@ -2452,6 +3004,10 @@ enum SettingsGameControllerButtonFunction: String, Codable, CaseIterable {
             return .chat
         case String(localized: "Scene"):
             return .scene
+        case String(localized: "Instant replay"):
+            return .instantReplay
+        case String(localized: "Pause TTS"):
+            return .pauseTts
         default:
             return .unused
         }
@@ -2479,6 +3035,10 @@ enum SettingsGameControllerButtonFunction: String, Codable, CaseIterable {
             return String(localized: "Chat")
         case .scene:
             return String(localized: "Scene")
+        case .instantReplay:
+            return String(localized: "Instant replay")
+        case .pauseTts:
+            return String(localized: "Pause TTS")
         }
     }
 }
@@ -2606,6 +3166,7 @@ enum SettingsKeyboardKeyFunction: String, Codable, CaseIterable {
     case blackScreen = "Black screen"
     case scene = "Scene"
     case widget = "Widget"
+    case instantReplay = "Instant replay"
 
     public init(from decoder: Decoder) throws {
         var value = try decoder.singleValueContainer().decode(RawValue.self)
@@ -2633,6 +3194,8 @@ enum SettingsKeyboardKeyFunction: String, Codable, CaseIterable {
             return .scene
         case String(localized: "Widget"):
             return .widget
+        case String(localized: "Instant replay"):
+            return .instantReplay
         default:
             return .unused
         }
@@ -2656,6 +3219,8 @@ enum SettingsKeyboardKeyFunction: String, Codable, CaseIterable {
             return String(localized: "Scene")
         case .widget:
             return String(localized: "Widget")
+        case .instantReplay:
+            return String(localized: "Instant replay")
         }
     }
 }
@@ -2705,11 +3270,36 @@ class SettingsMoblinkStreamer: Codable {
     var port: UInt16 = 7777
 }
 
-class SettingsMoblinkRelay: Codable {
+class SettingsMoblinkRelay: Codable, ObservableObject {
     var enabled: Bool = false
-    var name: String = randomName()
-    var url: String = ""
-    var manual: Bool? = false
+    @Published var name: String = randomName()
+    @Published var url: String = ""
+    @Published var manual: Bool = false
+
+    enum CodingKeys: CodingKey {
+        case enabled,
+             name,
+             url,
+             manual
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(.enabled, enabled)
+        try container.encode(.name, name)
+        try container.encode(.url, url)
+        try container.encode(.manual, manual)
+    }
+
+    init() {}
+
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        enabled = container.decode(.enabled, Bool.self, false)
+        name = container.decode(.name, String.self, randomName())
+        url = container.decode(.url, String.self, "")
+        manual = container.decode(.manual, Bool.self, false)
+    }
 }
 
 class SettingsMoblink: Codable {
@@ -2884,7 +3474,7 @@ class DeepLinkCreatorStream: Codable, Identifiable {
 
 class DeepLinkCreatorQuickButton: Codable, Identifiable {
     var id: UUID = .init()
-    var type: SettingsButtonType = .unknown
+    var type: SettingsQuickButtonType = .unknown
     var enabled: Bool = false
 }
 
@@ -2951,10 +3541,10 @@ class SettingsAlertsMediaGallery: Codable {
     var customSounds: [SettingsAlertsMediaGalleryItem] = []
 }
 
-class Database: Codable {
+class Database: Codable, ObservableObject {
     var streams: [SettingsStream] = []
     var scenes: [SettingsScene] = []
-    var widgets: [SettingsWidget] = []
+    @Published var widgets: [SettingsWidget] = []
     var show: SettingsShow = .init()
     var zoom: SettingsZoom = .init()
     var tapToFocus: Bool = false
@@ -2965,47 +3555,50 @@ class Database: Codable {
     var batteryPercentage: Bool = true
     var mic: SettingsMic = getDefaultMic()
     var debug: SettingsDebug = .init()
-    var quickButtons: SettingsQuickButtons? = .init()
-    var globalButtons: [SettingsButton]? = []
-    var rtmpServer: SettingsRtmpServer? = .init()
-    var networkInterfaceNames: [SettingsNetworkInterfaceName]? = []
-    var lowBitrateWarning: Bool? = true
-    var vibrate: Bool? = false
-    var gameControllers: [SettingsGameController]? = [.init()]
-    var remoteControl: SettingsRemoteControl? = .init()
-    var startStopRecordingConfirmations: Bool? = true
-    var color: SettingsColor? = .init()
-    var mirrorFrontCameraOnStream: Bool? = true
-    var streamButtonColor: RgbColor? = defaultStreamButtonColor
-    var location: SettingsLocation? = .init()
-    var watch: WatchSettings? = .init()
-    var audio: AudioSettings? = .init()
-    var webBrowser: WebBrowserSettings? = .init()
-    var deepLinkCreator: DeepLinkCreator? = .init()
-    var srtlaServer: SettingsSrtlaServer? = .init()
-    var mediaPlayers: SettingsMediaPlayers? = .init()
-    var showAllSettings: Bool? = false
-    var portrait: Bool? = false
-    var djiDevices: SettingsDjiDevices? = .init()
-    var alertsMediaGallery: SettingsAlertsMediaGallery? = .init()
-    var catPrinters: SettingsCatPrinters? = .init()
-    var verboseStatuses: Bool? = false
-    var scoreboardPlayers: [SettingsWidgetScoreboardPlayer]? = .init()
-    var keyboard: SettingsKeyboard? = .init()
-    var tesla: SettingsTesla? = .init()
-    var srtlaRelay: SettingsMoblink? = .init()
-    var pixellateStrength: Float? = 0.3
-    var moblink: SettingsMoblink? = .init()
-    var sceneSwitchTransition: SettingsSceneSwitchTransition? = .blur
-    var forceSceneSwitchTransition: Bool? = false
-    var cameraControlsEnabled: Bool? = true
-    var externalDisplayContent: SettingsExternalDisplayContent? = .stream
-    var cyclingPowerDevices: SettingsCyclingPowerDevices? = .init()
-    var heartRateDevices: SettingsHeartRateDevices? = .init()
-    var djiGimbalDevices: SettingsDjiGimbalDevices? = .init()
+    var quickButtonsGeneral: SettingsQuickButtons = .init()
+    var quickButtons: [SettingsQuickButton] = []
+    var rtmpServer: SettingsRtmpServer = .init()
+    var networkInterfaceNames: [SettingsNetworkInterfaceName] = []
+    var lowBitrateWarning: Bool = true
+    var vibrate: Bool = false
+    var gameControllers: [SettingsGameController] = [.init()]
+    var remoteControl: SettingsRemoteControl = .init()
+    var startStopRecordingConfirmations: Bool = true
+    var color: SettingsColor = .init()
+    var mirrorFrontCameraOnStream: Bool = true
+    var streamButtonColor: RgbColor = defaultStreamButtonColor
+    var location: SettingsLocation = .init()
+    var watch: WatchSettings = .init()
+    var audio: AudioSettings = .init()
+    var webBrowser: WebBrowserSettings = .init()
+    var deepLinkCreator: DeepLinkCreator = .init()
+    var srtlaServer: SettingsSrtlaServer = .init()
+    var mediaPlayers: SettingsMediaPlayers = .init()
+    var showAllSettings: Bool = false
+    var portrait: Bool = false
+    var djiDevices: SettingsDjiDevices = .init()
+    var alertsMediaGallery: SettingsAlertsMediaGallery = .init()
+    var catPrinters: SettingsCatPrinters = .init()
+    var verboseStatuses: Bool = false
+    var scoreboardPlayers: [SettingsWidgetScoreboardPlayer] = .init()
+    var keyboard: SettingsKeyboard = .init()
+    var tesla: SettingsTesla = .init()
+    var srtlaRelay: SettingsMoblink = .init()
+    var pixellateStrength: Float = 0.3
+    var moblink: SettingsMoblink = .init()
+    var sceneSwitchTransition: SettingsSceneSwitchTransition = .blur
+    var forceSceneSwitchTransition: Bool = false
+    var cameraControlsEnabled: Bool = true
+    var externalDisplayContent: SettingsExternalDisplayContent = .stream
+    var cyclingPowerDevices: SettingsCyclingPowerDevices = .init()
+    var heartRateDevices: SettingsHeartRateDevices = .init()
+    var djiGimbalDevices: SettingsDjiGimbalDevices = .init()
     var remoteSceneId: UUID?
-    var sceneNumericInput: Bool? = false
-    var goPro: SettingsGoPro? = .init()
+    var sceneNumericInput: Bool = false
+    var goPro: SettingsGoPro = .init()
+    var replay: SettingsReplay = .init()
+    var portraitVideoOffsetFromTop: Double = 0.0
+    var autoSceneSwitchers: SettingsAutoSceneSwitchers? = .init()
 
     static func fromString(settings: String) throws -> Database {
         let database = try JSONDecoder().decode(
@@ -3021,8 +3614,8 @@ class Database: Codable {
         if database.bitratePresets.isEmpty {
             addDefaultBitratePresets(database: database)
         }
-        addMissingGlobalButtons(database: database)
-        for button in database.globalButtons! where button.type != .interactiveChat && button.type != .cameraPreview {
+        addMissingQuickButtons(database: database)
+        for button in database.quickButtons where button.type != .interactiveChat && button.type != .cameraPreview {
             button.isOn = false
         }
         addMissingDeepLinkQuickButtons(database: database)
@@ -3033,6 +3626,211 @@ class Database: Codable {
 
     func toString() throws -> String {
         return try String.fromUtf8(data: JSONEncoder().encode(self))
+    }
+
+    enum CodingKeys: CodingKey {
+        case streams,
+             scenes,
+             widgets,
+             show,
+             zoom,
+             tapToFocus,
+             bitratePresets,
+             iconImage,
+             videoStabilizationMode,
+             chat,
+             batteryPercentage,
+             mic,
+             debug,
+             quickButtons,
+             globalButtons,
+             rtmpServer,
+             networkInterfaceNames,
+             lowBitrateWarning,
+             vibrate,
+             gameControllers,
+             remoteControl,
+             startStopRecordingConfirmations,
+             color,
+             mirrorFrontCameraOnStream,
+             streamButtonColor,
+             location,
+             watch,
+             audio,
+             webBrowser,
+             deepLinkCreator,
+             srtlaServer,
+             mediaPlayers,
+             showAllSettings,
+             portrait,
+             djiDevices,
+             alertsMediaGallery,
+             catPrinters,
+             verboseStatuses,
+             scoreboardPlayers,
+             keyboard,
+             tesla,
+             srtlaRelay,
+             pixellateStrength,
+             moblink,
+             sceneSwitchTransition,
+             forceSceneSwitchTransition,
+             cameraControlsEnabled,
+             externalDisplayContent,
+             cyclingPowerDevices,
+             heartRateDevices,
+             djiGimbalDevices,
+             remoteSceneId,
+             sceneNumericInput,
+             goPro,
+             replay,
+             portraitVideoOffsetFromTop,
+             autoSceneSwitchers
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(.streams, streams)
+        try container.encode(.scenes, scenes)
+        try container.encode(.widgets, widgets)
+        try container.encode(.show, show)
+        try container.encode(.zoom, zoom)
+        try container.encode(.tapToFocus, tapToFocus)
+        try container.encode(.bitratePresets, bitratePresets)
+        try container.encode(.iconImage, iconImage)
+        try container.encode(.videoStabilizationMode, videoStabilizationMode)
+        try container.encode(.chat, chat)
+        try container.encode(.batteryPercentage, batteryPercentage)
+        try container.encode(.mic, mic)
+        try container.encode(.debug, debug)
+        try container.encode(.quickButtons, quickButtonsGeneral)
+        try container.encode(.globalButtons, quickButtons)
+        try container.encode(.rtmpServer, rtmpServer)
+        try container.encode(.networkInterfaceNames, networkInterfaceNames)
+        try container.encode(.lowBitrateWarning, lowBitrateWarning)
+        try container.encode(.vibrate, vibrate)
+        try container.encode(.gameControllers, gameControllers)
+        try container.encode(.remoteControl, remoteControl)
+        try container.encode(.startStopRecordingConfirmations, startStopRecordingConfirmations)
+        try container.encode(.color, color)
+        try container.encode(.mirrorFrontCameraOnStream, mirrorFrontCameraOnStream)
+        try container.encode(.streamButtonColor, streamButtonColor)
+        try container.encode(.location, location)
+        try container.encode(.watch, watch)
+        try container.encode(.audio, audio)
+        try container.encode(.webBrowser, webBrowser)
+        try container.encode(.deepLinkCreator, deepLinkCreator)
+        try container.encode(.srtlaServer, srtlaServer)
+        try container.encode(.mediaPlayers, mediaPlayers)
+        try container.encode(.showAllSettings, showAllSettings)
+        try container.encode(.portrait, portrait)
+        try container.encode(.djiDevices, djiDevices)
+        try container.encode(.alertsMediaGallery, alertsMediaGallery)
+        try container.encode(.catPrinters, catPrinters)
+        try container.encode(.verboseStatuses, verboseStatuses)
+        try container.encode(.scoreboardPlayers, scoreboardPlayers)
+        try container.encode(.keyboard, keyboard)
+        try container.encode(.tesla, tesla)
+        try container.encode(.srtlaRelay, srtlaRelay)
+        try container.encode(.pixellateStrength, pixellateStrength)
+        try container.encode(.moblink, moblink)
+        try container.encode(.sceneSwitchTransition, sceneSwitchTransition)
+        try container.encode(.forceSceneSwitchTransition, forceSceneSwitchTransition)
+        try container.encode(.cameraControlsEnabled, cameraControlsEnabled)
+        try container.encode(.externalDisplayContent, externalDisplayContent)
+        try container.encode(.cyclingPowerDevices, cyclingPowerDevices)
+        try container.encode(.heartRateDevices, heartRateDevices)
+        try container.encode(.djiGimbalDevices, djiGimbalDevices)
+        try container.encode(.remoteSceneId, remoteSceneId)
+        try container.encode(.sceneNumericInput, sceneNumericInput)
+        try container.encode(.goPro, goPro)
+        try container.encode(.replay, replay)
+        try container.encode(.portraitVideoOffsetFromTop, portraitVideoOffsetFromTop)
+        try container.encode(.autoSceneSwitchers, autoSceneSwitchers)
+    }
+
+    init() {}
+
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        streams = try container.decode([SettingsStream].self, forKey: .streams)
+        scenes = try container.decode([SettingsScene].self, forKey: .scenes)
+        widgets = try container.decode([SettingsWidget].self, forKey: .widgets)
+        show = try container.decode(SettingsShow.self, forKey: .show)
+        zoom = try container.decode(SettingsZoom.self, forKey: .zoom)
+        tapToFocus = try container.decode(Bool.self, forKey: .tapToFocus)
+        bitratePresets = try container.decode([SettingsBitratePreset].self, forKey: .bitratePresets)
+        iconImage = try container.decode(String.self, forKey: .iconImage)
+        videoStabilizationMode = try container.decode(
+            SettingsVideoStabilizationMode.self,
+            forKey: .videoStabilizationMode
+        )
+        chat = try container.decode(SettingsChat.self, forKey: .chat)
+        batteryPercentage = try container.decode(Bool.self, forKey: .batteryPercentage)
+        mic = try container.decode(SettingsMic.self, forKey: .mic)
+        debug = try container.decode(SettingsDebug.self, forKey: .debug)
+        quickButtonsGeneral = (try? container.decode(SettingsQuickButtons.self, forKey: .quickButtons)) ?? .init()
+        quickButtons = (try? container.decode([SettingsQuickButton].self, forKey: .globalButtons)) ?? []
+        rtmpServer = (try? container.decode(SettingsRtmpServer.self, forKey: .rtmpServer)) ?? .init()
+        networkInterfaceNames = (try? container.decode(
+            [SettingsNetworkInterfaceName].self,
+            forKey: .networkInterfaceNames
+        )) ?? []
+        lowBitrateWarning = (try? container.decode(Bool.self, forKey: .lowBitrateWarning)) ?? true
+        vibrate = (try? container.decode(Bool.self, forKey: .vibrate)) ?? false
+        gameControllers = (try? container.decode([SettingsGameController].self, forKey: .gameControllers)) ?? [.init()]
+        remoteControl = (try? container.decode(SettingsRemoteControl.self, forKey: .remoteControl)) ?? .init()
+        startStopRecordingConfirmations = (
+            try? container.decode(Bool.self, forKey: .startStopRecordingConfirmations)
+        ) ??
+            true
+        color = (try? container.decode(SettingsColor.self, forKey: .color)) ?? .init()
+        mirrorFrontCameraOnStream = (try? container.decode(Bool.self, forKey: .mirrorFrontCameraOnStream)) ?? true
+        streamButtonColor = (try? container.decode(RgbColor.self, forKey: .streamButtonColor)) ??
+            defaultStreamButtonColor
+        location = (try? container.decode(SettingsLocation.self, forKey: .location)) ?? .init()
+        watch = (try? container.decode(WatchSettings.self, forKey: .watch)) ?? .init()
+        audio = (try? container.decode(AudioSettings.self, forKey: .audio)) ?? .init()
+        webBrowser = (try? container.decode(WebBrowserSettings.self, forKey: .webBrowser)) ?? .init()
+        deepLinkCreator = (try? container.decode(DeepLinkCreator.self, forKey: .deepLinkCreator)) ?? .init()
+        srtlaServer = (try? container.decode(SettingsSrtlaServer.self, forKey: .srtlaServer)) ?? .init()
+        mediaPlayers = (try? container.decode(SettingsMediaPlayers.self, forKey: .mediaPlayers)) ?? .init()
+        showAllSettings = (try? container.decode(Bool.self, forKey: .showAllSettings)) ?? false
+        portrait = (try? container.decode(Bool.self, forKey: .portrait)) ?? false
+        djiDevices = (try? container.decode(SettingsDjiDevices.self, forKey: .djiDevices)) ?? .init()
+        alertsMediaGallery = (try? container.decode(SettingsAlertsMediaGallery.self, forKey: .alertsMediaGallery)) ??
+            .init()
+        catPrinters = (try? container.decode(SettingsCatPrinters.self, forKey: .catPrinters)) ?? .init()
+        verboseStatuses = (try? container.decode(Bool.self, forKey: .verboseStatuses)) ?? false
+        scoreboardPlayers = (
+            try? container.decode([SettingsWidgetScoreboardPlayer].self, forKey: .scoreboardPlayers)
+        ) ??
+            .init()
+        keyboard = (try? container.decode(SettingsKeyboard.self, forKey: .keyboard)) ?? .init()
+        tesla = (try? container.decode(SettingsTesla.self, forKey: .tesla)) ?? .init()
+        srtlaRelay = (try? container.decode(SettingsMoblink?.self, forKey: .srtlaRelay)) ?? .init()
+        pixellateStrength = (try? container.decode(Float.self, forKey: .pixellateStrength)) ?? 0.3
+        moblink = (try? container.decode(SettingsMoblink.self, forKey: .moblink)) ?? srtlaRelay
+        sceneSwitchTransition = (try? container.decode(
+            SettingsSceneSwitchTransition.self,
+            forKey: .sceneSwitchTransition
+        )) ?? .blur
+        forceSceneSwitchTransition = (try? container.decode(Bool.self, forKey: .forceSceneSwitchTransition)) ?? false
+        cameraControlsEnabled = (try? container.decode(Bool.self, forKey: .cameraControlsEnabled)) ?? true
+        externalDisplayContent = (try? container.decode(
+            SettingsExternalDisplayContent.self,
+            forKey: .externalDisplayContent
+        )) ?? .stream
+        cyclingPowerDevices = (try? container.decode(SettingsCyclingPowerDevices.self, forKey: .cyclingPowerDevices)) ??
+            .init()
+        heartRateDevices = (try? container.decode(SettingsHeartRateDevices.self, forKey: .heartRateDevices)) ?? .init()
+        djiGimbalDevices = (try? container.decode(SettingsDjiGimbalDevices.self, forKey: .djiGimbalDevices)) ?? .init()
+        remoteSceneId = try? container.decode(UUID?.self, forKey: .remoteSceneId)
+        sceneNumericInput = (try? container.decode(Bool.self, forKey: .sceneNumericInput)) ?? false
+        goPro = (try? container.decode(SettingsGoPro.self, forKey: .goPro)) ?? .init()
+        replay = (try? container.decode(SettingsReplay.self, forKey: .replay)) ?? .init()
+        portraitVideoOffsetFromTop = (try? container.decode(Double.self, forKey: .portraitVideoOffsetFromTop)) ?? 0.0
+        autoSceneSwitchers = try? container.decode(SettingsAutoSceneSwitchers?.self, forKey: .autoSceneSwitchers)
     }
 }
 
@@ -3116,8 +3914,8 @@ private func addDefaultBitratePresets(database: Database) {
     ]
 }
 
-private func updateGlobalButton(database: Database, button: SettingsButton) {
-    let existingButton = database.globalButtons!.first(where: { globalButton in
+private func updateQuickButton(database: Database, button: SettingsQuickButton) {
+    let existingButton = database.quickButtons.first(where: { globalButton in
         globalButton.type == button.type
     })
     if let existingButton {
@@ -3125,327 +3923,396 @@ private func updateGlobalButton(database: Database, button: SettingsButton) {
         existingButton.systemImageNameOn = button.systemImageNameOn
         existingButton.systemImageNameOff = button.systemImageNameOff
     } else {
-        database.globalButtons!.append(button)
+        database.quickButtons.append(button)
     }
 }
 
-private func addMissingGlobalButtons(database: Database) {
-    if database.globalButtons == nil {
-        database.globalButtons = []
+private func quickButtonPageTwo() -> Int {
+    if #available(iOS 17, *) {
+        return 2
+    } else {
+        return 1
     }
-    var button = SettingsButton(name: String(localized: "Torch"))
+}
+
+private func addMissingQuickButtons(database: Database) {
+    var button = SettingsQuickButton(name: String(localized: "Torch"))
     button.id = UUID()
     button.type = .torch
     button.imageType = "System name"
     button.systemImageNameOn = "flashlight.on.fill"
     button.systemImageNameOff = "flashlight.off.fill"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Mute"))
+    button = SettingsQuickButton(name: String(localized: "Mute"))
     button.id = UUID()
     button.type = .mute
     button.imageType = "System name"
     button.systemImageNameOn = "mic.slash"
     button.systemImageNameOff = "mic"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Bitrate"))
+    button = SettingsQuickButton(name: String(localized: "Bitrate"))
     button.id = UUID()
     button.type = .bitrate
     button.imageType = "System name"
     button.systemImageNameOn = "speedometer"
     button.systemImageNameOff = "speedometer"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Mic"))
+    button = SettingsQuickButton(name: String(localized: "Mic"))
     button.id = UUID()
     button.type = .mic
     button.imageType = "System name"
     button.systemImageNameOn = "music.mic"
     button.systemImageNameOff = "music.mic"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Chat"))
+    button = SettingsQuickButton(name: String(localized: "Chat"))
     button.id = UUID()
     button.type = .chat
     button.imageType = "System name"
     button.systemImageNameOn = "message.fill"
     button.systemImageNameOff = "message"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Interactive chat"))
+    button = SettingsQuickButton(name: String(localized: "Interactive chat"))
     button.id = UUID()
     button.type = .interactiveChat
     button.imageType = "System name"
     button.systemImageNameOn = "arrow.up.message.fill"
     button.systemImageNameOff = "arrow.up.message"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Black screen"))
+    button = SettingsQuickButton(name: String(localized: "Black screen"))
     button.id = UUID()
     button.type = .blackScreen
     button.imageType = "System name"
     button.systemImageNameOn = "sunset.fill"
     button.systemImageNameOff = "sunset"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Lock screen"))
+    button = SettingsQuickButton(name: String(localized: "Lock screen"))
     button.id = UUID()
     button.type = .lockScreen
     button.imageType = "System name"
     button.systemImageNameOn = "lock.fill"
     button.systemImageNameOff = "lock"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Record"))
+    button = SettingsQuickButton(name: String(localized: "Record"))
     button.id = UUID()
     button.type = .record
     button.imageType = "System name"
     button.systemImageNameOn = "record.circle.fill"
     button.systemImageNameOff = "record.circle"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Stream"))
+    button = SettingsQuickButton(name: String(localized: "Stream"))
     button.id = UUID()
     button.type = .stream
     button.imageType = "System name"
     button.systemImageNameOn = "dot.radiowaves.left.and.right"
     button.systemImageNameOff = "dot.radiowaves.left.and.right"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Recordings"))
+    button = SettingsQuickButton(name: String(localized: "Recordings"))
     button.id = UUID()
     button.type = .recordings
     button.imageType = "System name"
     button.systemImageNameOn = "photo.on.rectangle.angled.fill"
     button.systemImageNameOff = "photo.on.rectangle.angled"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Snapshot"))
+    button = SettingsQuickButton(name: String(localized: "Snapshot"))
     button.id = UUID()
     button.type = .snapshot
     button.imageType = "System name"
     button.systemImageNameOn = "camera.aperture"
     button.systemImageNameOff = "camera.aperture"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "OBS"))
+    button = SettingsQuickButton(name: String(localized: "Replay"))
+    button.id = UUID()
+    button.type = .replay
+    button.imageType = "System name"
+    button.systemImageNameOn = "play.fill"
+    button.systemImageNameOff = "play"
+    updateQuickButton(database: database, button: button)
+
+    button = SettingsQuickButton(name: String(localized: "Instant replay"))
+    button.id = UUID()
+    button.type = .instantReplay
+    button.imageType = "System name"
+    button.systemImageNameOn = "memories"
+    button.systemImageNameOff = "memories"
+    updateQuickButton(database: database, button: button)
+
+    button = SettingsQuickButton(name: String(localized: "OBS"))
     button.id = UUID()
     button.type = .obs
     button.imageType = "System name"
     button.systemImageNameOn = "xserve"
     button.systemImageNameOff = "xserve"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Remote"))
+    button = SettingsQuickButton(name: String(localized: "Remote"))
     button.id = UUID()
     button.type = .remote
     button.imageType = "System name"
     button.systemImageNameOn = "appletvremote.gen1.fill"
     button.systemImageNameOff = "appletvremote.gen1"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Widgets"))
+    button = SettingsQuickButton(name: String(localized: "Widgets"))
     button.id = UUID()
     button.type = .widgets
     button.imageType = "System name"
     button.systemImageNameOn = "photo.on.rectangle.fill"
     button.systemImageNameOff = "photo.on.rectangle"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Draw"))
+    button = SettingsQuickButton(name: String(localized: "Auto scene switcher"))
+    button.id = UUID()
+    button.type = .autoSceneSwitcher
+    button.imageType = "System name"
+    button.systemImageNameOn = "autostartstop"
+    button.systemImageNameOff = "autostartstop"
+    updateQuickButton(database: database, button: button)
+
+    button = SettingsQuickButton(name: String(localized: "Draw"))
     button.id = UUID()
     button.type = .draw
     button.imageType = "System name"
     button.systemImageNameOn = "pencil.line"
     button.systemImageNameOff = "pencil.line"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Camera"))
+    button = SettingsQuickButton(name: String(localized: "Camera"))
     button.id = UUID()
     button.type = .image
     button.imageType = "System name"
     button.systemImageNameOn = "camera.fill"
     button.systemImageNameOff = "camera"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Browser"))
+    button = SettingsQuickButton(name: String(localized: "Browser"))
     button.id = UUID()
     button.type = .browser
     button.imageType = "System name"
     button.systemImageNameOn = "globe"
     button.systemImageNameOff = "globe"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Grid"))
+    button = SettingsQuickButton(name: String(localized: "Grid"))
     button.id = UUID()
     button.type = .grid
     button.imageType = "System name"
     button.systemImageNameOn = "grid"
     button.systemImageNameOff = "grid"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Face"))
+    button = SettingsQuickButton(name: String(localized: "Face"))
     button.id = UUID()
     button.type = .face
     button.imageType = "System name"
     button.systemImageNameOn = "theatermask.and.paintbrush.fill"
     button.systemImageNameOff = "theatermask.and.paintbrush"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Movie"))
+    button = SettingsQuickButton(name: String(localized: "Movie"))
     button.id = UUID()
     button.type = .movie
+    button.page = quickButtonPageTwo()
     button.imageType = "System name"
     button.systemImageNameOn = "film.fill"
     button.systemImageNameOff = "film"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "4:3"))
+    button = SettingsQuickButton(name: String(localized: "4:3"))
     button.id = UUID()
     button.type = .fourThree
+    button.page = quickButtonPageTwo()
     button.imageType = "System name"
     button.systemImageNameOn = "square.fill"
     button.systemImageNameOff = "square"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Gray scale"))
+    button = SettingsQuickButton(name: String(localized: "Gray scale"))
     button.id = UUID()
     button.type = .grayScale
+    button.page = quickButtonPageTwo()
     button.imageType = "System name"
     button.systemImageNameOn = "moon.fill"
     button.systemImageNameOff = "moon"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Sepia"))
+    button = SettingsQuickButton(name: String(localized: "Sepia"))
     button.id = UUID()
     button.type = .sepia
+    button.page = quickButtonPageTwo()
     button.imageType = "System name"
     button.systemImageNameOn = "moonphase.waxing.crescent.inverse"
     button.systemImageNameOff = "moonphase.waning.crescent"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Triple"))
+    button = SettingsQuickButton(name: String(localized: "Triple"))
     button.id = UUID()
     button.type = .triple
+    button.page = quickButtonPageTwo()
     button.imageType = "System name"
     button.systemImageNameOn = "person.3.fill"
     button.systemImageNameOff = "person.3"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Twin"))
+    button = SettingsQuickButton(name: String(localized: "Twin"))
     button.id = UUID()
     button.type = .twin
+    button.page = quickButtonPageTwo()
     button.imageType = "System name"
     button.systemImageNameOn = "person.2.fill"
     button.systemImageNameOff = "person.2"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Pixellate"))
+    button = SettingsQuickButton(name: String(localized: "Pixellate"))
     button.id = UUID()
     button.type = .pixellate
     button.imageType = "System name"
     button.systemImageNameOn = "squareshape.split.2x2"
     button.systemImageNameOff = "squareshape.split.2x2"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Local overlays"))
+    button = SettingsQuickButton(name: String(localized: "Whirlpool"))
+    button.id = UUID()
+    button.type = .whirlpool
+    button.page = quickButtonPageTwo()
+    button.imageType = "System name"
+    button.systemImageNameOn = "tornado"
+    button.systemImageNameOff = "tornado"
+    updateQuickButton(database: database, button: button)
+
+    button = SettingsQuickButton(name: String(localized: "Pinch"))
+    button.id = UUID()
+    button.type = .pinch
+    button.page = quickButtonPageTwo()
+    button.imageType = "System name"
+    button.systemImageNameOn = "hand.pinch.fill"
+    button.systemImageNameOff = "hand.pinch"
+    updateQuickButton(database: database, button: button)
+
+    button = SettingsQuickButton(name: String(localized: "Local overlays"))
     button.id = UUID()
     button.type = .localOverlays
     button.imageType = "System name"
     button.systemImageNameOn = "square.stack.3d.up.slash.fill"
     button.systemImageNameOff = "square.stack.3d.up.slash"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Poll"))
+    button = SettingsQuickButton(name: String(localized: "Poll"))
     button.id = UUID()
     button.type = .poll
     button.imageType = "System name"
     button.systemImageNameOn = "chart.bar.xaxis"
     button.systemImageNameOff = "chart.bar.xaxis"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "LUTs"))
+    button = SettingsQuickButton(name: String(localized: "LUTs"))
     button.id = UUID()
     button.type = .luts
     button.imageType = "System name"
     button.systemImageNameOn = "camera.filters"
     button.systemImageNameOff = "camera.filters"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Workout"))
+    button = SettingsQuickButton(name: String(localized: "Workout"))
     button.id = UUID()
     button.type = .workout
     button.imageType = "System name"
     button.systemImageNameOn = "figure.run"
     button.systemImageNameOff = "figure.run"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Skip current TTS"))
+    button = SettingsQuickButton(name: String(localized: "Skip current TTS"))
     button.id = UUID()
     button.type = .skipCurrentTts
     button.imageType = "System name"
     button.systemImageNameOn = "waveform.slash"
     button.systemImageNameOff = "waveform.slash"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Ads"))
+    button = SettingsQuickButton(name: String(localized: "Pause TTS"))
+    button.id = UUID()
+    button.type = .pauseTts
+    button.imageType = "System name"
+    button.systemImageNameOn = "waveform.badge.xmark"
+    button.systemImageNameOff = "waveform.badge.xmark"
+    updateQuickButton(database: database, button: button)
+
+    button = SettingsQuickButton(name: String(localized: "Ads"))
     button.id = UUID()
     button.type = .ads
     button.imageType = "System name"
     button.systemImageNameOn = "cup.and.saucer.fill"
     button.systemImageNameOff = "cup.and.saucer"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Stream marker"))
+    button = SettingsQuickButton(name: String(localized: "Stream marker"))
     button.id = UUID()
     button.type = .streamMarker
     button.imageType = "System name"
     button.systemImageNameOn = "bookmark.fill"
     button.systemImageNameOff = "bookmark"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Reload browser widgets"))
+    button = SettingsQuickButton(name: String(localized: "Reload browser widgets"))
     button.id = UUID()
     button.type = .reloadBrowserWidgets
     button.imageType = "System name"
     button.systemImageNameOn = "arrow.clockwise"
     button.systemImageNameOff = "arrow.clockwise"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "DJI devices"))
+    button = SettingsQuickButton(name: String(localized: "DJI devices"))
     button.id = UUID()
     button.type = .djiDevices
     button.imageType = "System name"
     button.systemImageNameOn = "appletvremote.gen1.fill"
     button.systemImageNameOff = "appletvremote.gen1"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "GoPro"))
+    button = SettingsQuickButton(name: String(localized: "GoPro"))
     button.id = UUID()
     button.type = .goPro
     button.imageType = "System name"
     button.systemImageNameOn = "appletvremote.gen1.fill"
     button.systemImageNameOff = "appletvremote.gen1"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Camera preview"))
+    button = SettingsQuickButton(name: String(localized: "Camera preview"))
     button.id = UUID()
     button.type = .cameraPreview
     button.imageType = "System name"
     button.systemImageNameOn = "camera.rotate.fill"
     button.systemImageNameOff = "camera.rotate"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    button = SettingsButton(name: String(localized: "Portrait"))
+    button = SettingsQuickButton(name: String(localized: "Portrait"))
     button.id = UUID()
     button.type = .portrait
     button.imageType = "System name"
     button.systemImageNameOn = "rectangle.portrait.rotate"
     button.systemImageNameOff = "rectangle.portrait.rotate"
-    updateGlobalButton(database: database, button: button)
+    updateQuickButton(database: database, button: button)
 
-    database.globalButtons = database.globalButtons!.filter { button in
+    button = SettingsQuickButton(name: String(localized: "Connection priorities"))
+    button.id = UUID()
+    button.type = .connectionPriorities
+    button.imageType = "System name"
+    button.systemImageNameOn = "phone.connection.fill"
+    button.systemImageNameOff = "phone.connection"
+    updateQuickButton(database: database, button: button)
+
+    database.quickButtons = database.quickButtons.filter { button in
         if button.type == .unknown {
             return false
         }
@@ -3460,20 +4327,17 @@ private func addMissingGlobalButtons(database: Database) {
 }
 
 private func addMissingDeepLinkQuickButtons(database: Database) {
-    if database.deepLinkCreator == nil {
-        database.deepLinkCreator = .init()
+    if database.deepLinkCreator.quickButtons == nil {
+        database.deepLinkCreator.quickButtons = .init()
     }
-    if database.deepLinkCreator!.quickButtons == nil {
-        database.deepLinkCreator!.quickButtons = .init()
-    }
-    let quickButtons = database.deepLinkCreator!.quickButtons!
-    for globalButton in database.globalButtons! where globalButton.type != .lut {
+    let quickButtons = database.deepLinkCreator.quickButtons!
+    for quickButton in database.quickButtons where quickButton.type != .lut {
         let button = DeepLinkCreatorQuickButton()
         let buttonExists = quickButtons.buttons.contains(where: { button in
-            globalButton.type == button.type
+            quickButton.type == button.type
         })
         if !buttonExists {
-            button.type = globalButton.type
+            button.type = quickButton.type
             quickButtons.buttons.append(button)
         }
     }
@@ -3483,25 +4347,19 @@ private func addMissingDeepLinkQuickButtons(database: Database) {
 }
 
 private func addMissingBundledLuts(database: Database) {
-    if database.color == nil {
-        database.color = .init()
-    }
     var bundledLuts: [SettingsColorLut] = []
     for lut in allBundledLuts {
-        if let existingLut = database.color!.bundledLuts.first(where: { $0.name == lut.name }) {
+        if let existingLut = database.color.bundledLuts.first(where: { $0.name == lut.name }) {
             bundledLuts.append(existingLut)
         } else {
             bundledLuts.append(lut)
         }
     }
-    database.color!.bundledLuts = bundledLuts
+    database.color.bundledLuts = bundledLuts
 }
 
 private func addMissingGoPro(database: Database) {
-    if database.goPro == nil {
-        database.goPro = .init()
-    }
-    let goPro = database.goPro!
+    let goPro = database.goPro
     if goPro.launchLiveStream.isEmpty {
         goPro.launchLiveStream = [.init()]
         goPro.selectedLaunchLiveStream = goPro.launchLiveStream.first?.id
@@ -3511,7 +4369,7 @@ private func addMissingGoPro(database: Database) {
 private func updateBundledAlertsMediaGallery(database: Database) {
     var bundledImages: [SettingsAlertsMediaGalleryItem] = []
     for image in allBundledAlertsMediaGalleryImages {
-        if let existingImage = database.alertsMediaGallery!.bundledImages
+        if let existingImage = database.alertsMediaGallery.bundledImages
             .first(where: { $0.name == image.name })
         {
             bundledImages.append(existingImage)
@@ -3519,10 +4377,10 @@ private func updateBundledAlertsMediaGallery(database: Database) {
             bundledImages.append(image)
         }
     }
-    database.alertsMediaGallery!.bundledImages = bundledImages
+    database.alertsMediaGallery.bundledImages = bundledImages
     var bundledSounds: [SettingsAlertsMediaGalleryItem] = []
     for sound in allBundledAlertsMediaGallerySounds {
-        if let existingSound = database.alertsMediaGallery!.bundledSounds
+        if let existingSound = database.alertsMediaGallery.bundledSounds
             .first(where: { $0.name == sound.name })
         {
             bundledSounds.append(existingSound)
@@ -3530,14 +4388,14 @@ private func updateBundledAlertsMediaGallery(database: Database) {
             bundledSounds.append(sound)
         }
     }
-    database.alertsMediaGallery!.bundledSounds = bundledSounds
+    database.alertsMediaGallery.bundledSounds = bundledSounds
 }
 
 private func addScenesToGameController(database: Database) {
-    var button = database.gameControllers![0].buttons[0]
+    var button = database.gameControllers[0].buttons[0]
     button.function = .scene
     button.sceneId = database.scenes[0].id
-    button = database.gameControllers![0].buttons[1]
+    button = database.gameControllers[0].buttons[1]
     button.function = .scene
     button.sceneId = database.scenes[1].id
 }
@@ -3569,7 +4427,7 @@ private func createDefault() -> Database {
     addDefaultScenes(database: database)
     addDefaultZoomPresets(database: database)
     addDefaultBitratePresets(database: database)
-    addMissingGlobalButtons(database: database)
+    addMissingQuickButtons(database: database)
     addMissingDeepLinkQuickButtons(database: database)
     addScenesToGameController(database: database)
     addMissingBundledLuts(database: database)
@@ -3659,28 +4517,8 @@ final class Settings {
     }
 
     private func migrateFromOlderVersions() {
-        if realDatabase.chat.height == nil {
-            realDatabase.chat.height = 0.7
-            store()
-        }
-        if realDatabase.chat.width == nil {
-            realDatabase.chat.width = 1.0
-            store()
-        }
         for stream in realDatabase.streams where stream.youTubeVideoId == nil {
             stream.youTubeVideoId = ""
-            store()
-        }
-        if realDatabase.chat.maximumAge == nil {
-            realDatabase.chat.maximumAge = 30
-            store()
-        }
-        if realDatabase.chat.maximumAgeEnabled == nil {
-            realDatabase.chat.maximumAgeEnabled = false
-            store()
-        }
-        if realDatabase.debug.srtOverheadBandwidth == nil {
-            realDatabase.debug.srtOverheadBandwidth = 25
             store()
         }
         for stream in realDatabase.streams where stream.maxKeyFrameInterval == nil {
@@ -3739,16 +4577,8 @@ final class Settings {
             stream.obsWebSocketEnabled = true
             store()
         }
-        if realDatabase.chat.meInUsernameColor == nil {
-            realDatabase.chat.meInUsernameColor = true
-            store()
-        }
         for stream in realDatabase.streams where stream.audioBitrate == nil {
             stream.audioBitrate = 128_000
-            store()
-        }
-        if realDatabase.quickButtons == nil {
-            realDatabase.quickButtons = .init()
             store()
         }
         for stream in realDatabase.streams where stream.chat == nil {
@@ -3759,10 +4589,6 @@ final class Settings {
             stream.bFrames = false
             store()
         }
-        if realDatabase.rtmpServer == nil {
-            realDatabase.rtmpServer = .init()
-            store()
-        }
         for scene in realDatabase.scenes where scene.rtmpCameraId == nil {
             scene.rtmpCameraId = .init()
             store()
@@ -3771,20 +4597,8 @@ final class Settings {
             realDatabase.show.rtmpSpeed = true
             store()
         }
-        if realDatabase.networkInterfaceNames == nil {
-            realDatabase.networkInterfaceNames = []
-            store()
-        }
-        if realDatabase.lowBitrateWarning == nil {
-            realDatabase.lowBitrateWarning = true
-            store()
-        }
-        for stream in realDatabase.rtmpServer!.streams where stream.latency == nil {
+        for stream in realDatabase.rtmpServer.streams where stream.latency == nil {
             stream.latency = defaultRtmpLatency
-            store()
-        }
-        if realDatabase.vibrate == nil {
-            realDatabase.vibrate = false
             store()
         }
         for stream in realDatabase.streams where stream.recording == nil {
@@ -3795,19 +4609,11 @@ final class Settings {
             realDatabase.show.gameController = true
             store()
         }
-        if realDatabase.gameControllers == nil {
-            realDatabase.gameControllers = [.init()]
-            store()
-        }
-        for controller in realDatabase.gameControllers! {
+        for controller in realDatabase.gameControllers {
             for button in controller.buttons where button.text == nil {
                 button.text = ""
                 store()
             }
-        }
-        if realDatabase.debug.cameraSwitchRemoveBlackish == nil {
-            realDatabase.debug.cameraSwitchRemoveBlackish = 0.3
-            store()
         }
         for stream in database.streams where stream.realtimeIrlEnabled == nil {
             stream.realtimeIrlEnabled = false
@@ -3821,7 +4627,7 @@ final class Settings {
             realDatabase.show.location = true
             store()
         }
-        for button in realDatabase.globalButtons! where button.type == .image {
+        for button in realDatabase.quickButtons where button.type == .image {
             if button.name != String(localized: "Camera") {
                 button.name = String(localized: "Camera")
                 store()
@@ -3843,18 +4649,6 @@ final class Settings {
             stream.srt.connectionPriorities = .init()
             store()
         }
-        for button in realDatabase.globalButtons! where button.backgroundColor == nil {
-            button.backgroundColor = defaultQuickButtonColor
-            store()
-        }
-        if realDatabase.debug.maximumBandwidthFollowInput == nil {
-            realDatabase.debug.maximumBandwidthFollowInput = true
-            store()
-        }
-        if realDatabase.remoteControl == nil {
-            realDatabase.remoteControl = .init()
-            store()
-        }
         for widget in realDatabase.widgets where widget.type == .browser {
             if widget.browser.audioOnly == nil {
                 widget.browser.audioOnly = false
@@ -3862,23 +4656,19 @@ final class Settings {
             }
         }
         for stream in realDatabase.streams where stream.srt.overheadBandwidth == nil {
-            stream.srt.overheadBandwidth = realDatabase.debug.srtOverheadBandwidth!
+            stream.srt.overheadBandwidth = realDatabase.debug.srtOverheadBandwidth
             store()
         }
         for stream in realDatabase.streams where stream.srt.maximumBandwidthFollowInput == nil {
-            stream.srt.maximumBandwidthFollowInput = realDatabase.debug.maximumBandwidthFollowInput!
+            stream.srt.maximumBandwidthFollowInput = realDatabase.debug.maximumBandwidthFollowInput
             store()
         }
         for stream in realDatabase.streams where stream.srt.adaptiveBitrate == nil {
             stream.srt.adaptiveBitrate = .init()
             store()
         }
-        if realDatabase.startStopRecordingConfirmations == nil {
-            realDatabase.startStopRecordingConfirmations = true
-            store()
-        }
-        if realDatabase.remoteControl!.password == nil {
-            realDatabase.remoteControl!.password = randomGoodPassword()
+        if realDatabase.remoteControl.password == nil {
+            realDatabase.remoteControl.password = randomGoodPassword()
             store()
         }
         for widget in realDatabase.widgets where widget.browser.scaleToFitVideo == nil {
@@ -3895,10 +4685,6 @@ final class Settings {
                 store()
             }
         }
-        if realDatabase.debug.audioOutputToInputChannelsMap == nil {
-            realDatabase.debug.audioOutputToInputChannelsMap = .init()
-            store()
-        }
         if realDatabase.show.remoteControl == nil {
             realDatabase.show.remoteControl = true
             store()
@@ -3907,20 +4693,8 @@ final class Settings {
             realDatabase.show.browserWidgets = true
             store()
         }
-        if realDatabase.debug.bluetoothOutputOnly == nil {
-            realDatabase.debug.bluetoothOutputOnly = true
-            store()
-        }
-        if realDatabase.debug.maximumLogLines == nil {
-            realDatabase.debug.maximumLogLines = 500
-            store()
-        }
-        if realDatabase.color == nil {
-            realDatabase.color = .init()
-            store()
-        }
-        if realDatabase.color!.diskLuts == nil {
-            realDatabase.color!.diskLuts = []
+        if realDatabase.color.diskLuts == nil {
+            realDatabase.color.diskLuts = []
             store()
         }
         for scene in realDatabase.scenes where scene.externalCameraId == nil {
@@ -3931,20 +4705,8 @@ final class Settings {
             scene.externalCameraName = ""
             store()
         }
-        if realDatabase.streamButtonColor == nil {
-            realDatabase.streamButtonColor = defaultStreamButtonColor
-            store()
-        }
-        if realDatabase.location == nil {
-            realDatabase.location = .init()
-            store()
-        }
         for stream in database.streams where stream.srt.adaptiveBitrate!.fastIrlSettings == nil {
             stream.srt.adaptiveBitrate!.fastIrlSettings = .init()
-            store()
-        }
-        if realDatabase.chat.enabled == nil {
-            realDatabase.chat.enabled = true
             store()
         }
         for stream in database.streams where stream.rtmp == nil {
@@ -3955,20 +4717,12 @@ final class Settings {
             stream.srt.adaptiveBitrateEnabled = stream.adaptiveBitrate!
             store()
         }
-        if realDatabase.watch == nil {
-            realDatabase.watch = .init()
+        if realDatabase.watch.chat.timestampEnabled == nil {
+            realDatabase.watch.chat.timestampEnabled = true
             store()
         }
-        if realDatabase.watch!.chat.timestampEnabled == nil {
-            realDatabase.watch!.chat.timestampEnabled = true
-            store()
-        }
-        if realDatabase.watch!.chat.notificationOnMessage == nil {
-            realDatabase.watch!.chat.notificationOnMessage = false
-            store()
-        }
-        if realDatabase.chat.usernamesToIgnore == nil {
-            realDatabase.chat.usernamesToIgnore = []
+        if realDatabase.watch.chat.notificationOnMessage == nil {
+            realDatabase.watch.chat.notificationOnMessage = false
             store()
         }
         for scene in realDatabase.scenes where scene.backCameraId == nil {
@@ -3987,100 +4741,16 @@ final class Settings {
             stream.openStreamingPlatformChannelId = ""
             store()
         }
-        for widget in realDatabase.widgets where widget.crop == nil {
-            widget.crop = .init()
-            store()
-        }
-        if realDatabase.chat.textToSpeechEnabled == nil {
-            realDatabase.chat.textToSpeechEnabled = false
-            store()
-        }
-        if realDatabase.chat.textToSpeechDetectLanguagePerMessage == nil {
-            realDatabase.chat.textToSpeechDetectLanguagePerMessage = false
-            store()
-        }
-        if realDatabase.chat.textToSpeechSayUsername == nil {
-            realDatabase.chat.textToSpeechSayUsername = true
-            store()
-        }
-        if realDatabase.chat.textToSpeechRate == nil {
-            realDatabase.chat.textToSpeechRate = 0.4
-            store()
-        }
-        if realDatabase.chat.textToSpeechSayVolume == nil {
-            realDatabase.chat.textToSpeechSayVolume = 0.6
-            store()
-        }
-        if realDatabase.chat.textToSpeechLanguageVoices == nil {
-            realDatabase.chat.textToSpeechLanguageVoices = .init()
-            store()
-        }
         for stream in realDatabase.streams where stream.kickChannelName == nil {
             stream.kickChannelName = ""
-            store()
-        }
-        if realDatabase.chat.textToSpeechSubscribersOnly == nil {
-            realDatabase.chat.textToSpeechSubscribersOnly = false
             store()
         }
         for stream in database.streams where stream.portrait == nil {
             stream.portrait = false
             store()
         }
-        if realDatabase.audio == nil {
-            realDatabase.audio = .init()
-            realDatabase.audio!.audioOutputToInputChannelsMap!.channel1 = realDatabase.debug
-                .audioOutputToInputChannelsMap!.channel0
-            realDatabase.audio!.audioOutputToInputChannelsMap!.channel2 = realDatabase.debug
-                .audioOutputToInputChannelsMap!.channel1
-            store()
-        }
-        if realDatabase.webBrowser == nil {
-            realDatabase.webBrowser = .init()
-            store()
-        }
-        if realDatabase.chat.textToSpeechFilter == nil {
-            realDatabase.chat.textToSpeechFilter = true
-            store()
-        }
-        if realDatabase.watch!.show == nil {
-            realDatabase.watch!.show = .init()
-            store()
-        }
-        if realDatabase.debug.pixelFormat == nil {
-            realDatabase.debug.pixelFormat = pixelFormats[1]
-            store()
-        }
-        if realDatabase.chat.mirrored == nil {
-            realDatabase.chat.mirrored = false
-            store()
-        }
-        if realDatabase.debug.beautyFilter == nil {
-            realDatabase.debug.beautyFilter = false
-            store()
-        }
-        if realDatabase.debug.beautyFilterSettings == nil {
-            realDatabase.debug.beautyFilterSettings = .init()
-            store()
-        }
-        if realDatabase.debug.beautyFilterSettings!.showBeauty == nil {
-            realDatabase.debug.beautyFilterSettings!.showBeauty = realDatabase.debug.beautyFilterSettings!
-                .showCute ?? false
-            store()
-        }
-        if realDatabase.debug.beautyFilterSettings!.shapeRadius == nil {
-            realDatabase.debug.beautyFilterSettings!.shapeRadius = realDatabase.debug.beautyFilterSettings!
-                .cuteRadius ?? 0.5
-            store()
-        }
-        if realDatabase.debug.beautyFilterSettings!.shapeScale == nil {
-            realDatabase.debug.beautyFilterSettings!.shapeScale = realDatabase.debug.beautyFilterSettings!
-                .cuteScale ?? 0.0
-            store()
-        }
-        if realDatabase.debug.beautyFilterSettings!.shapeOffset == nil {
-            realDatabase.debug.beautyFilterSettings!.shapeOffset = realDatabase.debug.beautyFilterSettings!
-                .cuteOffset ?? 0.5
+        if realDatabase.watch.show == nil {
+            realDatabase.watch.show = .init()
             store()
         }
         for stream in realDatabase.streams where stream.recording!.autoStartRecording == nil {
@@ -4089,10 +4759,6 @@ final class Settings {
         }
         for stream in realDatabase.streams where stream.recording!.autoStopRecording == nil {
             stream.recording!.autoStopRecording = false
-            store()
-        }
-        if realDatabase.debug.allowVideoRangePixelFormat == nil {
-            realDatabase.debug.allowVideoRangePixelFormat = false
             store()
         }
         for stream in realDatabase.streams where stream.rist == nil {
@@ -4105,18 +4771,6 @@ final class Settings {
         }
         if realDatabase.show.bonding == nil {
             realDatabase.show.bonding = true
-            store()
-        }
-        if realDatabase.debug.blurSceneSwitch == nil {
-            realDatabase.debug.blurSceneSwitch = true
-            store()
-        }
-        if realDatabase.debug.beautyFilterSettings!.smoothAmount == nil {
-            realDatabase.debug.beautyFilterSettings!.smoothAmount = 0.65
-            store()
-        }
-        if realDatabase.debug.beautyFilterSettings!.smoothRadius == nil {
-            realDatabase.debug.beautyFilterSettings!.smoothRadius = 20.0
             store()
         }
         var videoEffectWidgets: [SettingsWidget] = []
@@ -4136,42 +4790,26 @@ final class Settings {
             }
             store()
         }
-        if realDatabase.mirrorFrontCameraOnStream == nil {
-            realDatabase.mirrorFrontCameraOnStream = true
-            store()
-        }
-        if realDatabase.debug.metalPetalFilters == nil {
-            realDatabase.debug.metalPetalFilters = false
-            store()
-        }
         for stream in realDatabase.streams
             where stream.srt.adaptiveBitrate!.customSettings.minimumBitrate == nil
         {
             stream.srt.adaptiveBitrate!.customSettings.minimumBitrate = 250
             store()
         }
-        if realDatabase.deepLinkCreator == nil {
-            realDatabase.deepLinkCreator = .init()
+        if realDatabase.deepLinkCreator.webBrowser == nil {
+            realDatabase.deepLinkCreator.webBrowser = .init()
             store()
         }
-        if realDatabase.deepLinkCreator!.webBrowser == nil {
-            realDatabase.deepLinkCreator!.webBrowser = .init()
+        if realDatabase.deepLinkCreator.quickButtons == nil {
+            realDatabase.deepLinkCreator.quickButtons = .init()
             store()
         }
-        if realDatabase.deepLinkCreator!.quickButtons == nil {
-            realDatabase.deepLinkCreator!.quickButtons = .init()
+        if realDatabase.deepLinkCreator.quickButtonsEnabled == nil {
+            realDatabase.deepLinkCreator.quickButtonsEnabled = false
             store()
         }
-        if realDatabase.deepLinkCreator!.quickButtonsEnabled == nil {
-            realDatabase.deepLinkCreator!.quickButtonsEnabled = false
-            store()
-        }
-        if realDatabase.deepLinkCreator!.webBrowserEnabled == nil {
-            realDatabase.deepLinkCreator!.webBrowserEnabled = false
-            store()
-        }
-        if realDatabase.srtlaServer == nil {
-            realDatabase.srtlaServer = .init()
+        if realDatabase.deepLinkCreator.webBrowserEnabled == nil {
+            realDatabase.deepLinkCreator.webBrowserEnabled = false
             store()
         }
         for stream in realDatabase.streams
@@ -4188,92 +4826,60 @@ final class Settings {
             scene.srtlaCameraId = .init()
             store()
         }
-        for stream in realDatabase.rtmpServer!.streams where stream.autoSelectMic == nil {
+        for stream in realDatabase.rtmpServer.streams where stream.autoSelectMic == nil {
             stream.autoSelectMic = true
             store()
         }
-        for stream in realDatabase.srtlaServer!.streams where stream.autoSelectMic == nil {
+        for stream in realDatabase.srtlaServer.streams where stream.autoSelectMic == nil {
             stream.autoSelectMic = true
             store()
         }
-        if realDatabase.debug.preferStereoMic == nil {
-            realDatabase.debug.preferStereoMic = false
-            store()
-        }
-        if realDatabase.remoteControl!.server.previewFps == nil {
-            realDatabase.remoteControl!.server.previewFps = 1.0
+        if realDatabase.remoteControl.server.previewFps == nil {
+            realDatabase.remoteControl.server.previewFps = 1.0
             store()
         }
         for stream in realDatabase.streams where stream.srt.adaptiveBitrate!.belaboxSettings == nil {
             stream.srt.adaptiveBitrate!.belaboxSettings = .init()
             store()
         }
-        for stream in realDatabase.deepLinkCreator!.streams where stream.video.bFrames == nil {
+        for stream in realDatabase.deepLinkCreator.streams where stream.video.bFrames == nil {
             stream.video.bFrames = false
             store()
         }
-        for stream in realDatabase.deepLinkCreator!.streams where stream.twitch == nil {
+        for stream in realDatabase.deepLinkCreator.streams where stream.twitch == nil {
             stream.twitch = .init()
             store()
         }
-        for stream in realDatabase.deepLinkCreator!.streams where stream.kick == nil {
+        for stream in realDatabase.deepLinkCreator.streams where stream.kick == nil {
             stream.kick = .init()
             store()
         }
-        if realDatabase.chat.botEnabled == nil {
-            realDatabase.chat.botEnabled = false
-            store()
-        }
-        for stream in realDatabase.deepLinkCreator!.streams where stream.video.resolution == nil {
+        for stream in realDatabase.deepLinkCreator.streams where stream.video.resolution == nil {
             stream.video.resolution = .r1920x1080
             store()
         }
-        for stream in realDatabase.deepLinkCreator!.streams where stream.video.fps == nil {
+        for stream in realDatabase.deepLinkCreator.streams where stream.video.fps == nil {
             stream.video.fps = 30
             store()
         }
-        for stream in realDatabase.deepLinkCreator!.streams where stream.video.bitrate == nil {
+        for stream in realDatabase.deepLinkCreator.streams where stream.video.bitrate == nil {
             stream.video.bitrate = 5_000_000
             store()
         }
-        for stream in realDatabase.deepLinkCreator!.streams where stream.video.maxKeyFrameInterval == nil {
+        for stream in realDatabase.deepLinkCreator.streams where stream.video.maxKeyFrameInterval == nil {
             stream.video.maxKeyFrameInterval = 2
             store()
         }
-        for stream in realDatabase.deepLinkCreator!.streams where stream.audio == nil {
+        for stream in realDatabase.deepLinkCreator.streams where stream.audio == nil {
             stream.audio = .init()
-            store()
-        }
-        if realDatabase.mediaPlayers == nil {
-            realDatabase.mediaPlayers = .init()
-            store()
-        }
-        if realDatabase.showAllSettings == nil {
-            realDatabase.showAllSettings = true
             store()
         }
         for stream in realDatabase.streams where stream.obsBrbScene == nil {
             stream.obsBrbScene = ""
             store()
         }
-        for widget in realDatabase.widgets where widget.map == nil {
-            widget.map = .init()
-            store()
-        }
-        for widget in realDatabase.widgets where widget.map!.northUp == nil {
-            widget.map!.northUp = false
-            store()
-        }
-        if realDatabase.portrait == nil {
-            realDatabase.portrait = false
-            store()
-        }
-        for widget in realDatabase.widgets where widget.scene == nil {
-            widget.scene = .init()
-            store()
-        }
-        for widget in realDatabase.widgets where widget.qrCode == nil {
-            widget.qrCode = .init()
+        for widget in realDatabase.widgets where widget.map.northUp == nil {
+            widget.map.northUp = false
             store()
         }
         for widget in realDatabase.widgets where widget.text.backgroundColor == nil {
@@ -4324,55 +4930,47 @@ final class Settings {
             stream.obsBrbSceneVideoSourceBroken = false
             store()
         }
-        if realDatabase.djiDevices == nil {
-            realDatabase.djiDevices = .init()
-            store()
-        }
-        for device in realDatabase.djiDevices!.devices where device.rtmpUrlType == nil {
+        for device in realDatabase.djiDevices.devices where device.rtmpUrlType == nil {
             device.rtmpUrlType = .server
             store()
         }
-        for device in realDatabase.djiDevices!.devices where device.serverRtmpStreamId == nil {
+        for device in realDatabase.djiDevices.devices where device.serverRtmpStreamId == nil {
             device.serverRtmpStreamId = .init()
             store()
         }
-        for device in realDatabase.djiDevices!.devices where device.serverRtmpUrl == nil {
+        for device in realDatabase.djiDevices.devices where device.serverRtmpUrl == nil {
             device.serverRtmpUrl = ""
             store()
         }
-        for device in realDatabase.djiDevices!.devices where device.customRtmpUrl == nil {
+        for device in realDatabase.djiDevices.devices where device.customRtmpUrl == nil {
             device.customRtmpUrl = ""
             store()
         }
-        for device in realDatabase.djiDevices!.devices where device.autoRestartStream == nil {
+        for device in realDatabase.djiDevices.devices where device.autoRestartStream == nil {
             device.autoRestartStream = false
             store()
         }
-        if realDatabase.chat.textToSpeechFilterMentions == nil {
-            realDatabase.chat.textToSpeechFilterMentions = true
-            store()
-        }
-        for device in realDatabase.djiDevices!.devices where device.imageStabilization == nil {
+        for device in realDatabase.djiDevices.devices where device.imageStabilization == nil {
             device.imageStabilization = .off
             store()
         }
-        for device in realDatabase.djiDevices!.devices where device.resolution == nil {
+        for device in realDatabase.djiDevices.devices where device.resolution == nil {
             device.resolution = .r1080p
             store()
         }
-        for device in realDatabase.djiDevices!.devices where device.bitrate == nil {
+        for device in realDatabase.djiDevices.devices where device.bitrate == nil {
             device.bitrate = 6_000_000
             store()
         }
-        for device in realDatabase.djiDevices!.devices where device.isStarted == nil {
+        for device in realDatabase.djiDevices.devices where device.isStarted == nil {
             device.isStarted = false
             store()
         }
-        for device in realDatabase.djiDevices!.devices where device.fps == nil {
+        for device in realDatabase.djiDevices.devices where device.fps == nil {
             device.fps = 30
             store()
         }
-        for device in realDatabase.djiDevices!.devices where device.model == nil {
+        for device in realDatabase.djiDevices.devices where device.model == nil {
             device.model = .unknown
             store()
         }
@@ -4380,12 +4978,8 @@ final class Settings {
             widget.text.delay = 0.0
             store()
         }
-        for widget in database.widgets where widget.map!.delay == nil {
-            widget.map!.delay = 0.0
-            store()
-        }
-        for widget in database.widgets where widget.enabled == nil {
-            widget.enabled = true
+        for widget in database.widgets where widget.map.delay == nil {
+            widget.map.delay = 0.0
             store()
         }
         for widget in database.widgets where widget.text.timers == nil {
@@ -4414,65 +5008,61 @@ final class Settings {
             widget.text.checkboxes = []
             store()
         }
-        for widget in realDatabase.widgets where widget.alerts == nil {
-            widget.alerts = .init()
-            store()
-        }
         for stream in realDatabase.streams where stream.twitchAccessToken == nil {
             stream.twitchAccessToken = ""
             store()
         }
-        for widget in realDatabase.widgets where widget.alerts!.twitch == nil {
-            widget.alerts!.twitch = .init()
+        for widget in realDatabase.widgets where widget.alerts.twitch == nil {
+            widget.alerts.twitch = .init()
             store()
         }
         for widget in realDatabase.widgets {
-            if widget.alerts!.twitch!.follows.textToSpeechEnabled == nil {
-                widget.alerts!.twitch!.follows.textToSpeechEnabled = true
+            if widget.alerts.twitch!.follows.textToSpeechEnabled == nil {
+                widget.alerts.twitch!.follows.textToSpeechEnabled = true
                 store()
             }
-            if widget.alerts!.twitch!.follows.textToSpeechDelay == nil {
-                widget.alerts!.twitch!.follows.textToSpeechDelay = 1.5
+            if widget.alerts.twitch!.follows.textToSpeechDelay == nil {
+                widget.alerts.twitch!.follows.textToSpeechDelay = 1.5
                 store()
             }
-            if widget.alerts!.twitch!.follows.textToSpeechLanguageVoices == nil {
-                widget.alerts!.twitch!.follows.textToSpeechLanguageVoices = .init()
+            if widget.alerts.twitch!.follows.textToSpeechLanguageVoices == nil {
+                widget.alerts.twitch!.follows.textToSpeechLanguageVoices = .init()
                 store()
             }
-            if widget.alerts!.twitch!.follows.imageLoopCount == nil {
-                widget.alerts!.twitch!.follows.imageLoopCount = 1
+            if widget.alerts.twitch!.follows.imageLoopCount == nil {
+                widget.alerts.twitch!.follows.imageLoopCount = 1
                 store()
             }
-            if widget.alerts!.twitch!.follows.positionType == nil {
-                widget.alerts!.twitch!.follows.positionType = .scene
+            if widget.alerts.twitch!.follows.positionType == nil {
+                widget.alerts.twitch!.follows.positionType = .scene
                 store()
             }
-            if widget.alerts!.twitch!.follows.facePosition == nil {
-                widget.alerts!.twitch!.follows.facePosition = .init()
+            if widget.alerts.twitch!.follows.facePosition == nil {
+                widget.alerts.twitch!.follows.facePosition = .init()
                 store()
             }
-            if widget.alerts!.twitch!.subscriptions.textToSpeechEnabled == nil {
-                widget.alerts!.twitch!.subscriptions.textToSpeechEnabled = true
+            if widget.alerts.twitch!.subscriptions.textToSpeechEnabled == nil {
+                widget.alerts.twitch!.subscriptions.textToSpeechEnabled = true
                 store()
             }
-            if widget.alerts!.twitch!.subscriptions.textToSpeechDelay == nil {
-                widget.alerts!.twitch!.subscriptions.textToSpeechDelay = 1.5
+            if widget.alerts.twitch!.subscriptions.textToSpeechDelay == nil {
+                widget.alerts.twitch!.subscriptions.textToSpeechDelay = 1.5
                 store()
             }
-            if widget.alerts!.twitch!.subscriptions.textToSpeechLanguageVoices == nil {
-                widget.alerts!.twitch!.subscriptions.textToSpeechLanguageVoices = .init()
+            if widget.alerts.twitch!.subscriptions.textToSpeechLanguageVoices == nil {
+                widget.alerts.twitch!.subscriptions.textToSpeechLanguageVoices = .init()
                 store()
             }
-            if widget.alerts!.twitch!.subscriptions.imageLoopCount == nil {
-                widget.alerts!.twitch!.subscriptions.imageLoopCount = 1
+            if widget.alerts.twitch!.subscriptions.imageLoopCount == nil {
+                widget.alerts.twitch!.subscriptions.imageLoopCount = 1
                 store()
             }
-            if widget.alerts!.twitch!.subscriptions.positionType == nil {
-                widget.alerts!.twitch!.subscriptions.positionType = .scene
+            if widget.alerts.twitch!.subscriptions.positionType == nil {
+                widget.alerts.twitch!.subscriptions.positionType = .scene
                 store()
             }
-            if widget.alerts!.twitch!.subscriptions.facePosition == nil {
-                widget.alerts!.twitch!.subscriptions.facePosition = .init()
+            if widget.alerts.twitch!.subscriptions.facePosition == nil {
+                widget.alerts.twitch!.subscriptions.facePosition = .init()
                 store()
             }
         }
@@ -4480,16 +5070,8 @@ final class Settings {
             widget.text.ratings = []
             store()
         }
-        if realDatabase.chat.botCommandPermissions == nil {
-            realDatabase.chat.botCommandPermissions = .init()
-            store()
-        }
         for stream in realDatabase.streams where stream.twitchLoggedIn == nil {
             stream.twitchLoggedIn = false
-            store()
-        }
-        if realDatabase.alertsMediaGallery == nil {
-            realDatabase.alertsMediaGallery = .init()
             store()
         }
         updateBundledAlertsMediaGallery(database: realDatabase)
@@ -4501,16 +5083,12 @@ final class Settings {
             stream.twitchRewards = .init()
             store()
         }
-        if realDatabase.debug.twitchRewards == nil {
-            realDatabase.debug.twitchRewards = false
+        for widget in realDatabase.widgets where widget.map.migrated == nil {
+            widget.map.migrated = false
             store()
         }
-        for widget in realDatabase.widgets where widget.map!.migrated == nil {
-            widget.map!.migrated = false
-            store()
-        }
-        for widget in realDatabase.widgets where !widget.map!.migrated! {
-            widget.map!.migrated = true
+        for widget in realDatabase.widgets where !widget.map.migrated! {
+            widget.map.migrated = true
             let stream = realDatabase.streams.first(where: { $0.enabled }) ?? SettingsStream(name: "")
             if widget.type == .map {
                 for scene in realDatabase.scenes {
@@ -4540,9 +5118,9 @@ final class Settings {
                             width = 426
                             height = 240
                         }
-                        sceneWidget.width = (100 * Double(widget.map!.width) / width)
+                        sceneWidget.width = (100 * Double(widget.map.width) / width)
                             .clamped(to: 1 ... 100)
-                        sceneWidget.height = (100 * Double(widget.map!.height) / height)
+                        sceneWidget.height = (100 * Double(widget.map.height) / height)
                             .clamped(to: 1 ... 100)
                     }
                 }
@@ -4553,82 +5131,66 @@ final class Settings {
             widget.text.needsSubtitles = false
             store()
         }
-        for widget in realDatabase.widgets where widget.alerts!.chatBot == nil {
-            widget.alerts!.chatBot = .init()
+        for widget in realDatabase.widgets where widget.alerts.chatBot == nil {
+            widget.alerts.chatBot = .init()
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.alert == nil {
-            realDatabase.chat.botCommandPermissions!.alert = .init()
+        if realDatabase.chat.botCommandPermissions.alert == nil {
+            realDatabase.chat.botCommandPermissions.alert = .init()
             store()
         }
-        if realDatabase.chat.botSendLowBatteryWarning == nil {
-            realDatabase.chat.botSendLowBatteryWarning = false
+        if realDatabase.chat.botCommandPermissions.fax == nil {
+            realDatabase.chat.botCommandPermissions.fax = .init()
             store()
         }
-        if realDatabase.catPrinters == nil {
-            realDatabase.catPrinters = .init()
-            store()
-        }
-        if realDatabase.chat.botCommandPermissions!.fax == nil {
-            realDatabase.chat.botCommandPermissions!.fax = .init()
-            store()
-        }
-        let allLuts = realDatabase.color!.bundledLuts + (realDatabase.color!.diskLuts ?? [])
+        let allLuts = realDatabase.color.bundledLuts + (realDatabase.color.diskLuts ?? [])
         for lut in allLuts where lut.enabled == nil {
-            if let button = realDatabase.globalButtons!.first(where: { $0.id == lut.buttonId }) {
+            if let button = realDatabase.quickButtons.first(where: { $0.id == lut.buttonId }) {
                 lut.enabled = button.isOn
             } else {
                 lut.enabled = false
             }
             store()
         }
-        let newButtons = realDatabase.globalButtons!.filter { $0.type != .lut }
-        if realDatabase.globalButtons!.count != newButtons.count {
-            realDatabase.globalButtons = newButtons
+        let newButtons = realDatabase.quickButtons.filter { $0.type != .lut }
+        if realDatabase.quickButtons.count != newButtons.count {
+            realDatabase.quickButtons = newButtons
             store()
         }
         for stream in realDatabase.streams where stream.obsMainScene == nil {
             stream.obsMainScene = ""
             store()
         }
-        if realDatabase.verboseStatuses == nil {
-            realDatabase.verboseStatuses = false
+        for widget in database.widgets where widget.alerts.twitch!.raids == nil {
+            widget.alerts.twitch!.raids = .init()
             store()
         }
-        for widget in database.widgets where widget.alerts!.twitch!.raids == nil {
-            widget.alerts!.twitch!.raids = .init()
-            store()
-        }
-        for device in realDatabase.catPrinters!.devices where device.printChat == nil {
+        for device in realDatabase.catPrinters.devices where device.printChat == nil {
             device.printChat = true
             store()
         }
-        if realDatabase.chat.badges == nil {
-            realDatabase.chat.badges = true
+        if realDatabase.watch.chat.badges == nil {
+            realDatabase.watch.chat.badges = true
             store()
         }
-        if realDatabase.watch!.chat.badges == nil {
-            realDatabase.watch!.chat.badges = true
+        if realDatabase.chat.botCommandPermissions.tts.subscribersEnabled == nil {
+            realDatabase.chat.botCommandPermissions.tts.subscribersEnabled = false
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.tts.subscribersEnabled == nil {
-            realDatabase.chat.botCommandPermissions!.tts.subscribersEnabled = false
+        if realDatabase.chat.botCommandPermissions.fix.subscribersEnabled == nil {
+            realDatabase.chat.botCommandPermissions.fix.subscribersEnabled = false
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.fix.subscribersEnabled == nil {
-            realDatabase.chat.botCommandPermissions!.fix.subscribersEnabled = false
+        if realDatabase.chat.botCommandPermissions.map.subscribersEnabled == nil {
+            realDatabase.chat.botCommandPermissions.map.subscribersEnabled = false
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.map.subscribersEnabled == nil {
-            realDatabase.chat.botCommandPermissions!.map.subscribersEnabled = false
+        if realDatabase.chat.botCommandPermissions.alert!.subscribersEnabled == nil {
+            realDatabase.chat.botCommandPermissions.alert!.subscribersEnabled = false
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.alert!.subscribersEnabled == nil {
-            realDatabase.chat.botCommandPermissions!.alert!.subscribersEnabled = false
-            store()
-        }
-        if realDatabase.chat.botCommandPermissions!.fax!.subscribersEnabled == nil {
-            realDatabase.chat.botCommandPermissions!.fax!.subscribersEnabled = false
+        if realDatabase.chat.botCommandPermissions.fax!.subscribersEnabled == nil {
+            realDatabase.chat.botCommandPermissions.fax!.subscribersEnabled = false
             store()
         }
         for stream in realDatabase.streams where stream.discordSnapshotWebhook == nil {
@@ -4639,165 +5201,133 @@ final class Settings {
             stream.discordSnapshotWebhookOnlyWhenLive = true
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.snapshot == nil {
-            realDatabase.chat.botCommandPermissions!.snapshot = .init()
+        if realDatabase.chat.botCommandPermissions.snapshot == nil {
+            realDatabase.chat.botCommandPermissions.snapshot = .init()
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.filter == nil {
-            realDatabase.chat.botCommandPermissions!.filter = .init()
+        if realDatabase.chat.botCommandPermissions.filter == nil {
+            realDatabase.chat.botCommandPermissions.filter = .init()
             store()
         }
-        for device in realDatabase.catPrinters!.devices where device.faxMeowSound == nil {
+        for device in realDatabase.catPrinters.devices where device.faxMeowSound == nil {
             device.faxMeowSound = true
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.tts.minimumSubscriberTier == nil {
-            realDatabase.chat.botCommandPermissions!.tts.minimumSubscriberTier = 1
+        if realDatabase.chat.botCommandPermissions.tts.minimumSubscriberTier == nil {
+            realDatabase.chat.botCommandPermissions.tts.minimumSubscriberTier = 1
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.fix.minimumSubscriberTier == nil {
-            realDatabase.chat.botCommandPermissions!.fix.minimumSubscriberTier = 1
+        if realDatabase.chat.botCommandPermissions.fix.minimumSubscriberTier == nil {
+            realDatabase.chat.botCommandPermissions.fix.minimumSubscriberTier = 1
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.map.minimumSubscriberTier == nil {
-            realDatabase.chat.botCommandPermissions!.map.minimumSubscriberTier = 1
+        if realDatabase.chat.botCommandPermissions.map.minimumSubscriberTier == nil {
+            realDatabase.chat.botCommandPermissions.map.minimumSubscriberTier = 1
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.alert!.minimumSubscriberTier == nil {
-            realDatabase.chat.botCommandPermissions!.alert!.minimumSubscriberTier = 1
+        if realDatabase.chat.botCommandPermissions.alert!.minimumSubscriberTier == nil {
+            realDatabase.chat.botCommandPermissions.alert!.minimumSubscriberTier = 1
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.fax!.minimumSubscriberTier == nil {
-            realDatabase.chat.botCommandPermissions!.fax!.minimumSubscriberTier = 1
+        if realDatabase.chat.botCommandPermissions.fax!.minimumSubscriberTier == nil {
+            realDatabase.chat.botCommandPermissions.fax!.minimumSubscriberTier = 1
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.snapshot!.minimumSubscriberTier == nil {
-            realDatabase.chat.botCommandPermissions!.snapshot!.minimumSubscriberTier = 1
+        if realDatabase.chat.botCommandPermissions.snapshot!.minimumSubscriberTier == nil {
+            realDatabase.chat.botCommandPermissions.snapshot!.minimumSubscriberTier = 1
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.filter!.minimumSubscriberTier == nil {
-            realDatabase.chat.botCommandPermissions!.filter!.minimumSubscriberTier = 1
+        if realDatabase.chat.botCommandPermissions.filter!.minimumSubscriberTier == nil {
+            realDatabase.chat.botCommandPermissions.filter!.minimumSubscriberTier = 1
             store()
         }
-        for widget in database.widgets where widget.alerts!.twitch!.cheers == nil {
-            widget.alerts!.twitch!.cheers = .init()
-            store()
-        }
-        if realDatabase.debug.beautyFilterSettings!.showBlurBackground == nil {
-            realDatabase.debug.beautyFilterSettings!.showBlurBackground = false
+        for widget in database.widgets where widget.alerts.twitch!.cheers == nil {
+            widget.alerts.twitch!.cheers = .init()
             store()
         }
         for widget in realDatabase.widgets where widget.browser.styleSheet == nil {
             widget.browser.styleSheet = ""
             store()
         }
-        if realDatabase.chat.showFirstTimeChatterMessage == nil {
-            realDatabase.chat.showFirstTimeChatterMessage = true
+        for widget in realDatabase.widgets where widget.videoSource.cameraPosition == nil {
+            widget.videoSource.cameraPosition = .screenCapture
             store()
         }
-        if realDatabase.chat.showNewFollowerMessage == nil {
-            realDatabase.chat.showNewFollowerMessage = true
+        for widget in realDatabase.widgets where widget.videoSource.backCameraId == nil {
+            widget.videoSource.backCameraId = getBestBackCameraId()
             store()
         }
-        for widget in realDatabase.widgets where widget.videoSource == nil {
-            widget.videoSource = .init()
+        for widget in realDatabase.widgets where widget.videoSource.frontCameraId == nil {
+            widget.videoSource.frontCameraId = getBestFrontCameraId()
             store()
         }
-        for widget in realDatabase.widgets where widget.videoSource!.cameraPosition == nil {
-            widget.videoSource!.cameraPosition = .screenCapture
+        for widget in realDatabase.widgets where widget.videoSource.rtmpCameraId == nil {
+            widget.videoSource.rtmpCameraId = .init()
             store()
         }
-        for widget in realDatabase.widgets where widget.videoSource!.backCameraId == nil {
-            widget.videoSource!.backCameraId = getBestBackCameraId()
+        for widget in realDatabase.widgets where widget.videoSource.srtlaCameraId == nil {
+            widget.videoSource.srtlaCameraId = .init()
             store()
         }
-        for widget in realDatabase.widgets where widget.videoSource!.frontCameraId == nil {
-            widget.videoSource!.frontCameraId = getBestFrontCameraId()
+        for widget in realDatabase.widgets where widget.videoSource.mediaPlayerCameraId == nil {
+            widget.videoSource.mediaPlayerCameraId = .init()
             store()
         }
-        for widget in realDatabase.widgets where widget.videoSource!.rtmpCameraId == nil {
-            widget.videoSource!.rtmpCameraId = .init()
+        for widget in realDatabase.widgets where widget.videoSource.externalCameraId == nil {
+            widget.videoSource.externalCameraId = ""
             store()
         }
-        for widget in realDatabase.widgets where widget.videoSource!.srtlaCameraId == nil {
-            widget.videoSource!.srtlaCameraId = .init()
+        for widget in realDatabase.widgets where widget.videoSource.externalCameraName == nil {
+            widget.videoSource.externalCameraName = ""
             store()
         }
-        for widget in realDatabase.widgets where widget.videoSource!.mediaPlayerCameraId == nil {
-            widget.videoSource!.mediaPlayerCameraId = .init()
+        for widget in realDatabase.widgets where widget.videoSource.cropEnabled == nil {
+            widget.videoSource.cropEnabled = false
             store()
         }
-        for widget in realDatabase.widgets where widget.videoSource!.externalCameraId == nil {
-            widget.videoSource!.externalCameraId = ""
+        for widget in realDatabase.widgets where widget.videoSource.cropX == nil {
+            widget.videoSource.cropX = 0.25
             store()
         }
-        for widget in realDatabase.widgets where widget.videoSource!.externalCameraName == nil {
-            widget.videoSource!.externalCameraName = ""
+        for widget in realDatabase.widgets where widget.videoSource.cropY == nil {
+            widget.videoSource.cropY = 0.0
             store()
         }
-        for widget in realDatabase.widgets where widget.videoSource!.cropEnabled == nil {
-            widget.videoSource!.cropEnabled = false
+        for widget in realDatabase.widgets where widget.videoSource.cropWidth == nil {
+            widget.videoSource.cropWidth = 0.5
             store()
         }
-        for widget in realDatabase.widgets where widget.videoSource!.cropX == nil {
-            widget.videoSource!.cropX = 0.25
+        for widget in realDatabase.widgets where widget.videoSource.cropHeight == nil {
+            widget.videoSource.cropHeight = 1.0
             store()
         }
-        for widget in realDatabase.widgets where widget.videoSource!.cropY == nil {
-            widget.videoSource!.cropY = 0.0
+        for widget in realDatabase.widgets where widget.videoSource.cropX! > 1.0 {
+            widget.videoSource.cropX = 0.0
             store()
         }
-        for widget in realDatabase.widgets where widget.videoSource!.cropWidth == nil {
-            widget.videoSource!.cropWidth = 0.5
+        for widget in realDatabase.widgets where widget.videoSource.cropY! > 1.0 {
+            widget.videoSource.cropY = 0.0
             store()
         }
-        for widget in realDatabase.widgets where widget.videoSource!.cropHeight == nil {
-            widget.videoSource!.cropHeight = 1.0
+        for widget in realDatabase.widgets where widget.videoSource.cropWidth! > 1.0 {
+            widget.videoSource.cropWidth = 1.0
             store()
         }
-        for widget in realDatabase.widgets where widget.videoSource!.cropX! > 1.0 {
-            widget.videoSource!.cropX = 0.0
+        for widget in realDatabase.widgets where widget.videoSource.cropHeight! > 1.0 {
+            widget.videoSource.cropHeight = 1.0
             store()
         }
-        for widget in realDatabase.widgets where widget.videoSource!.cropY! > 1.0 {
-            widget.videoSource!.cropY = 0.0
+        for widget in realDatabase.widgets where widget.videoSource.rotation == nil {
+            widget.videoSource.rotation = 0.0
             store()
         }
-        for widget in realDatabase.widgets where widget.videoSource!.cropWidth! > 1.0 {
-            widget.videoSource!.cropWidth = 1.0
-            store()
-        }
-        for widget in realDatabase.widgets where widget.videoSource!.cropHeight! > 1.0 {
-            widget.videoSource!.cropHeight = 1.0
-            store()
-        }
-        for widget in realDatabase.widgets where widget.videoSource!.rotation == nil {
-            widget.videoSource!.rotation = 0.0
-            store()
-        }
-        if realDatabase.debug.removeWindNoise == nil {
-            realDatabase.debug.removeWindNoise = false
-            store()
-        }
-        for widget in realDatabase.widgets where widget.scoreboard == nil {
-            widget.scoreboard = .init()
-            store()
-        }
-        if realDatabase.scoreboardPlayers == nil {
-            realDatabase.scoreboardPlayers = .init()
-            store()
-        }
-        for widget in database.widgets where widget.alerts!.twitch!.cheerBits == nil {
-            widget.alerts!.twitch!.cheerBits = createDefaultCheerBits()
-            widget.alerts!.twitch!.cheerBits![0].alert = widget.alerts!.twitch!.cheers!.clone()
+        for widget in database.widgets where widget.alerts.twitch!.cheerBits == nil {
+            widget.alerts.twitch!.cheerBits = createDefaultCheerBits()
+            widget.alerts.twitch!.cheerBits![0].alert = widget.alerts.twitch!.cheers!.clone()
             store()
         }
         for stream in database.streams where stream.adaptiveEncoderResolution == nil {
             stream.adaptiveEncoderResolution = false
-            store()
-        }
-        if realDatabase.debug.httpProxy == nil {
-            realDatabase.debug.httpProxy = .init()
             store()
         }
         for stream in realDatabase.streams where stream.discordChatBotSnapshotWebhook == nil {
@@ -4808,54 +5338,36 @@ final class Settings {
             stream.estimatedViewerDelay = 8.0
             store()
         }
-        if realDatabase.remoteControl!.client.relay == nil {
-            realDatabase.remoteControl!.client.relay = .init()
+        if realDatabase.remoteControl.client.relay == nil {
+            realDatabase.remoteControl.client.relay = .init()
             store()
         }
-        if realDatabase.debug.tesla == nil {
-            realDatabase.debug.tesla = .init()
+        if realDatabase.chat.botCommandPermissions.tesla == nil {
+            realDatabase.chat.botCommandPermissions.tesla = .init()
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.tesla == nil {
-            realDatabase.chat.botCommandPermissions!.tesla = .init()
-            store()
-        }
-        if realDatabase.watch!.viaRemoteControl == nil {
-            realDatabase.watch!.viaRemoteControl = false
-            store()
-        }
-        if realDatabase.keyboard == nil {
-            realDatabase.keyboard = .init()
+        if realDatabase.watch.viaRemoteControl == nil {
+            realDatabase.watch.viaRemoteControl = false
             store()
         }
         for stream in realDatabase.streams where stream.twitchMultiTrackEnabled == nil {
             stream.twitchMultiTrackEnabled = false
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.audio == nil {
-            realDatabase.chat.botCommandPermissions!.audio = .init()
-            store()
-        }
-        if realDatabase.tesla == nil {
-            realDatabase.tesla = .init()
-            realDatabase.tesla!.vin = realDatabase.debug.tesla!.vin
-            realDatabase.tesla!.privateKey = realDatabase.debug.tesla!.privateKey
-            store()
-        }
-        if realDatabase.debug.reliableChat == nil {
-            realDatabase.debug.reliableChat = false
+        if realDatabase.chat.botCommandPermissions.audio == nil {
+            realDatabase.chat.botCommandPermissions.audio = .init()
             store()
         }
         for scene in realDatabase.scenes where scene.videoSourceRotation == nil {
             scene.videoSourceRotation = 0.0
             store()
         }
-        for widget in realDatabase.widgets where widget.alerts!.speechToText == nil {
-            widget.alerts!.speechToText = .init()
+        for widget in realDatabase.widgets where widget.alerts.speechToText == nil {
+            widget.alerts.speechToText = .init()
             store()
         }
-        for widget in realDatabase.widgets where widget.alerts!.needsSubtitles == nil {
-            widget.alerts!.needsSubtitles = false
+        for widget in realDatabase.widgets where widget.alerts.needsSubtitles == nil {
+            widget.alerts.needsSubtitles = false
             store()
         }
         for stream in realDatabase.streams where stream.ntpPoolAddress == nil {
@@ -4866,44 +5378,12 @@ final class Settings {
             stream.timecodesEnabled = false
             store()
         }
-        if realDatabase.debug.timecodesEnabled == nil {
-            realDatabase.debug.timecodesEnabled = false
-            store()
-        }
-        if realDatabase.srtlaRelay == nil {
-            realDatabase.srtlaRelay = .init()
-            store()
-        }
-        if realDatabase.debug.dnsLookupStrategy == nil {
-            realDatabase.debug.dnsLookupStrategy = .system
-            store()
-        }
         for stream in realDatabase.streams where stream.srt.dnsLookupStrategy == nil {
             stream.srt.dnsLookupStrategy = .system
             store()
         }
-        for stream in realDatabase.deepLinkCreator!.streams where stream.srt.dnsLookupStrategy == nil {
+        for stream in realDatabase.deepLinkCreator.streams where stream.srt.dnsLookupStrategy == nil {
             stream.srt.dnsLookupStrategy = .system
-            store()
-        }
-        if realDatabase.debug.srtlaBatchSend == nil {
-            realDatabase.debug.srtlaBatchSend = false
-            store()
-        }
-        if realDatabase.chat.bottom == nil {
-            realDatabase.chat.bottom = 0.0
-            store()
-        }
-        if realDatabase.pixellateStrength == nil {
-            realDatabase.pixellateStrength = 0.3
-            store()
-        }
-        if realDatabase.moblink == nil {
-            realDatabase.moblink = realDatabase.srtlaRelay
-            store()
-        }
-        if realDatabase.debug.cameraControlsEnabled == nil {
-            realDatabase.debug.cameraControlsEnabled = true
             store()
         }
         if realDatabase.show.djiDevices == nil {
@@ -4914,16 +5394,12 @@ final class Settings {
             stream.autoFps = false
             store()
         }
-        if realDatabase.chat.newMessagesAtTop == nil {
-            realDatabase.chat.newMessagesAtTop = false
+        if realDatabase.color.diskLutsPng == nil {
+            realDatabase.color.diskLutsPng = realDatabase.color.diskLuts
             store()
         }
-        if realDatabase.color!.diskLutsPng == nil {
-            realDatabase.color!.diskLutsPng = realDatabase.color!.diskLuts
-            store()
-        }
-        if realDatabase.color!.diskLutsCube == nil {
-            realDatabase.color!.diskLutsCube = []
+        if realDatabase.color.diskLutsCube == nil {
+            realDatabase.color.diskLutsCube = []
             store()
         }
         if realDatabase.show.bondingRtts == nil {
@@ -4934,18 +5410,6 @@ final class Settings {
             realDatabase.show.moblink = true
             store()
         }
-        if realDatabase.debug.dataRateLimitFactor == nil {
-            realDatabase.debug.dataRateLimitFactor = 2.0
-            store()
-        }
-        if realDatabase.debug.bitrateDropFix == nil {
-            realDatabase.debug.bitrateDropFix = false
-            store()
-        }
-        if realDatabase.debug.relaxedBitrate == nil {
-            realDatabase.debug.relaxedBitrate = false
-            store()
-        }
         for scene in realDatabase.scenes where scene.videoStabilizationMode == nil {
             scene.videoStabilizationMode = .off
             store()
@@ -4954,52 +5418,24 @@ final class Settings {
             scene.overrideVideoStabilizationMode = false
             store()
         }
-        for key in realDatabase.keyboard!.keys where key.widgetId == nil {
+        for key in realDatabase.keyboard.keys where key.widgetId == nil {
             key.widgetId = .init()
             store()
         }
-        if realDatabase.sceneSwitchTransition == nil {
-            realDatabase.sceneSwitchTransition = realDatabase.debug.blurSceneSwitch! ? .blur : .freeze
+        if realDatabase.location.distance == nil {
+            realDatabase.location.distance = 0.0
             store()
         }
-        if realDatabase.forceSceneSwitchTransition == nil {
-            realDatabase.forceSceneSwitchTransition = false
-            store()
-        }
-        if realDatabase.location!.distance == nil {
-            realDatabase.location!.distance = 0.0
-            store()
-        }
-        if realDatabase.catPrinters!.backgroundPrinting == nil {
-            realDatabase.catPrinters!.backgroundPrinting = false
+        if realDatabase.catPrinters.backgroundPrinting == nil {
+            realDatabase.catPrinters.backgroundPrinting = false
             store()
         }
         if realDatabase.show.catPrinter == nil {
             realDatabase.show.catPrinter = true
             store()
         }
-        if realDatabase.moblink!.client.manual == nil {
-            realDatabase.moblink!.client.manual = !realDatabase.moblink!.client.url.isEmpty
-            store()
-        }
-        if realDatabase.cameraControlsEnabled == nil {
-            realDatabase.cameraControlsEnabled = realDatabase.debug.cameraControlsEnabled!
-            store()
-        }
         for widget in realDatabase.widgets where widget.text.alignment == nil {
             widget.text.alignment = .leading
-            store()
-        }
-        if realDatabase.debug.externalDisplayChat == nil {
-            realDatabase.debug.externalDisplayChat = false
-            store()
-        }
-        if realDatabase.externalDisplayContent == nil {
-            if realDatabase.debug.externalDisplayChat! {
-                realDatabase.externalDisplayContent = .chat
-            } else {
-                realDatabase.externalDisplayContent = .stream
-            }
             store()
         }
         for stream in realDatabase.streams where stream.recording!.cleanRecordings == nil {
@@ -5018,24 +5454,12 @@ final class Settings {
             widget.text.verticalAlignment = .top
             store()
         }
-        if realDatabase.cyclingPowerDevices == nil {
-            realDatabase.cyclingPowerDevices = .init()
-            store()
-        }
-        if realDatabase.heartRateDevices == nil {
-            realDatabase.heartRateDevices = .init()
-            store()
-        }
         if realDatabase.show.cyclingPowerDevice == nil {
             realDatabase.show.cyclingPowerDevice = true
             store()
         }
         if realDatabase.show.heartRateDevice == nil {
             realDatabase.show.heartRateDevice = true
-            store()
-        }
-        if realDatabase.djiGimbalDevices == nil {
-            realDatabase.djiGimbalDevices = .init()
             store()
         }
         for widget in database.widgets where widget.text.lapTimes == nil {
@@ -5050,118 +5474,142 @@ final class Settings {
             scene.fillFrame = false
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.reaction == nil {
-            realDatabase.chat.botCommandPermissions!.reaction = .init()
+        if realDatabase.chat.botCommandPermissions.reaction == nil {
+            realDatabase.chat.botCommandPermissions.reaction = .init()
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.scene == nil {
-            realDatabase.chat.botCommandPermissions!.scene = .init()
+        if realDatabase.chat.botCommandPermissions.scene == nil {
+            realDatabase.chat.botCommandPermissions.scene = .init()
             store()
         }
-        if realDatabase.location!.resetWhenGoingLive == nil {
-            realDatabase.location!.resetWhenGoingLive = false
+        if realDatabase.location.resetWhenGoingLive == nil {
+            realDatabase.location.resetWhenGoingLive = false
             store()
         }
-        if realDatabase.debug.videoSourceWidgetTrackFace == nil {
-            realDatabase.debug.videoSourceWidgetTrackFace = false
+        for widget in realDatabase.widgets where widget.videoSource.trackFaceEnabled == nil {
+            widget.videoSource.trackFaceEnabled = false
             store()
         }
-        for widget in realDatabase.widgets where widget.videoSource!.trackFaceEnabled == nil {
-            widget.videoSource!.trackFaceEnabled = false
+        if realDatabase.chat.botCommandPermissions.tts.sendChatMessages == nil {
+            realDatabase.chat.botCommandPermissions.tts.sendChatMessages = false
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.tts.sendChatMessages == nil {
-            realDatabase.chat.botCommandPermissions!.tts.sendChatMessages = false
+        if realDatabase.chat.botCommandPermissions.fix.sendChatMessages == nil {
+            realDatabase.chat.botCommandPermissions.fix.sendChatMessages = false
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.fix.sendChatMessages == nil {
-            realDatabase.chat.botCommandPermissions!.fix.sendChatMessages = false
+        if realDatabase.chat.botCommandPermissions.map.sendChatMessages == nil {
+            realDatabase.chat.botCommandPermissions.map.sendChatMessages = false
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.map.sendChatMessages == nil {
-            realDatabase.chat.botCommandPermissions!.map.sendChatMessages = false
+        if realDatabase.chat.botCommandPermissions.alert!.sendChatMessages == nil {
+            realDatabase.chat.botCommandPermissions.alert!.sendChatMessages = false
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.alert!.sendChatMessages == nil {
-            realDatabase.chat.botCommandPermissions!.alert!.sendChatMessages = false
+        if realDatabase.chat.botCommandPermissions.fax!.sendChatMessages == nil {
+            realDatabase.chat.botCommandPermissions.fax!.sendChatMessages = false
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.fax!.sendChatMessages == nil {
-            realDatabase.chat.botCommandPermissions!.fax!.sendChatMessages = false
+        if realDatabase.chat.botCommandPermissions.snapshot!.sendChatMessages == nil {
+            realDatabase.chat.botCommandPermissions.snapshot!.sendChatMessages = false
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.snapshot!.sendChatMessages == nil {
-            realDatabase.chat.botCommandPermissions!.snapshot!.sendChatMessages = false
+        if realDatabase.chat.botCommandPermissions.filter!.sendChatMessages == nil {
+            realDatabase.chat.botCommandPermissions.filter!.sendChatMessages = false
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.filter!.sendChatMessages == nil {
-            realDatabase.chat.botCommandPermissions!.filter!.sendChatMessages = false
+        if realDatabase.chat.botCommandPermissions.tesla!.sendChatMessages == nil {
+            realDatabase.chat.botCommandPermissions.tesla!.sendChatMessages = false
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.tesla!.sendChatMessages == nil {
-            realDatabase.chat.botCommandPermissions!.tesla!.sendChatMessages = false
+        if realDatabase.chat.botCommandPermissions.audio!.sendChatMessages == nil {
+            realDatabase.chat.botCommandPermissions.audio!.sendChatMessages = false
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.audio!.sendChatMessages == nil {
-            realDatabase.chat.botCommandPermissions!.audio!.sendChatMessages = false
+        if realDatabase.chat.botCommandPermissions.reaction!.sendChatMessages == nil {
+            realDatabase.chat.botCommandPermissions.reaction!.sendChatMessages = false
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.reaction!.sendChatMessages == nil {
-            realDatabase.chat.botCommandPermissions!.reaction!.sendChatMessages = false
+        if realDatabase.chat.botCommandPermissions.scene!.sendChatMessages == nil {
+            realDatabase.chat.botCommandPermissions.scene!.sendChatMessages = false
             store()
         }
-        if realDatabase.chat.botCommandPermissions!.scene!.sendChatMessages == nil {
-            realDatabase.chat.botCommandPermissions!.scene!.sendChatMessages = false
-            store()
-        }
-        for device in realDatabase.catPrinters!.devices where device.printSnapshots == nil {
+        for device in realDatabase.catPrinters.devices where device.printSnapshots == nil {
             device.printSnapshots = true
             store()
         }
-        for widget in realDatabase.widgets where widget.videoSource!.mirror == nil {
-            widget.videoSource!.mirror = false
+        for widget in realDatabase.widgets where widget.videoSource.mirror == nil {
+            widget.videoSource.mirror = false
             store()
         }
-        for widget in realDatabase.widgets where widget.videoSource!.trackFaceZoom == nil {
-            widget.videoSource!.trackFaceZoom = 0.75
-            store()
-        }
-        if realDatabase.sceneNumericInput == nil {
-            realDatabase.sceneNumericInput = false
+        for widget in realDatabase.widgets where widget.videoSource.trackFaceZoom == nil {
+            widget.videoSource.trackFaceZoom = 0.75
             store()
         }
         for widget in realDatabase.widgets {
-            for command in widget.alerts!.chatBot!.commands where command.imageType == nil {
+            for command in widget.alerts.chatBot!.commands where command.imageType == nil {
                 command.imageType = .file
                 store()
             }
-            for command in widget.alerts!.chatBot!.commands where command.imagePlaygroundImageId == nil {
+            for command in widget.alerts.chatBot!.commands where command.imagePlaygroundImageId == nil {
                 command.imagePlaygroundImageId = .init()
                 store()
             }
         }
-        if realDatabase.debug.srtlaBatchSendEnabled == nil {
-            realDatabase.debug.srtlaBatchSendEnabled = true
-            store()
-        }
-        if realDatabase.goPro == nil {
-            realDatabase.goPro = .init()
-            store()
-        }
-        for launchLiveStream in realDatabase.goPro!.launchLiveStream where launchLiveStream.isHero12Or13 == nil {
+        for launchLiveStream in realDatabase.goPro.launchLiveStream where launchLiveStream.isHero12Or13 == nil {
             launchLiveStream.isHero12Or13 = true
             store()
         }
-        for widget in realDatabase.widgets where widget.videoSource!.borderWidth == nil {
-            widget.videoSource!.borderWidth = 0
+        for widget in realDatabase.widgets where widget.videoSource.borderWidth == nil {
+            widget.videoSource.borderWidth = 0
             store()
         }
-        for widget in realDatabase.widgets where widget.videoSource!.borderColor == nil {
-            widget.videoSource!.borderColor = .init(red: 0, green: 0, blue: 0)
+        for widget in realDatabase.widgets where widget.videoSource.borderColor == nil {
+            widget.videoSource.borderColor = .init(red: 0, green: 0, blue: 0)
             store()
         }
-        if realDatabase.tesla!.enabled == nil {
-            realDatabase.tesla!.enabled = true
+        if realDatabase.tesla.enabled == nil {
+            realDatabase.tesla.enabled = true
+            store()
+        }
+        for stream in realDatabase.streams where stream.twitchShowFollows == nil {
+            stream.twitchShowFollows = true
+            store()
+        }
+        if realDatabase.replay.position == nil {
+            realDatabase.replay.position = 10.0
+            store()
+        }
+        if realDatabase.replay.start == nil {
+            realDatabase.replay.start = 20.0
+            store()
+        }
+        if realDatabase.replay.stop == nil {
+            realDatabase.replay.stop = 30.0
+            store()
+        }
+        for stream in realDatabase.streams where stream.replay == nil {
+            stream.replay = .init()
+            store()
+        }
+        for stream in realDatabase.streams where stream.replay!.fade == nil {
+            stream.replay!.fade = true
+            store()
+        }
+        for widget in realDatabase.widgets where widget.browser.moblinAccess == nil {
+            widget.browser.moblinAccess = false
+            store()
+        }
+        if realDatabase.autoSceneSwitchers == nil {
+            realDatabase.autoSceneSwitchers = .init()
+            store()
+        }
+        for button in realDatabase.quickButtons where button.page == nil {
+            button.page = 1
+            store()
+        }
+        for widget in database.widgets where widget.text.needsGForce == nil {
+            widget.text.needsGForce = false
             store()
         }
     }

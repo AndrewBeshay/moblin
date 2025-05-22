@@ -223,14 +223,14 @@ struct WidgetVideoSourceSettingsView: View {
     @State var background: Color
 
     private func onCameraChange(cameraId: String) {
-        widget.videoSource!
+        widget.videoSource
             .updateCameraId(settingsCameraId: model.cameraIdToSettingsCameraId(cameraId: cameraId))
         model.sceneUpdated(attachCamera: true, updateRemoteScene: false)
     }
 
     private func setEffectSettings() {
         model.getVideoSourceEffect(id: widget.id)?
-            .setSettings(settings: widget.videoSource!.toEffectSettings())
+            .setSettings(settings: widget.videoSource.toEffectSettings())
     }
 
     var body: some View {
@@ -268,7 +268,7 @@ struct WidgetVideoSourceSettingsView: View {
                     step: 0.01
                 )
                 .onChange(of: cornerRadius) { _ in
-                    widget.videoSource!.cornerRadius = cornerRadius
+                    widget.videoSource.cornerRadius = cornerRadius
                     setEffectSettings()
                 }
                 Text(String(Int(cornerRadius * 100)))
@@ -280,13 +280,13 @@ struct WidgetVideoSourceSettingsView: View {
         Section {
             VideoSourceRotationView(selectedRotation: $selectedRotation)
                 .onChange(of: selectedRotation) { rotation in
-                    widget.videoSource!.rotation = rotation
+                    widget.videoSource.rotation = rotation
                     setEffectSettings()
                 }
             Toggle(isOn: Binding(get: {
-                widget.videoSource!.mirror!
+                widget.videoSource.mirror!
             }, set: { value in
-                widget.videoSource!.mirror = value
+                widget.videoSource.mirror = value
                 setEffectSettings()
             })) {
                 Text("Mirror")
@@ -301,13 +301,13 @@ struct WidgetVideoSourceSettingsView: View {
                     step: 0.01
                 )
                 .onChange(of: borderWidth) { value in
-                    widget.videoSource!.borderWidth = value
+                    widget.videoSource.borderWidth = value
                     setEffectSettings()
                 }
             }
             ColorPicker("Background", selection: $background, supportsOpacity: false)
                 .onChange(of: background) { _ in
-                    widget.videoSource!.borderColor = background.toRgb()
+                    widget.videoSource.borderColor = background.toRgb()
                     setEffectSettings()
                 }
         } header: {
@@ -315,9 +315,9 @@ struct WidgetVideoSourceSettingsView: View {
         }
         Section {
             Toggle(isOn: Binding(get: {
-                widget.videoSource!.trackFaceEnabled!
+                widget.videoSource.trackFaceEnabled!
             }, set: { value in
-                widget.videoSource!.trackFaceEnabled = value
+                widget.videoSource.trackFaceEnabled = value
                 setEffectSettings()
                 model.objectWillChange.send()
             })) {
@@ -331,27 +331,29 @@ struct WidgetVideoSourceSettingsView: View {
                     step: 0.01
                 )
                 .onChange(of: zoom) {
-                    widget.videoSource!.trackFaceZoom = $0
+                    widget.videoSource.trackFaceZoom = $0
                     setEffectSettings()
                 }
             }
         } header: {
             Text("Face tracking")
         }
-        Section {
-            Toggle(isOn: Binding(get: {
-                widget.videoSource!.cropEnabled!
-            }, set: { value in
-                widget.videoSource!.cropEnabled = value
-                setEffectSettings()
-            })) {
-                Text("Enabled")
+        if !widget.videoSource.trackFaceEnabled! {
+            Section {
+                Toggle(isOn: Binding(get: {
+                    widget.videoSource.cropEnabled!
+                }, set: { value in
+                    widget.videoSource.cropEnabled = value
+                    setEffectSettings()
+                })) {
+                    Text("Enabled")
+                }
+            } header: {
+                Text("Crop")
             }
-        } header: {
-            Text("Crop")
-        }.disabled(widget.videoSource!.trackFaceEnabled!)
-        Section {
-            CropView(widgetId: widget.id, widget: widget.videoSource!)
+            Section {
+                CropView(widgetId: widget.id, widget: widget.videoSource)
+            }
         }
     }
 }

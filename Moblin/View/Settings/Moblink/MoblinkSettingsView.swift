@@ -10,12 +10,12 @@ private struct InterfaceViewUrl: View {
             Image(systemName: image)
             Text(url)
             Spacer()
-            Button(action: {
+            Button {
                 UIPasteboard.general.string = url
                 model.makeToast(title: "URL copied to clipboard")
-            }, label: {
+            } label: {
                 Image(systemName: "doc.on.doc")
-            })
+            }
         }
     }
 }
@@ -141,7 +141,7 @@ private struct RelayStreamerUrlView: View {
         guard isValidWebSocketUrl(url: value) == nil else {
             return
         }
-        model.database.moblink!.client.url = value
+        model.database.moblink.client.url = value
         model.reloadMoblinkRelay()
         dismiss()
     }
@@ -174,43 +174,39 @@ private struct RelayStreamerUrlView: View {
 
 private struct RelayView: View {
     @EnvironmentObject var model: Model
-    @State var name: String
-    @State var streamerUrl: String
-    @State var manual: Bool
+    @ObservedObject var relay: SettingsMoblinkRelay
 
     var body: some View {
         Section {
             Toggle(isOn: Binding(get: {
-                model.database.moblink!.client.enabled
+                model.database.moblink.client.enabled
             }, set: { value in
-                model.database.moblink!.client.enabled = value
+                model.database.moblink.client.enabled = value
                 model.reloadMoblinkRelay()
                 model.objectWillChange.send()
             })) {
                 Text("Enabled")
             }
             NavigationLink {
-                NameEditView(name: $name)
+                NameEditView(name: $relay.name)
             } label: {
-                TextItemView(name: String(localized: "Name"), value: name)
+                TextItemView(name: String(localized: "Name"), value: relay.name)
             }
-            .onChange(of: name) { name in
-                model.database.moblink!.client.name = name
+            .onChange(of: relay.name) { _ in
                 model.reloadMoblinkRelay()
             }
-            Toggle(isOn: $manual) {
+            Toggle(isOn: $relay.manual) {
                 Text("Manual")
             }
-            .onChange(of: manual) { value in
-                model.database.moblink!.client.manual = value
+            .onChange(of: relay.manual) { _ in
                 model.reloadMoblinkRelay()
             }
             .disabled(model.isLive)
-            if manual {
+            if relay.manual {
                 NavigationLink {
-                    RelayStreamerUrlView(streamerUrl: $streamerUrl)
+                    RelayStreamerUrlView(streamerUrl: $relay.url)
                 } label: {
-                    TextItemView(name: String(localized: "Streamer URL"), value: model.database.moblink!.client.url)
+                    TextItemView(name: String(localized: "Streamer URL"), value: relay.url)
                 }
             }
         } header: {
@@ -232,7 +228,7 @@ private struct StreamerView: View {
         guard let port = UInt16(value.trim()) else {
             return
         }
-        model.database.moblink!.server.port = port
+        model.database.moblink.server.port = port
         model.reloadMoblinkStreamer()
     }
 
@@ -242,14 +238,14 @@ private struct StreamerView: View {
                 Text("Enabled")
             }
             .onChange(of: enabled) { value in
-                model.database.moblink!.server.enabled = value
+                model.database.moblink.server.enabled = value
                 model.reloadMoblinkStreamer()
                 model.objectWillChange.send()
             }
             .disabled(model.isLive)
             TextEditNavigationView(
                 title: String(localized: "Server port"),
-                value: String(model.database.moblink!.server.port),
+                value: String(model.database.moblink.server.port),
                 onSubmit: submitPort,
                 keyboardType: .numbersAndPunctuation,
                 placeholder: "7777"
@@ -268,7 +264,7 @@ struct MoblinkSettingsView: View {
     @State var streamerEnabled: Bool
 
     private func submitPassword(value: String) {
-        model.database.moblink!.password = value.trim()
+        model.database.moblink.password = value.trim()
         model.reloadMoblinkRelay()
         model.reloadMoblinkStreamer()
     }
@@ -284,23 +280,20 @@ struct MoblinkSettingsView: View {
             Section {
                 NavigationLink {
                     PasswordView(
-                        value: model.database.moblink!.password,
+                        value: model.database.moblink.password,
                         onSubmit: submitPassword
                     )
                 } label: {
                     TextItemView(
                         name: String(localized: "Password"),
-                        value: model.database.moblink!.password
+                        value: model.database.moblink.password,
+                        sensitive: true
                     )
                 }
             } footer: {
                 Text("Used by both relay and streamer devices. Copy the streamer's password to the relay device.")
             }
-            RelayView(
-                name: model.database.moblink!.client.name,
-                streamerUrl: model.database.moblink!.client.url,
-                manual: model.database.moblink!.client.manual!
-            )
+            RelayView(relay: model.database.moblink.client)
             StreamerView(enabled: $streamerEnabled)
             if streamerEnabled {
                 Section {
@@ -308,19 +301,19 @@ struct MoblinkSettingsView: View {
                         ForEach(model.ipStatuses.filter { $0.ipType == .ipv4 }) { status in
                             InterfaceView(
                                 ip: status.ipType.formatAddress(status.ip),
-                                port: model.database.moblink!.server.port,
+                                port: model.database.moblink.server.port,
                                 image: urlImage(interfaceType: status.interfaceType)
                             )
                         }
                         InterfaceView(
                             ip: personalHotspotLocalAddress,
-                            port: model.database.moblink!.server.port,
+                            port: model.database.moblink.server.port,
                             image: "personalhotspot"
                         )
                         ForEach(model.ipStatuses.filter { $0.ipType == .ipv6 }) { status in
                             InterfaceView(
                                 ip: status.ipType.formatAddress(status.ip),
-                                port: model.database.moblink!.server.port,
+                                port: model.database.moblink.server.port,
                                 image: urlImage(interfaceType: status.interfaceType)
                             )
                         }

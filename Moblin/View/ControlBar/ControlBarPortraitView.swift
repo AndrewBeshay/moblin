@@ -1,52 +1,166 @@
 import SwiftUI
 
-private struct ButtonsPortraitView: View {
+@available(iOS 17, *)
+private struct ControlBarPageScrollTargetBehavior: ScrollTargetBehavior {
+    var model: Model
+
+    func updateTarget(_ target: inout ScrollTarget, context: TargetContext) {
+        target.rect.origin.y = controlBarScrollTargetBehavior(
+            model: model,
+            containerWidth: context.containerSize.height,
+            targetPosition: target.rect.minY
+        )
+    }
+}
+
+private struct QuickButtonsView: View {
     @EnvironmentObject var model: Model
-    var width: CGFloat
+    var page: Int
 
     var body: some View {
         HStack {
-            ForEach(model.buttonPairs) { pair in
-                if model.database.quickButtons!.twoColumns {
+            ForEach(model.getQuickButtonPairs(page: page)) { pair in
+                if model.database.quickButtonsGeneral.twoColumns {
                     VStack(alignment: .leading) {
                         if let second = pair.second {
                             QuickButtonsInnerView(
                                 state: second,
-                                size: buttonSize,
-                                nameSize: 10,
-                                nameWidth: buttonSize
+                                size: controlBarButtonSize,
+                                nameSize: controlBarQuickButtonNameSize,
+                                nameWidth: controlBarButtonSize,
                             )
                         } else {
                             QuickButtonPlaceholderImage()
                         }
                         QuickButtonsInnerView(
                             state: pair.first,
-                            size: buttonSize,
-                            nameSize: 10,
-                            nameWidth: buttonSize
+                            size: controlBarButtonSize,
+                            nameSize: controlBarQuickButtonNameSize,
+                            nameWidth: controlBarButtonSize,
                         )
                     }
-                    .id(pair.first.button.id)
                 } else {
                     if let second = pair.second {
                         QuickButtonsInnerView(
                             state: second,
-                            size: singleQuickButtonSize,
-                            nameSize: 12,
-                            nameWidth: width - 10
+                            size: controlBarQuickButtonSingleQuickButtonSize,
+                            nameSize: controlBarQuickButtonNameSingleColumnSize,
+                            nameWidth: controlBarQuickButtonSingleQuickButtonSize,
                         )
                     } else {
                         EmptyView()
                     }
                     QuickButtonsInnerView(
                         state: pair.first,
-                        size: singleQuickButtonSize,
-                        nameSize: 12,
-                        nameWidth: width - 10
+                        size: controlBarQuickButtonSingleQuickButtonSize,
+                        nameSize: controlBarQuickButtonNameSingleColumnSize,
+                        nameWidth: controlBarQuickButtonSingleQuickButtonSize,
                     )
-                    .id(pair.first.button.id)
                 }
             }
+        }
+    }
+}
+
+private struct PageView: View {
+    @EnvironmentObject var model: Model
+    var page: Int
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            QuickButtonsView(page: page)
+        }
+        .scrollDisabled(!model.database.quickButtonsGeneral.enableScroll)
+        .rotationEffect(.degrees(180))
+    }
+}
+
+private struct IconAndSettingsView: View {
+    @EnvironmentObject var model: Model
+
+    var body: some View {
+        HStack(spacing: 0) {
+            Button {
+                model.toggleShowingPanel(type: nil, panel: .cosmetics)
+            } label: {
+                Image("\(model.iconImage)NoBackground")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .padding([.bottom], 4)
+                    .offset(x: 2)
+                    .frame(width: controlBarButtonSize, height: controlBarButtonSize)
+            }
+            Button {
+                model.toggleShowingPanel(type: nil, panel: .settings)
+            } label: {
+                Image(systemName: "gearshape")
+                    .frame(width: controlBarButtonSize, height: controlBarButtonSize)
+                    .overlay(
+                        Circle()
+                            .stroke(.secondary)
+                    )
+                    .foregroundColor(.white)
+            }
+            .padding([.leading], 10)
+        }
+        .padding([.leading, .trailing], 10)
+    }
+}
+
+private struct MainPageView: View {
+    @EnvironmentObject var model: Model
+    var height: Double
+
+    var body: some View {
+        HStack(spacing: 0) {
+            PageView(page: 0)
+                .padding([.top, .leading], 5)
+                .padding([.trailing], 0)
+            VStack(spacing: 0) {
+                HStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    ThermalStateView(thermalState: model.thermalState)
+                    Spacer(minLength: 0)
+                }
+                .padding([.bottom, .trailing], 5)
+                .padding([.leading], 0)
+                IconAndSettingsView()
+                StreamButton()
+                    .padding([.top], 10)
+                    .padding([.leading, .trailing], 5)
+            }
+            .padding([.leading], 0)
+            .frame(width: height)
+        }
+    }
+}
+
+private struct PagesView: View {
+    @EnvironmentObject var model: Model
+    var height: Double
+
+    var body: some View {
+        if #available(iOS 17, *) {
+            ScrollView(.vertical) {
+                LazyVStack {
+                    Group {
+                        MainPageView(height: height)
+                        ForEach(1 ..< controlBarPages, id: \.self) { page in
+                            if !model.buttonPairs[page].isEmpty {
+                                PageView(page: page)
+                                    .padding([.top, .leading, .trailing], 5)
+                            }
+                        }
+                    }
+                    .containerRelativeFrame(.vertical, count: 1, spacing: 0)
+                }
+                .scrollTargetLayout()
+            }
+            .scrollTargetBehavior(ControlBarPageScrollTargetBehavior(model: model))
+            .scrollIndicators(.never)
+            .frame(height: height - 1)
+        } else {
+            MainPageView(height: height)
         }
     }
 }
@@ -58,78 +172,15 @@ struct ControlBarPortraitView: View {
 
     private func controlBarHeight() -> CGFloat {
         if accessibilityShowButtonShapes {
-            return 150
+            return controlBarWidthAccessibility
         } else {
-            return 100
+            return controlBarWidthDefault
         }
     }
 
     var body: some View {
-        HStack(spacing: 0) {
-            GeometryReader { metrics in
-                ScrollView(.horizontal, showsIndicators: false) {
-                    ScrollViewReader { reader in
-                        HStack {
-                            Spacer(minLength: 0)
-                            ButtonsPortraitView(width: metrics.size.height)
-                                .frame(height: metrics.size.height)
-                                .onChange(of: model.scrollQuickButtons) { _ in
-                                    let id = model.buttonPairs.last?.first.button.id ?? model.buttonPairs
-                                        .last?.second?.button.id ?? UUID()
-                                    reader.scrollTo(id, anchor: .trailing)
-                                }
-                        }
-                        .frame(minWidth: metrics.size.width)
-                        .onChange(of: metrics.size) { _ in
-                            model.scrollQuickButtonsToBottom()
-                        }
-                    }
-                }
-                .scrollDisabled(!model.database.quickButtons!.enableScroll)
-                .padding([.top], 5)
-            }
-            .padding([.leading, .trailing], 0)
-            VStack(spacing: 0) {
-                HStack(spacing: 0) {
-                    Spacer(minLength: 0)
-                    ThermalStateView(thermalState: model.thermalState)
-                    Spacer(minLength: 0)
-                }
-                .padding([.bottom], 5)
-                .padding([.leading], 0)
-                .padding([.trailing], 5)
-                HStack(spacing: 0) {
-                    Button {
-                        model.toggleShowingPanel(type: nil, panel: .cosmetics)
-                    } label: {
-                        Image("\(model.iconImage)NoBackground")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .padding([.bottom], 4)
-                            .offset(x: 2)
-                            .frame(width: buttonSize, height: buttonSize)
-                    }
-                    Button {
-                        model.toggleShowingPanel(type: nil, panel: .settings)
-                    } label: {
-                        Image(systemName: "gearshape")
-                            .frame(width: buttonSize, height: buttonSize)
-                            .overlay(
-                                Circle()
-                                    .stroke(.secondary)
-                            )
-                            .foregroundColor(.white)
-                    }
-                    .padding([.leading], 10)
-                }
-                .padding([.leading, .trailing], 10)
-                StreamButton()
-                    .padding([.top], 10)
-                    .padding([.leading, .trailing], 5)
-            }
-            .frame(width: controlBarHeight())
-        }
-        .frame(height: controlBarHeight())
-        .background(.black)
+        PagesView(height: controlBarHeight())
+            .frame(height: controlBarHeight())
+            .background(.black)
     }
 }

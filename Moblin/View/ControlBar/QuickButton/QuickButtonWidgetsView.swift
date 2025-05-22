@@ -52,8 +52,8 @@ struct TimerWidgetView: View {
                                 .tag(delta)
                         }
                     }
-                    .onChange(of: delta) { value in
-                        timer.delta = value
+                    .onChange(of: delta) {
+                        timer.delta = $0
                     }
                     Button {
                         endTime -= 60 * Double(delta)
@@ -116,14 +116,14 @@ struct CheckboxWidgetView: View {
             }
             Text(name)
             Spacer()
-            Button(action: {
+            Button {
                 checkbox.checked = !checkbox.checked
                 image = checkbox.checked ? "checkmark.square" : "square"
                 updateTextEffect()
-            }, label: {
+            } label: {
                 Image(systemName: image)
                     .font(.title)
-            })
+            }
         }
         .buttonStyle(BorderlessButtonStyle())
     }
@@ -169,8 +169,8 @@ struct RatingWidgetView: View {
             } label: {
                 Text(name)
             }
-            .onChange(of: ratingSelection) { value in
-                rating.rating = value
+            .onChange(of: ratingSelection) {
+                rating.rating = $0
                 updateTextEffect()
             }
         }
@@ -210,16 +210,16 @@ struct LapTimesWidgetView: View {
             }
             Text(name)
             Spacer()
-            Button(action: {
+            Button {
                 lapTimes.currentLapStartTime = nil
                 lapTimes.lapTimes = []
                 updateTextEffect()
-            }, label: {
+            } label: {
                 Image(systemName: "trash")
                     .font(.title)
-            })
+            }
             .padding([.trailing], 10)
-            Button(action: {
+            Button {
                 let now = Date().timeIntervalSince1970
                 let lastIndex = lapTimes.lapTimes.endIndex - 1
                 if lastIndex >= 0, let currentLapStartTime = lapTimes.currentLapStartTime {
@@ -228,12 +228,12 @@ struct LapTimesWidgetView: View {
                 lapTimes.currentLapStartTime = now
                 lapTimes.lapTimes.append(0)
                 updateTextEffect()
-            }, label: {
+            } label: {
                 Image(systemName: "stopwatch")
                     .font(.title)
-            })
+            }
             .padding([.trailing], 10)
-            Button(action: {
+            Button {
                 if let currentLapStartTime = lapTimes.currentLapStartTime {
                     let lastIndex = lapTimes.lapTimes.endIndex - 1
                     if lastIndex >= 0 {
@@ -244,10 +244,10 @@ struct LapTimesWidgetView: View {
                     lapTimes.lapTimes.append(.infinity)
                 }
                 updateTextEffect()
-            }, label: {
+            } label: {
                 Image(systemName: "flag.checkered")
                     .font(.title)
-            })
+            }
         }
         .buttonStyle(BorderlessButtonStyle())
     }
@@ -260,11 +260,11 @@ struct QuickButtonWidgetsView: View {
         Form {
             Section {
                 List {
-                    ForEach(model.widgetsInCurrentScene) { widget in
+                    ForEach(model.widgetsInCurrentScene(onlyEnabled: false)) { widget in
                         Toggle(isOn: Binding(get: {
-                            widget.enabled!
-                        }, set: { value in
-                            widget.enabled = value
+                            widget.enabled
+                        }, set: {
+                            widget.enabled = $0
                             model.reloadSpeechToText()
                             model.sceneUpdated(attachCamera: model.isCaptureDeviceVideoSoureWidget(widget: widget))
                         })) {

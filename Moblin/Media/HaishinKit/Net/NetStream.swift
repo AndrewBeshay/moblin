@@ -9,6 +9,8 @@ protocol NetStreamDelegate: AnyObject {
     func streamVideo(_ stream: NetStream, findVideoFormatError: String, activeFormat: String)
     func streamVideoAttachCameraError(_ stream: NetStream)
     func streamVideoCaptureSessionError(_ stream: NetStream, _ message: String)
+    func streamRecorderInitSegment(data: Data)
+    func streamRecorderDataSegment(segment: RecorderDataSegment)
     func streamRecorderFinished()
     func streamAudio(_ stream: NetStream, sampleBuffer: CMSampleBuffer)
     func streamNoTorch()
@@ -72,7 +74,7 @@ open class NetStream: NSObject {
         }
     }
 
-    func setAudioEncoderSettings(settings: AudioCodecOutputSettings) {
+    func setAudioEncoderSettings(settings: AudioEncoderSettings) {
         netStreamLockQueue.async {
             self.mixer.audio.getEncoders().first!.settings = settings
         }
@@ -85,31 +87,13 @@ open class NetStream: NSObject {
     }
 
     func attachCamera(
-        _ devices: CaptureDevices,
-        _ cameraPreviewLayer: AVCaptureVideoPreviewLayer?,
-        _ showCameraPreview: Bool,
-        _ externalDisplayPreview: Bool,
-        _ preferredVideoStabilizationMode: AVCaptureVideoStabilizationMode,
-        _ isVideoMirrored: Bool,
-        _ ignoreFramesAfterAttachSeconds: Double,
-        _ fillFrame: Bool,
+        params: VideoUnitAttachParams,
         onError: ((_ error: Error) -> Void)? = nil,
-        onSuccess: (() -> Void)? = nil,
-        replaceVideoCameraId: UUID? = nil
+        onSuccess: (() -> Void)? = nil
     ) {
         netStreamLockQueue.async {
             do {
-                try self.mixer.attachCamera(
-                    devices,
-                    cameraPreviewLayer,
-                    showCameraPreview,
-                    externalDisplayPreview,
-                    replaceVideoCameraId,
-                    preferredVideoStabilizationMode,
-                    isVideoMirrored,
-                    ignoreFramesAfterAttachSeconds,
-                    fillFrame
-                )
+                try self.mixer.attachCamera(params: params)
                 onSuccess?()
             } catch {
                 onError?(error)
@@ -117,14 +101,10 @@ open class NetStream: NSObject {
         }
     }
 
-    func attachAudio(
-        _ device: AVCaptureDevice?,
-        onError: ((_ error: Error) -> Void)? = nil,
-        replaceAudioId: UUID? = nil
-    ) {
+    func attachAudio(params: AudioUnitAttachParams, onError: ((_ error: Error) -> Void)? = nil) {
         netStreamLockQueue.async {
             do {
-                try self.mixer.attachAudio(device, replaceAudioId)
+                try self.mixer.attachAudio(params: params)
             } catch {
                 onError?(error)
             }
@@ -137,44 +117,44 @@ open class NetStream: NSObject {
         }
     }
 
-    func addReplaceVideo(cameraId: UUID, name: String, latency: Double) {
-        mixer.video.addReplaceVideo(cameraId: cameraId, name: name, latency: latency)
+    func addBufferedVideo(cameraId: UUID, name: String, latency: Double) {
+        mixer.video.addBufferedVideo(cameraId: cameraId, name: name, latency: latency)
     }
 
-    func removeReplaceVideo(cameraId: UUID) {
-        mixer.video.removeReplaceVideo(cameraId: cameraId)
+    func removeBufferedVideo(cameraId: UUID) {
+        mixer.video.removeBufferedVideo(cameraId: cameraId)
     }
 
-    func addReplaceVideoSampleBuffer(cameraId: UUID, _ sampleBuffer: CMSampleBuffer) {
-        mixer.video.addReplaceVideoSampleBuffer(cameraId: cameraId, sampleBuffer)
+    func appendBufferedVideoSampleBuffer(cameraId: UUID, _ sampleBuffer: CMSampleBuffer) {
+        mixer.video.appendBufferedVideoSampleBuffer(cameraId: cameraId, sampleBuffer)
     }
 
-    func setReplaceVideoTargetLatency(cameraId: UUID, _ latency: Double) {
-        mixer.video.setReplaceVideoTargetLatency(cameraId: cameraId, latency: latency)
+    func setBufferedVideoTargetLatency(cameraId: UUID, _ latency: Double) {
+        mixer.video.setBufferedVideoTargetLatency(cameraId: cameraId, latency: latency)
     }
 
-    func addReplaceAudio(cameraId: UUID, name: String, latency: Double) {
-        mixer.audio.addReplaceAudio(cameraId: cameraId, name: name, latency: latency)
+    func addBufferedAudio(cameraId: UUID, name: String, latency: Double) {
+        mixer.audio.addBufferedAudio(cameraId: cameraId, name: name, latency: latency)
     }
 
-    func removeReplaceAudio(cameraId: UUID) {
-        mixer.audio.removeReplaceAudio(cameraId: cameraId)
+    func removeBufferedAudio(cameraId: UUID) {
+        mixer.audio.removeBufferedAudio(cameraId: cameraId)
     }
 
-    func addReplaceAudioSampleBuffer(cameraId: UUID, _ sampleBuffer: CMSampleBuffer) {
-        mixer.audio.addReplaceAudioSampleBuffer(cameraId: cameraId, sampleBuffer)
+    func appendBufferedAudioSampleBuffer(cameraId: UUID, _ sampleBuffer: CMSampleBuffer) {
+        mixer.audio.appendBufferedAudioSampleBuffer(cameraId: cameraId, sampleBuffer)
     }
 
-    func setReplaceAudioTargetLatency(cameraId: UUID, _ latency: Double) {
-        mixer.audio.setReplaceAudioTargetLatency(cameraId: cameraId, latency: latency)
-    }
-
-    func videoCapture() -> VideoUnit? {
-        return mixer.video
+    func setBufferedAudioTargetLatency(cameraId: UUID, _ latency: Double) {
+        mixer.audio.setBufferedAudioTargetLatency(cameraId: cameraId, latency: latency)
     }
 
     func registerVideoEffect(_ effect: VideoEffect) {
         mixer.video.registerEffect(effect)
+    }
+
+    func registerVideoEffectBack(_ effect: VideoEffect) {
+        mixer.video.registerEffectBack(effect)
     }
 
     func unregisterVideoEffect(_ effect: VideoEffect) {
@@ -221,12 +201,25 @@ open class NetStream: NSObject {
         mixer.audio.setSpeechToText(enabled: enabled)
     }
 
-    func startRecording(url: URL, audioSettings: [String: Any], videoSettings: [String: Any]) {
-        mixer.recorder.startRunning(url: url, audioOutputSettings: audioSettings, videoOutputSettings: videoSettings)
+    func startRecording(url: URL?, replay: Bool, audioSettings: [String: Any], videoSettings: [String: Any]) {
+        mixer.recorder.startRunning(
+            url: url,
+            replay: replay,
+            audioOutputSettings: audioSettings,
+            videoOutputSettings: videoSettings
+        )
     }
 
     func stopRecording() {
         mixer.recorder.stopRunning()
+    }
+
+    func setUrl(url: URL?) {
+        mixer.recorder.setUrl(url: url)
+    }
+
+    func setReplayBuffering(enabled: Bool) {
+        mixer.recorder.setReplayBuffering(enabled: enabled)
     }
 
     func stopMixer() {
@@ -263,6 +256,14 @@ extension NetStream: MixerDelegate {
 
     func mixerCaptureSessionError(message: String) {
         delegate?.streamVideoCaptureSessionError(self, message)
+    }
+
+    func mixerRecorderInitSegment(data: Data) {
+        delegate?.streamRecorderInitSegment(data: data)
+    }
+
+    func mixerRecorderDataSegment(segment: RecorderDataSegment) {
+        delegate?.streamRecorderDataSegment(segment: segment)
     }
 
     func mixerRecorderFinished() {

@@ -7,7 +7,7 @@ struct AudioSettingsView: View {
         guard let channel = Int(value) else {
             return
         }
-        model.database.audio!.audioOutputToInputChannelsMap!.channel1 = max(channel - 1, -1)
+        model.database.audio.audioOutputToInputChannelsMap!.channel1 = max(channel - 1, -1)
         model.reloadStream()
         model.sceneUpdated(updateRemoteScene: false)
     }
@@ -16,14 +16,14 @@ struct AudioSettingsView: View {
         guard let channel = Int(value) else {
             return
         }
-        model.database.audio!.audioOutputToInputChannelsMap!.channel2 = max(channel - 1, -1)
+        model.database.audio.audioOutputToInputChannelsMap!.channel2 = max(channel - 1, -1)
         model.reloadStream()
         model.sceneUpdated(updateRemoteScene: false)
     }
 
     var body: some View {
         Form {
-            if model.database.showAllSettings! {
+            if model.database.showAllSettings {
                 Section {
                     NavigationLink {
                         StreamAudioSettingsView(
@@ -42,9 +42,9 @@ struct AudioSettingsView: View {
             }
             Section {
                 Toggle("Bluetooth output only", isOn: Binding(get: {
-                    model.database.debug.bluetoothOutputOnly!
-                }, set: { value in
-                    model.database.debug.bluetoothOutputOnly = value
+                    model.database.debug.bluetoothOutputOnly
+                }, set: {
+                    model.database.debug.bluetoothOutputOnly = $0
                     model.reloadAudioSession()
                 }))
             } footer: {
@@ -52,9 +52,9 @@ struct AudioSettingsView: View {
             }
             Section {
                 Toggle("Prefer stereo mic", isOn: Binding(get: {
-                    model.database.debug.preferStereoMic!
-                }, set: { value in
-                    model.database.debug.preferStereoMic = value
+                    model.database.debug.preferStereoMic
+                }, set: {
+                    model.database.debug.preferStereoMic = $0
                     model.reloadAudioSession()
                     model.setMic()
                 }))
@@ -68,13 +68,13 @@ struct AudioSettingsView: View {
             Section {
                 TextEditNavigationView(
                     title: String(localized: "Output channel 1"),
-                    value: String(model.database.audio!.audioOutputToInputChannelsMap!.channel1 + 1),
+                    value: String(model.database.audio.audioOutputToInputChannelsMap!.channel1 + 1),
                     onSubmit: submitOutputChannel1
                 )
                 .disabled(model.isLive || model.isRecording)
                 TextEditNavigationView(
                     title: String(localized: "Output channel 2"),
-                    value: String(model.database.audio!.audioOutputToInputChannelsMap!.channel2 + 1),
+                    value: String(model.database.audio.audioOutputToInputChannelsMap!.channel2 + 1),
                     onSubmit: submitOutputChannel2
                 )
                 .disabled(model.isLive || model.isRecording)

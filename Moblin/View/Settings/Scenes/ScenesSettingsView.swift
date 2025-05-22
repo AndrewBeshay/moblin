@@ -16,7 +16,7 @@ private struct ScenesListView: View {
                             scene: scene,
                             name: scene.name,
                             selectedRotation: scene.videoSourceRotation!,
-                            numericInput: model.database.sceneNumericInput!
+                            numericInput: model.database.sceneNumericInput
                         )
                     } label: {
                         HStack {
@@ -30,21 +30,21 @@ private struct ScenesListView: View {
                         }
                     }
                     .swipeActions(edge: .trailing) {
-                        Button(action: {
+                        Button {
                             database.scenes.removeAll { $0 == scene }
                             model.resetSelectedScene()
-                        }, label: {
+                        } label: {
                             Text("Delete")
-                        })
+                        }
                         .tint(.red)
                     }
                     .swipeActions(edge: .trailing) {
-                        Button(action: {
+                        Button {
                             database.scenes.append(scene.clone())
                             model.resetSelectedScene()
-                        }, label: {
+                        } label: {
                             Text("Duplicate")
-                        })
+                        }
                         .tint(.blue)
                     }
                 }
@@ -82,7 +82,7 @@ private struct ScenesSwitchTransition: View {
                 model.setSceneSwitchTransition()
             }
             Toggle("Force scene switch transition", isOn: Binding(get: {
-                model.database.forceSceneSwitchTransition!
+                model.database.forceSceneSwitchTransition
             }, set: { value in
                 model.database.forceSceneSwitchTransition = value
             }))
@@ -148,8 +148,9 @@ struct ScenesSettingsView: View {
     var body: some View {
         Form {
             ScenesListView()
-            WidgetsSettingsView()
-            ScenesSwitchTransition(sceneSwitchTransition: model.database.sceneSwitchTransition!.toString())
+            WidgetsSettingsView(database: model.database)
+            AutoSwitchersSettingsView(autoSceneSwitchers: model.database.autoSceneSwitchers!)
+            ScenesSwitchTransition(sceneSwitchTransition: model.database.sceneSwitchTransition.toString())
             RemoteSceneView(selectedSceneId: model.database.remoteSceneId)
             ReloadBrowserSources()
         }

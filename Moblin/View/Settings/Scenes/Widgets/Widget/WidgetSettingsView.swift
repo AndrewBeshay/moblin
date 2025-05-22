@@ -2,20 +2,15 @@ import SwiftUI
 
 struct WidgetSettingsView: View {
     @EnvironmentObject var model: Model
-    var widget: SettingsWidget
-    @State var type: String
-    @State var name: String
+    @ObservedObject var widget: SettingsWidget
 
     var body: some View {
         Form {
             Section {
                 NavigationLink {
-                    NameEditView(name: $name)
+                    NameEditView(name: $widget.name)
                 } label: {
-                    TextItemView(name: String(localized: "Name"), value: name)
-                }
-                .onChange(of: name) { name in
-                    widget.name = name
+                    TextItemView(name: String(localized: "Name"), value: widget.name)
                 }
                 NavigationLink {
                     InlinePickerView(title: String(localized: "Type"),
@@ -55,22 +50,22 @@ struct WidgetSettingsView: View {
             case .crop:
                 WidgetCropSettingsView(widget: widget)
             case .map:
-                WidgetMapSettingsView(widget: widget, delay: widget.map!.delay!)
+                WidgetMapSettingsView(widget: widget, delay: widget.map.delay!)
             case .scene:
-                WidgetSceneSettingsView(widget: widget, selectedSceneId: widget.scene!.sceneId)
+                WidgetSceneSettingsView(widget: widget, selectedSceneId: widget.scene.sceneId)
             case .qrCode:
                 WidgetQrCodeSettingsView(widget: widget)
             case .alerts:
                 WidgetAlertsSettingsView(widget: widget)
             case .videoSource:
                 WidgetVideoSourceSettingsView(widget: widget,
-                                              cornerRadius: widget.videoSource!.cornerRadius,
-                                              selectedRotation: widget.videoSource!.rotation!,
-                                              zoom: widget.videoSource!.trackFaceZoom!,
-                                              borderWidth: widget.videoSource!.borderWidth!,
-                                              background: widget.videoSource!.borderColor!.color())
+                                              cornerRadius: widget.videoSource.cornerRadius,
+                                              selectedRotation: widget.videoSource.rotation!,
+                                              zoom: widget.videoSource.trackFaceZoom!,
+                                              borderWidth: widget.videoSource.borderWidth!,
+                                              background: widget.videoSource.borderColor!.color())
             case .scoreboard:
-                WidgetScoreboardSettingsView(widget: widget, type: widget.scoreboard!.type.rawValue)
+                WidgetScoreboardSettingsView(widget: widget, type: widget.scoreboard.type.rawValue)
             }
         }
         .navigationTitle("Widget")

@@ -1,13 +1,25 @@
 import AVFoundation
 
-protocol IORecorderDelegate: AnyObject {
+struct RecorderDataSegment {
+    let data: Data
+    let startTime: Double
+    let duration: Double
+}
+
+protocol RecorderDelegate: AnyObject {
+    func recorderInitSegment(data: Data)
+    func recorderDataSegment(segment: RecorderDataSegment)
     func recorderFinished()
 }
 
+private let recorderQueue = DispatchQueue(label: "com.eerimoq.recorder")
+
 class Recorder: NSObject {
+    private var replay = false
     private var audioOutputSettings: [String: Any] = [:]
     private var videoOutputSettings: [String: Any] = [:]
-    private var fileHandle: Atomic<FileHandle?> = .init(nil)
+    private var fileHandle: FileHandle?
+    private var initSegment: Data?
     private var outputChannelsMap: [Int: Int] = [0: 0, 1: 1]
     private var writer: AVAssetWriter?
     private var audioWriterInput: AVAssetWriterInput?
@@ -15,7 +27,7 @@ class Recorder: NSObject {
     private var audioConverter: AVAudioConverter?
     private var audioOutputFormat: AVAudioFormat?
     private var basePresentationTimeStamp: CMTime = .zero
-    weak var delegate: (any IORecorderDelegate)?
+    weak var delegate: RecorderDelegate?
 
     func setAudioChannelsMap(map: [Int: Int]) {
         mixerLockQueue.async {
@@ -23,10 +35,11 @@ class Recorder: NSObject {
         }
     }
 
-    func startRunning(url: URL, audioOutputSettings: [String: Any], videoOutputSettings: [String: Any]) {
+    func startRunning(url: URL?, replay: Bool, audioOutputSettings: [String: Any], videoOutputSettings: [String: Any]) {
         mixerLockQueue.async {
             self.startRunningInner(
                 url: url,
+                replay: replay,
                 audioOutputSettings: audioOutputSettings,
                 videoOutputSettings: videoOutputSettings
             )
@@ -36,6 +49,29 @@ class Recorder: NSObject {
     func stopRunning() {
         mixerLockQueue.async {
             self.stopRunningInner()
+        }
+    }
+
+    func setUrl(url: URL?) {
+        recorderQueue.async {
+            if let url {
+                try? Data().write(to: url)
+                self.fileHandle = FileHandle(forWritingAtPath: url.path)
+                if let initSegment = self.initSegment {
+                    self.fileHandle?.write(initSegment)
+                }
+            } else {
+                self.fileHandle = nil
+            }
+        }
+    }
+
+    func setReplayBuffering(enabled: Bool) {
+        recorderQueue.async {
+            self.replay = enabled
+            if let initSegment = self.initSegment {
+                self.delegate?.recorderInitSegment(data: initSegment)
+            }
         }
     }
 
@@ -254,7 +290,13 @@ class Recorder: NSObject {
         return .init(streamDescription: &basicDescription)
     }
 
-    private func startRunningInner(url: URL, audioOutputSettings: [String: Any], videoOutputSettings: [String: Any]) {
+    private func startRunningInner(
+        url: URL?,
+        replay: Bool,
+        audioOutputSettings: [String: Any],
+        videoOutputSettings: [String: Any]
+    ) {
+        self.replay = replay
         self.audioOutputSettings = audioOutputSettings
         self.videoOutputSettings = videoOutputSettings
         guard writer == nil else {
@@ -265,11 +307,10 @@ class Recorder: NSObject {
         writer = AVAssetWriter(contentType: UTType(AVFileType.mp4.rawValue)!)
         writer?.shouldOptimizeForNetworkUse = true
         writer?.outputFileTypeProfile = .mpeg4AppleHLS
-        writer?.preferredOutputSegmentInterval = CMTime(seconds: 5, preferredTimescale: 1)
+        writer?.preferredOutputSegmentInterval = CMTime(seconds: 2, preferredTimescale: 1)
         writer?.delegate = self
         writer?.initialSegmentStartTime = .zero
-        try? Data().write(to: url)
-        fileHandle.mutate { $0 = FileHandle(forWritingAtPath: url.path) }
+        setUrl(url: url)
     }
 
     private func stopRunningInner() {
@@ -299,7 +340,10 @@ class Recorder: NSObject {
         audioConverter = nil
         audioOutputFormat = nil
         basePresentationTimeStamp = .zero
-        fileHandle.mutate { $0 = nil }
+        recorderQueue.async {
+            self.fileHandle = nil
+            self.initSegment = nil
+        }
     }
 
     private func isReadyForStartWriting(writer: AVAssetWriter) -> Bool {
@@ -310,9 +354,30 @@ class Recorder: NSObject {
 extension Recorder: AVAssetWriterDelegate {
     func assetWriter(_: AVAssetWriter,
                      didOutputSegmentData segmentData: Data,
-                     segmentType _: AVAssetSegmentType,
-                     segmentReport _: AVAssetSegmentReport?)
+                     segmentType: AVAssetSegmentType,
+                     segmentReport: AVAssetSegmentReport?)
     {
-        fileHandle.value?.write(segmentData)
+        recorderQueue.async {
+            self.fileHandle?.write(segmentData)
+            if segmentType == .initialization {
+                self.initSegment = segmentData
+            }
+            if self.replay {
+                switch segmentType {
+                case .initialization:
+                    self.delegate?.recorderInitSegment(data: segmentData)
+                case .separable:
+                    if let report = segmentReport?.trackReports.first {
+                        self.delegate?.recorderDataSegment(segment: RecorderDataSegment(
+                            data: segmentData,
+                            startTime: report.earliestPresentationTimeStamp.seconds,
+                            duration: report.duration.seconds
+                        ))
+                    }
+                default:
+                    break
+                }
+            }
+        }
     }
 }

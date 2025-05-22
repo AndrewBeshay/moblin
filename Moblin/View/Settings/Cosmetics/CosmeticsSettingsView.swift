@@ -49,11 +49,11 @@ private struct CosmeticsSettingsIconsInStoreView: View {
                         Image(icon.imageNoBackground())
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(width: buttonSize, height: buttonSize)
+                            .frame(width: controlBarButtonSize, height: controlBarButtonSize)
                         Spacer()
                         Text(icon.name)
                         ZStack {
-                            Button(action: {
+                            Button {
                                 disabledPurchaseButtons.insert(icon.id)
                                 disabledPurchaseButtons = disabledPurchaseButtons
                                 Task {
@@ -68,9 +68,9 @@ private struct CosmeticsSettingsIconsInStoreView: View {
                                     disabledPurchaseButtons.remove(icon.id)
                                     disabledPurchaseButtons = disabledPurchaseButtons
                                 }
-                            }, label: {
+                            } label: {
                                 Text(icon.price)
-                            })
+                            }
                             .padding([.leading], 10)
                             .disabled(disabledPurchaseButtons.contains(icon.id))
                             .opacity(disabledPurchaseButtons.contains(icon.id) ? 0.0 : 1.0)
@@ -112,7 +112,7 @@ private struct CosmeticsSettingsMyIconsView: View {
                         Image(icon.imageNoBackground())
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(width: buttonSize, height: buttonSize)
+                            .frame(width: controlBarButtonSize, height: controlBarButtonSize)
                         Spacer()
                         Text(icon.name)
                     }

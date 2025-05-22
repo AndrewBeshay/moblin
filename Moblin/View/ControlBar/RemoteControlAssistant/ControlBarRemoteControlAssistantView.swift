@@ -26,7 +26,7 @@ private struct RemoteControlSrtConnectionPriorityView: View {
     @State var prio: Float
 
     private func makeName() -> String {
-        if let name = model.database.networkInterfaceNames!.first(where: { interface in
+        if let name = model.database.networkInterfaceNames.first(where: { interface in
             interface.interfaceName == priority.name
         })?.name, !name.isEmpty {
             return name
@@ -38,10 +38,10 @@ private struct RemoteControlSrtConnectionPriorityView: View {
     var body: some View {
         Toggle(isOn: Binding(get: {
             enabled
-        }, set: { value in
+        }, set: {
             var priority = priority
-            priority.enabled = value
-            enabled = value
+            priority.enabled = $0
+            enabled = $0
             model.remoteControlAssistantSetSrtConnectionPriority(priority: priority)
         })) {
             HStack {
@@ -75,9 +75,9 @@ private struct RemoteControlSrtConnectionPrioritiesView: View {
             Section {
                 Toggle(isOn: Binding(get: {
                     enabled
-                }, set: { value in
-                    enabled = value
-                    model.remoteControlAssistantSetSrtConnectionPriorityEnabled(enabled: value)
+                }, set: {
+                    enabled = $0
+                    model.remoteControlAssistantSetSrtConnectionPriorityEnabled(enabled: $0)
                 })) {
                     Text("Enabled")
                 }
@@ -189,7 +189,7 @@ private struct RemoteControlAudioLevelView: View {
     }
 }
 
-private struct ControlBarRemoteControlAssistantLeftView: View {
+private struct ControlBarRemoteControlAssistantStatusView: View {
     @EnvironmentObject var model: Model
 
     private func batteryStatus(status: RemoteControlStatusGeneral) -> RemoteControlStatusItem? {
@@ -220,112 +220,111 @@ private struct ControlBarRemoteControlAssistantLeftView: View {
     }
 
     var body: some View {
-        Form {
-            Section {
-                if model.remoteControlAssistantShowPreview {
-                    if let preview = model.remoteControlPreview {
-                        Image(uiImage: preview)
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(maxWidth: .infinity)
-                            .padding([.bottom], 3)
-                            .onTapGesture(count: 2) { _ in
-                                model.remoteControlAssistantShowPreviewFullScreen = true
-                            }
-                            .onTapGesture(count: 1) { _ in
-                                model.remoteControlAssistantStopPreview(user: .panel)
-                                model.remoteControlAssistantShowPreview = false
-                            }
+        Section {
+            if model.remoteControlAssistantShowPreview {
+                if let preview = model.remoteControlPreview {
+                    Image(uiImage: preview)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: .infinity)
+                        .padding([.bottom], 3)
+                        .onTapGesture(count: 2) { _ in
+                            model.remoteControlAssistantShowPreviewFullScreen = true
+                        }
+                        .onTapGesture(count: 1) { _ in
+                            model.remoteControlAssistantStopPreview(user: .panel)
+                            model.remoteControlAssistantShowPreview = false
+                        }
+                } else {
+                    Text("No preview received yet.")
+                }
+            } else {
+                Button {
+                    model.remoteControlAssistantStartPreview(user: .panel)
+                    model.remoteControlAssistantShowPreview = true
+                } label: {
+                    HStack {
+                        Spacer()
+                        Text("Show")
+                        Spacer()
+                    }
+                }
+            }
+        } header: {
+            Text("Preview")
+        } footer: {
+            if model.remoteControlAssistantShowPreview {
+                Text("Tap the preview to hide it. Double tap to toggle full screen.")
+            }
+        }
+        Section {
+            if let status = model.remoteControlGeneral {
+                VStack(alignment: .leading, spacing: 3) {
+                    StatusItemView(
+                        icon: "battery.0",
+                        status: batteryStatus(status: status)
+                    )
+                    StatusItemView(icon: "flame", status: flameStatus(status: status))
+                    StatusItemView(icon: "wifi", status: ssidStatus(status: status))
+                }
+            } else {
+                Text("No status received yet.")
+            }
+        } header: {
+            Text("General")
+        }
+        Section {
+            if let status = model.remoteControlTopLeft {
+                VStack(alignment: .leading, spacing: 3) {
+                    StatusItemView(
+                        icon: "dot.radiowaves.left.and.right",
+                        status: status.stream
+                    )
+                    StatusItemView(icon: "camera", status: status.camera)
+                    StatusItemView(icon: "music.mic", status: status.mic)
+                    StatusItemView(icon: "magnifyingglass", status: status.zoom)
+                    StatusItemView(icon: "xserve", status: status.obs)
+                    StatusItemView(icon: "megaphone", status: status.events)
+                    StatusItemView(icon: "message", status: status.chat)
+                    StatusItemView(icon: "eye", status: status.viewers)
+                }
+            } else {
+                Text("No status received yet.")
+            }
+        } header: {
+            Text("Top left")
+        }
+        Section {
+            if let status = model.remoteControlTopRight {
+                VStack(alignment: .leading, spacing: 3) {
+                    if let audioInfo = status.audioInfo {
+                        RemoteControlAudioLevelView(
+                            level: audioInfo.audioLevel.toFloat(),
+                            channels: audioInfo.numberOfAudioChannels
+                        )
                     } else {
-                        Text("No preview received yet.")
+                        // Backwards compatibility. Remove later.
+                        StatusItemView(icon: "waveform", status: status.audioLevel)
                     }
-                } else {
-                    Button {
-                        model.remoteControlAssistantStartPreview(user: .panel)
-                        model.remoteControlAssistantShowPreview = true
-                    } label: {
-                        HStack {
-                            Spacer()
-                            Text("Show")
-                            Spacer()
-                        }
-                    }
+                    StatusItemView(icon: "server.rack", status: status.rtmpServer)
+                    StatusItemView(icon: "app.connected.to.app.below.fill", status: status.moblink)
+                    StatusItemView(icon: "appletvremote.gen1", status: status.remoteControl)
+                    StatusItemView(icon: "appletvremote.gen1", status: status.djiDevices)
+                    StatusItemView(icon: "gamecontroller", status: status.gameController)
+                    StatusItemView(icon: "speedometer", status: status.bitrate)
+                    StatusItemView(icon: "deskclock", status: status.uptime)
+                    StatusItemView(icon: "location", status: status.location)
+                    StatusItemView(icon: "phone.connection", status: status.srtla)
+                    StatusItemView(icon: "phone.connection", status: status.srtlaRtts)
+                    StatusItemView(icon: "record.circle", status: status.recording)
+                    StatusItemView(icon: "play", status: status.replay)
+                    StatusItemView(icon: "globe", status: status.browserWidgets)
                 }
-            } header: {
-                Text("Preview")
-            } footer: {
-                if model.remoteControlAssistantShowPreview {
-                    Text("Tap the preview to hide it. Double tap to toggle full screen.")
-                }
+            } else {
+                Text("No status received yet.")
             }
-            Section {
-                if let status = model.remoteControlGeneral {
-                    VStack(alignment: .leading, spacing: 3) {
-                        StatusItemView(
-                            icon: "battery.0",
-                            status: batteryStatus(status: status)
-                        )
-                        StatusItemView(icon: "flame", status: flameStatus(status: status))
-                        StatusItemView(icon: "wifi", status: ssidStatus(status: status))
-                    }
-                } else {
-                    Text("No status received yet.")
-                }
-            } header: {
-                Text("General")
-            }
-            Section {
-                if let status = model.remoteControlTopLeft {
-                    VStack(alignment: .leading, spacing: 3) {
-                        StatusItemView(
-                            icon: "dot.radiowaves.left.and.right",
-                            status: status.stream
-                        )
-                        StatusItemView(icon: "camera", status: status.camera)
-                        StatusItemView(icon: "music.mic", status: status.mic)
-                        StatusItemView(icon: "magnifyingglass", status: status.zoom)
-                        StatusItemView(icon: "xserve", status: status.obs)
-                        StatusItemView(icon: "megaphone", status: status.events)
-                        StatusItemView(icon: "message", status: status.chat)
-                        StatusItemView(icon: "eye", status: status.viewers)
-                    }
-                } else {
-                    Text("No status received yet.")
-                }
-            } header: {
-                Text("Top left")
-            }
-            Section {
-                if let status = model.remoteControlTopRight {
-                    VStack(alignment: .leading, spacing: 3) {
-                        if let audioInfo = status.audioInfo {
-                            RemoteControlAudioLevelView(
-                                level: audioInfo.audioLevel.toFloat(),
-                                channels: audioInfo.numberOfAudioChannels
-                            )
-                        } else {
-                            // Backwards compatibility. Remove later.
-                            StatusItemView(icon: "waveform", status: status.audioLevel)
-                        }
-                        StatusItemView(icon: "server.rack", status: status.rtmpServer)
-                        StatusItemView(icon: "app.connected.to.app.below.fill", status: status.moblink)
-                        StatusItemView(icon: "appletvremote.gen1", status: status.remoteControl)
-                        StatusItemView(icon: "appletvremote.gen1", status: status.djiDevices)
-                        StatusItemView(icon: "gamecontroller", status: status.gameController)
-                        StatusItemView(icon: "speedometer", status: status.bitrate)
-                        StatusItemView(icon: "deskclock", status: status.uptime)
-                        StatusItemView(icon: "location", status: status.location)
-                        StatusItemView(icon: "phone.connection", status: status.srtla)
-                        StatusItemView(icon: "phone.connection", status: status.srtlaRtts)
-                        StatusItemView(icon: "record.circle", status: status.recording)
-                        StatusItemView(icon: "globe", status: status.browserWidgets)
-                    }
-                } else {
-                    Text("No status received yet.")
-                }
-            } header: {
-                Text("Top right")
-            }
+        } header: {
+            Text("Top right")
         }
     }
 }
@@ -338,8 +337,8 @@ private struct LiveView: View {
     var body: some View {
         Toggle(isOn: Binding(get: {
             model.remoteControlState.streaming ?? false
-        }, set: { value in
-            pendingValue = value
+        }, set: {
+            pendingValue = $0
             isPresentingConfirm = true
         })) {
             Text("Live")
@@ -360,8 +359,8 @@ private struct RecordingView: View {
     var body: some View {
         Toggle(isOn: Binding(get: {
             model.remoteControlState.recording ?? false
-        }, set: { value in
-            pendingValue = value
+        }, set: {
+            pendingValue = $0
             isPresentingConfirm = true
         })) {
             Text("Recording")
@@ -496,8 +495,8 @@ private struct DebugLoggingView: View {
     var body: some View {
         Toggle(isOn: Binding(get: {
             model.remoteControlDebugLogging
-        }, set: { value in
-            model.remoteControlDebugLogging = value
+        }, set: {
+            model.remoteControlDebugLogging = $0
             guard model.remoteControlDebugLogging != model.remoteControlState.debugLogging else {
                 return
             }
@@ -508,64 +507,62 @@ private struct DebugLoggingView: View {
     }
 }
 
-private struct ControlBarRemoteControlAssistantRightView: View {
+private struct ControlBarRemoteControlAssistantControlView: View {
     @EnvironmentObject var model: Model
 
     var body: some View {
-        Form {
-            Section {
-                if model.remoteControlSettings != nil {
-                    LiveView()
-                    RecordingView()
-                    ZoomView()
-                    ScenePickerView()
-                    MicView()
-                    BitrateView()
-                    SrtConnectionPrioritiesView()
-                    DebugLoggingView()
-                } else {
-                    HCenter {
-                        ProgressView()
-                    }
+        Section {
+            if model.remoteControlSettings != nil {
+                LiveView()
+                RecordingView()
+                ZoomView()
+                ScenePickerView()
+                MicView()
+                BitrateView()
+                SrtConnectionPrioritiesView()
+                DebugLoggingView()
+            } else {
+                HCenter {
+                    ProgressView()
                 }
-            } header: {
-                Text("Control")
+            }
+        } header: {
+            Text("Control")
+        }
+        Section {
+            Button {
+                model.remoteControlAssistantReloadBrowserWidgets()
+            } label: {
+                HStack {
+                    Text("")
+                    Spacer()
+                    Text("Reload browser widgets")
+                    Spacer()
+                }
             }
             Section {
                 Button {
-                    model.remoteControlAssistantReloadBrowserWidgets()
+                    model.updateRemoteControlAssistantStatus()
                 } label: {
                     HStack {
                         Text("")
                         Spacer()
-                        Text("Reload browser widgets")
+                        Text("Refresh status")
                         Spacer()
                     }
                 }
-                Section {
-                    Button {
-                        model.updateRemoteControlAssistantStatus()
-                    } label: {
-                        HStack {
-                            Text("")
-                            Spacer()
-                            Text("Refresh status")
-                            Spacer()
-                        }
-                    }
-                }
             }
-            Section {
-                NavigationLink {
-                    DebugLogSettingsView(
-                        log: model.remoteControlAssistantLog,
-                        clearLog: {
-                            model.clearRemoteControlAssistantLog()
-                        }
-                    )
-                } label: {
-                    Text("Log")
-                }
+        }
+        Section {
+            NavigationLink {
+                DebugLogSettingsView(
+                    log: model.remoteControlAssistantLog,
+                    clearLog: {
+                        model.clearRemoteControlAssistantLog()
+                    }
+                )
+            } label: {
+                Text("Log")
             }
         }
     }
@@ -598,9 +595,18 @@ struct ControlBarRemoteControlAssistantView: View {
                         Form {
                             Text("Waiting for the remote control streamer to connect...")
                         }
+                    } else if model.isPortrait() {
+                        Form {
+                            ControlBarRemoteControlAssistantStatusView()
+                            ControlBarRemoteControlAssistantControlView()
+                        }
                     } else {
-                        ControlBarRemoteControlAssistantLeftView()
-                        ControlBarRemoteControlAssistantRightView()
+                        Form {
+                            ControlBarRemoteControlAssistantStatusView()
+                        }
+                        Form {
+                            ControlBarRemoteControlAssistantControlView()
+                        }
                     }
                 }
             }

@@ -32,9 +32,9 @@ struct DisplaySettingsView: View {
                 } label: {
                     Text("Quick buttons")
                 }
-                if model.database.showAllSettings! {
+                if model.database.showAllSettings {
                     NavigationLink {
-                        StreamButtonsSettingsView(background: model.database.streamButtonColor!.color())
+                        StreamButtonsSettingsView(background: model.database.streamButtonColor.color())
                     } label: {
                         Text("Stream button")
                     }
@@ -51,19 +51,19 @@ struct DisplaySettingsView: View {
                     } label: {
                         Text("Local overlays")
                     }
-                    ExternalDisplayContentView(selection: model.database.externalDisplayContent!.toString())
+                    ExternalDisplayContentView(selection: model.database.externalDisplayContent.toString())
                     NavigationLink {
                         LocalOverlaysNetworkInterfaceNamesSettingsView()
                     } label: {
                         Text("Network interface names")
                     }
                     Toggle("Low bitrate warning", isOn: Binding(get: {
-                        model.database.lowBitrateWarning!
+                        model.database.lowBitrateWarning
                     }, set: { value in
                         model.database.lowBitrateWarning = value
                     }))
                     Toggle("Recording confirmations", isOn: Binding(get: {
-                        model.database.startStopRecordingConfirmations!
+                        model.database.startStopRecordingConfirmations
                     }, set: { value in
                         model.database.startStopRecordingConfirmations = value
                     }))
@@ -71,7 +71,7 @@ struct DisplaySettingsView: View {
             }
             Section {
                 Toggle("Vibrate", isOn: Binding(get: {
-                    model.database.vibrate!
+                    model.database.vibrate
                 }, set: { value in
                     model.database.vibrate = value
                     model.setAllowHapticsAndSystemSoundsDuringRecording()
@@ -89,15 +89,24 @@ struct DisplaySettingsView: View {
                     Text("Make sure silent mode is off for vibrations to work.")
                 }
             }
-            if model.database.showAllSettings! {
+            if model.database.showAllSettings {
                 if !ProcessInfo().isiOSAppOnMac {
                     Section {
                         Toggle(isOn: Binding(get: {
-                            model.database.portrait!
+                            model.database.portrait
                         }, set: { _ in
-                            model.setDisplayPortrait(portrait: !model.database.portrait!)
+                            model.setDisplayPortrait(portrait: !model.database.portrait)
                         })) {
                             Text("Portrait")
+                        }
+                        HStack {
+                            Text("Video position")
+                            Slider(value: $model.portraitVideoOffsetFromTop, in: 0 ... 1) {
+                                Text("")
+                            }
+                        }
+                        .onChange(of: model.portraitVideoOffsetFromTop) {
+                            model.database.portraitVideoOffsetFromTop = $0
                         }
                     } footer: {
                         VStack(alignment: .leading) {

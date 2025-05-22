@@ -9,7 +9,7 @@ struct StreamButtonsSettingsView: View {
             return
         }
         model.database.streamButtonColor = color
-        model.updateButtonStates()
+        model.updateQuickButtonStates()
     }
 
     var body: some View {
@@ -19,14 +19,14 @@ struct StreamButtonsSettingsView: View {
                     .onChange(of: background) { _ in
                         onColorChange(color: background)
                     }
-                Button(action: {
+                Button {
                     background = defaultStreamButtonColor.color()
                     onColorChange(color: background)
-                }, label: {
+                } label: {
                     HCenter {
                         Text("Reset")
                     }
-                })
+                }
             } header: {
                 Text("Color")
             }

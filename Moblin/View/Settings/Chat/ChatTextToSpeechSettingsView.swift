@@ -3,12 +3,11 @@ import SwiftUI
 
 struct ChatTextToSpeechSettingsView: View {
     @EnvironmentObject var model: Model
-    @State var rate: Float
-    @State var volume: Float
+    @ObservedObject var chat: SettingsChat
 
     private func onVoiceChange(languageCode: String, voice: String) {
-        model.database.chat.textToSpeechLanguageVoices![languageCode] = voice
-        model.chatTextToSpeech.setVoices(voices: model.database.chat.textToSpeechLanguageVoices!)
+        model.database.chat.textToSpeechLanguageVoices[languageCode] = voice
+        model.chatTextToSpeech.setVoices(voices: model.database.chat.textToSpeechLanguageVoices)
     }
 
     var body: some View {
@@ -16,48 +15,67 @@ struct ChatTextToSpeechSettingsView: View {
             Section {
                 NavigationLink {
                     VoicesView(
-                        textToSpeechLanguageVoices: model.database.chat.textToSpeechLanguageVoices!,
+                        textToSpeechLanguageVoices: model.database.chat.textToSpeechLanguageVoices,
                         onVoiceChange: onVoiceChange
                     )
                 } label: {
                     Text("Voices")
                 }
                 HStack {
-                    Image(systemName: "tortoise.fill")
-                    Slider(
-                        value: $rate,
-                        in: 0.3 ... 0.6,
-                        step: 0.01,
-                        onEditingChanged: { begin in
-                            guard !begin else {
-                                return
-                            }
-                            model.database.chat.textToSpeechRate = rate
-                            model.chatTextToSpeech.setRate(rate: rate)
-                        }
-                    )
-                    Image(systemName: "hare.fill")
-                }
-                HStack {
                     Image(systemName: "volume.1.fill")
                     Slider(
-                        value: $volume,
+                        value: $chat.textToSpeechSayVolume,
                         in: 0.3 ... 1.0,
                         step: 0.01,
                         onEditingChanged: { begin in
                             guard !begin else {
                                 return
                             }
-                            model.database.chat.textToSpeechSayVolume = volume
-                            model.chatTextToSpeech.setVolume(volume: volume)
+                            model.chatTextToSpeech.setVolume(volume: chat.textToSpeechSayVolume)
                         }
                     )
                     Image(systemName: "volume.3.fill")
                 }
+                HStack {
+                    Image(systemName: "tortoise.fill")
+                    Slider(
+                        value: $chat.textToSpeechRate,
+                        in: 0.3 ... 0.6,
+                        step: 0.01,
+                        onEditingChanged: { begin in
+                            guard !begin else {
+                                return
+                            }
+                            model.chatTextToSpeech.setRate(rate: chat.textToSpeechRate)
+                        }
+                    )
+                    Image(systemName: "hare.fill")
+                }
+            } header: {
+                Text("Voice")
+            }
+            Section {
+                HStack {
+                    Slider(
+                        value: $chat.textToSpeechPauseBetweenMessages,
+                        in: 0.5 ... 15.0,
+                        step: 0.5,
+                        onEditingChanged: { begin in
+                            guard !begin else {
+                                return
+                            }
+                            model.chatTextToSpeech.setPauseBetweenMessages(value: chat.textToSpeechPauseBetweenMessages)
+                        }
+                    )
+                    Text("\(formatOneDecimal(Float(chat.textToSpeechPauseBetweenMessages))) s")
+                        .frame(width: 45)
+                }
+            } header: {
+                Text("Pause between messages")
             }
             Section {
                 Toggle(isOn: Binding(get: {
-                    model.database.chat.textToSpeechDetectLanguagePerMessage!
+                    model.database.chat.textToSpeechDetectLanguagePerMessage
                 }, set: { value in
                     model.database.chat.textToSpeechDetectLanguagePerMessage = value
                     model.chatTextToSpeech.setDetectLanguagePerMessage(value: value)
@@ -65,7 +83,7 @@ struct ChatTextToSpeechSettingsView: View {
                     Text("Detect language per message")
                 }
                 Toggle(isOn: Binding(get: {
-                    model.database.chat.textToSpeechSayUsername!
+                    model.database.chat.textToSpeechSayUsername
                 }, set: { value in
                     model.database.chat.textToSpeechSayUsername = value
                     model.chatTextToSpeech.setSayUsername(value: value)
@@ -73,7 +91,7 @@ struct ChatTextToSpeechSettingsView: View {
                     Text("Say username")
                 }
                 Toggle(isOn: Binding(get: {
-                    model.database.chat.textToSpeechSubscribersOnly!
+                    model.database.chat.textToSpeechSubscribersOnly
                 }, set: { value in
                     model.database.chat.textToSpeechSubscribersOnly = value
                 })) {
@@ -84,7 +102,7 @@ struct ChatTextToSpeechSettingsView: View {
             }
             Section {
                 Toggle(isOn: Binding(get: {
-                    model.database.chat.textToSpeechFilter!
+                    model.database.chat.textToSpeechFilter
                 }, set: { value in
                     model.database.chat.textToSpeechFilter = value
                     model.chatTextToSpeech.setFilter(value: value)
@@ -96,7 +114,7 @@ struct ChatTextToSpeechSettingsView: View {
             }
             Section {
                 Toggle(isOn: Binding(get: {
-                    model.database.chat.textToSpeechFilterMentions!
+                    model.database.chat.textToSpeechFilterMentions
                 }, set: { value in
                     model.database.chat.textToSpeechFilterMentions = value
                     model.chatTextToSpeech.setFilterMentions(value: value)

@@ -39,20 +39,23 @@ final class BrowserEffect: VideoEffect {
     let audioOnly: Bool
     var fps: Float
     private var scaleToFitVideo: Bool
-    private var snapshotTimer: Timer?
+    private let snapshotTimer = SimpleTimer(queue: .main)
     var startLoadingTime = ContinuousClock.now
     private var scale = UIScreen().scale
     private var defaultEnabled = true
     private var crops: [WidgetCrop] = []
     private var cropsMetalPetal: [WidgetCrop] = []
     private let settingName: String
+    private let server: BrowserEffectServer
+    private var stopped = false
 
     init(
         url: URL,
         styleSheet: String,
         widget: SettingsWidgetBrowser,
         videoSize: CGSize,
-        settingName: String
+        settingName: String,
+        moblinAccess: Bool
     ) {
         scaleToFitVideo = widget.scaleToFitVideo!
         self.url = url
@@ -81,6 +84,10 @@ final class BrowserEffect: VideoEffect {
                 forMainFrameOnly: false
             ))
         }
+        server = BrowserEffectServer()
+        if moblinAccess {
+            server.addScript(configuration: configuration)
+        }
         webView = WKWebView(frame: CGRect(x: 0, y: 0, width: width, height: height),
                             configuration: configuration)
         webView.isOpaque = false
@@ -89,10 +96,15 @@ final class BrowserEffect: VideoEffect {
         webView.scrollView.showsVerticalScrollIndicator = false
         webView.scrollView.showsHorizontalScrollIndicator = false
         super.init()
+        server.webView = webView
     }
 
     override func getName() -> String {
         return "\(settingName) browser widget"
+    }
+
+    func sendChatMessage(post: ChatPost) {
+        server.sendChatMessage(post: post)
     }
 
     var host: String {
@@ -163,12 +175,19 @@ final class BrowserEffect: VideoEffect {
         }
         stopTakeSnapshots()
         if enabled {
+            stopped = false
             startTakeSnapshots()
         }
     }
 
     private func startTakeSnapshots() {
-        snapshotTimer = Timer.scheduledTimer(withTimeInterval: Double(1 / fps), repeats: false, block: { _ in
+        guard !stopped else {
+            return
+        }
+        snapshotTimer.startSingleShot(timeout: Double(1 / fps)) { [weak self] in
+            guard let self else {
+                return
+            }
             guard !self.audioOnly else {
                 return
             }
@@ -178,7 +197,10 @@ final class BrowserEffect: VideoEffect {
             } else {
                 configuration.snapshotWidth = NSNumber(value: self.width / self.scale)
             }
-            self.webView.takeSnapshot(with: configuration) { image, error in
+            self.webView.takeSnapshot(with: configuration) { [weak self] image, error in
+                guard let self else {
+                    return
+                }
                 self.startTakeSnapshots()
                 if let error {
                     logger.warning("Browser snapshot error: \(error)")
@@ -188,12 +210,12 @@ final class BrowserEffect: VideoEffect {
                     logger.warning("No browser image")
                 }
             }
-        })
+        }
     }
 
     private func stopTakeSnapshots() {
-        snapshotTimer?.invalidate()
-        snapshotTimer = nil
+        stopped = true
+        snapshotTimer.stop()
     }
 
     func setImage(image: UIImage) {

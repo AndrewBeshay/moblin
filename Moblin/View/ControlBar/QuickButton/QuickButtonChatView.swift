@@ -27,11 +27,7 @@ private struct LineView: View {
     var chat: SettingsChat
 
     private func usernameColor() -> Color {
-        if let color = post.userColor {
-            return color.color()
-        } else {
-            return chat.usernameColor.color()
-        }
+        return post.userColor.color()
     }
 
     var body: some View {
@@ -46,7 +42,7 @@ private struct LineView: View {
                 Text("\(post.timestamp) ")
                     .foregroundColor(.gray)
             }
-            if chat.badges! {
+            if chat.badges {
                 ForEach(post.userBadges, id: \.self) { url in
                     CacheAsyncImage(url: url) { image in
                         image
@@ -134,7 +130,7 @@ private struct MessagesView: View {
     @State var scrollViewSize: CGSize = .zero
 
     private func getRotation() -> Double {
-        if model.database.chat.newMessagesAtTop! {
+        if model.database.chat.newMessagesAtTop {
             return 0.0
         } else {
             return 180.0
@@ -142,7 +138,7 @@ private struct MessagesView: View {
     }
 
     private func getScaleX() -> Double {
-        if model.database.chat.newMessagesAtTop! {
+        if model.database.chat.newMessagesAtTop {
             return 1.0
         } else {
             return -1.0
@@ -150,7 +146,7 @@ private struct MessagesView: View {
     }
 
     private func isCloseToStart(offset: Double) -> Bool {
-        if model.database.chat.newMessagesAtTop! {
+        if model.database.chat.newMessagesAtTop {
             return offset < 50
         } else {
             return offset >= scrollViewSize.height - wholeSize.height - 50.0
@@ -158,7 +154,7 @@ private struct MessagesView: View {
     }
 
     private func isMirrored() -> CGFloat {
-        if model.database.chat.mirrored! {
+        if model.database.chat.mirrored {
             return -1
         } else {
             return 1
@@ -342,7 +338,7 @@ private struct AlertsMessagesView: View {
     }
 
     private func getRotation() -> Double {
-        if model.database.chat.newMessagesAtTop! {
+        if model.database.chat.newMessagesAtTop {
             return 0.0
         } else {
             return 180.0
@@ -350,7 +346,7 @@ private struct AlertsMessagesView: View {
     }
 
     private func getScaleX() -> Double {
-        if model.database.chat.newMessagesAtTop! {
+        if model.database.chat.newMessagesAtTop {
             return 1.0
         } else {
             return -1.0
@@ -358,7 +354,7 @@ private struct AlertsMessagesView: View {
     }
 
     private func isCloseToStart(offset: Double) -> Bool {
-        if model.database.chat.newMessagesAtTop! {
+        if model.database.chat.newMessagesAtTop {
             return offset < 50
         } else {
             return offset >= scrollViewSize.height - wholeSize.height - 50.0
@@ -366,7 +362,7 @@ private struct AlertsMessagesView: View {
     }
 
     private func isMirrored() -> CGFloat {
-        if model.database.chat.mirrored! {
+        if model.database.chat.mirrored {
             return -1
         } else {
             return 1
@@ -479,14 +475,14 @@ private struct ControlAlertsButtonView: View {
     @EnvironmentObject var model: Model
 
     var body: some View {
-        Button(action: {
+        Button {
             model.showAllQuickButtonChatMessage.toggle()
-        }, label: {
+        } label: {
             Image(systemName: model
                 .showAllQuickButtonChatMessage ? "megaphone" : "megaphone.fill")
                 .font(.title)
                 .padding(5)
-        })
+        }
     }
 }
 
@@ -517,23 +513,23 @@ private struct AlertsControlView: View {
     @State var message: String = ""
 
     var body: some View {
-        Button(action: {
+        Button {
             model.showFirstTimeChatterMessage.toggle()
             model.database.chat.showFirstTimeChatterMessage = model.showFirstTimeChatterMessage
-        }, label: {
+        } label: {
             Image(systemName: model
                 .showFirstTimeChatterMessage ? "bubble.left.fill" : "bubble.left")
                 .font(.title)
                 .padding(5)
-        })
-        Button(action: {
+        }
+        Button {
             model.showNewFollowerMessage.toggle()
             model.database.chat.showNewFollowerMessage = model.showNewFollowerMessage
-        }, label: {
+        } label: {
             Image(systemName: model.showNewFollowerMessage ? "medal.fill" : "medal")
                 .font(.title)
                 .padding(5)
-        })
+        }
         Spacer()
         ControlAlertsButtonView()
     }

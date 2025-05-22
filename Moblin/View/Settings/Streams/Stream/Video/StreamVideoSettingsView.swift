@@ -123,9 +123,9 @@ struct StreamVideoSettingsView: View {
                         stream.autoFps!
                     }, set: { value in
                         stream.autoFps = value
-                        model.storeAndReloadStreamIfEnabled(stream: stream)
+                        model.setStreamPreferAutoFps()
+                        model.objectWillChange.send()
                     }))
-                    .disabled(stream.enabled && (model.isLive || model.isRecording))
                 } footer: {
                     Text("""
                     Enable low light boost to make builtin cameras automatically \
@@ -133,7 +133,7 @@ struct StreamVideoSettingsView: View {
                     """)
                 }
             }
-            if model.database.showAllSettings! {
+            if model.database.showAllSettings {
                 Section {
                     HStack {
                         Text("Codec")
@@ -218,7 +218,7 @@ struct StreamVideoSettingsView: View {
                         """)
                     }
                 }
-                if model.database.debug.timecodesEnabled! {
+                if model.database.debug.timecodesEnabled {
                     Section {
                         NavigationLink {
                             StreamTimecodesSettingsView(stream: stream)

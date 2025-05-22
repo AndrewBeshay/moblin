@@ -25,6 +25,8 @@ enum RemoteControlRequest: Codable {
     case chatMessages(history: Bool, messages: [RemoteControlChatMessage])
     case setRemoteSceneSettings(data: RemoteControlRemoteSceneSettings)
     case setRemoteSceneData(data: RemoteControlRemoteSceneData)
+    case instantReplay
+    case saveReplay
 }
 
 enum RemoteControlResponse: Codable {
@@ -130,7 +132,7 @@ struct RemoteControlRemoteSceneSettingsWidget: Codable {
 
     init?(widget: SettingsWidget) {
         id = widget.id
-        enabled = widget.enabled!
+        enabled = widget.enabled
         switch widget.type {
         case .browser:
             type = .browser(data: RemoteControlRemoteSceneSettingsWidgetTypeBrowser(browser: widget.browser))
@@ -143,9 +145,9 @@ struct RemoteControlRemoteSceneSettingsWidget: Codable {
         case .crop:
             return nil
         case .map:
-            type = .map(data: RemoteControlRemoteSceneSettingsWidgetTypeMap(map: widget.map!))
+            type = .map(data: RemoteControlRemoteSceneSettingsWidgetTypeMap(map: widget.map))
         case .scene:
-            type = .scene(data: RemoteControlRemoteSceneSettingsWidgetTypeScene(scene: widget.scene!))
+            type = .scene(data: RemoteControlRemoteSceneSettingsWidgetTypeScene(scene: widget.scene))
         case .qrCode:
             return nil
         case .alerts:
@@ -370,6 +372,7 @@ struct RemoteControlRemoteSceneDataTextStats: Codable {
     var cyclingPower: String
     var cyclingCadence: String
     var browserTitle: String
+    var gForce: GForce?
 
     init(stats: TextEffectStats) {
         bitrateAndTotal = stats.bitrateAndTotal
@@ -425,7 +428,8 @@ struct RemoteControlRemoteSceneDataTextStats: Codable {
                                teslaMedia: teslaMedia,
                                cyclingPower: cyclingPower,
                                cyclingCadence: cyclingCadence,
-                               browserTitle: browserTitle)
+                               browserTitle: browserTitle,
+                               gForce: gForce)
     }
 }
 
@@ -520,6 +524,7 @@ struct RemoteControlStatusTopRight: Codable {
     var srtla: RemoteControlStatusItem?
     var srtlaRtts: RemoteControlStatusItem?
     var recording: RemoteControlStatusItem?
+    var replay: RemoteControlStatusItem?
     var browserWidgets: RemoteControlStatusItem?
     var moblink: RemoteControlStatusItem?
     var djiDevices: RemoteControlStatusItem?

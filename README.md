@@ -68,13 +68,17 @@ TestFlight: https://testflight.apple.com/join/PDpxEaGh
     - Checkboxes.
     - Ratings.
     - Date.
+    - ...
   - Browser widget. Show a web page on stream.
     - Optional style sheet.
   - Map widget with location.
   - QR code widget.
   - Scene widget.
-- Back or front camera.
+  - Video soure widget (for multi cam).
+  - ...
+- Back, front or multi camera.
   - Front camera mirrored on screen for natural experience.
+- Low energy truple and dual cameras.
 - Back, front, top, bottom or external mic.
   - Automatically changes to external mic when connected.
 - Video stabilization.
@@ -148,6 +152,8 @@ TestFlight: https://testflight.apple.com/join/PDpxEaGh
   - Torch.
   - Mute.
   - ...
+- Moblink for more connection.
+- Low light boost.
 - Cosmetics.
   - Select Moblin icon to show in app and on home screen.
   - Optionally purchase additional Moblin icons to support developers.
@@ -161,6 +167,7 @@ TestFlight: https://testflight.apple.com/join/PDpxEaGh
   - Change bitrate.
   - Change zoom.
   - Show logs.
+  - ...
 - Torch.
 - Mute audio.
 - Deep link settings (moblin://).
@@ -184,12 +191,14 @@ TestFlight: https://testflight.apple.com/join/PDpxEaGh
     - Fax.
     - Turn filters on and off.
     - Let chat take snapshot.
+    - ...
   - Send low battery warning to chat periodically.
 - Screen capture as video source.
 - Basic video player as video source and mic.
 - DJI camera Bluetooth controller.
   - Automatically start DJI camera live stream.
   - Tested with OA4, OA3 and OP3.
+- GoPro QR-code creator.
 - Show grid for easier positioning.
 - Camera settings (on some cameras).
   - Exposure bias.
@@ -201,6 +210,11 @@ TestFlight: https://testflight.apple.com/join/PDpxEaGh
   - Optional meow sound when printing.
 - Take snapshots.
   - And optionally automatically upload to your Discord server.
+- Save and play replays.
+- Tesla vehicle status and control.
+- Cycling power monitor.
+- Heart rate monitor.
+- Show video on external dispaly. Aka clean HDMI out.
 
 ## Apple Watch companion app
 
@@ -291,6 +305,35 @@ The `MoblinSettingsUrl` class in
 the JSON blob format. Class members are JSON object keys. Members with
 `?` after the type are optional. Some types are defined in
 [Settings.swift](https://github.com/eerimoq/moblin/blob/main/Moblin/Various/Settings.swift).
+
+# Browser widget JavaScript API
+
+Get access to various data in your Browser widget.
+
+NOTE: You must enable `Settings -> Scenes -> My browser widget -> Moblin
+access` to give the website access to the Browser widget JavaScript
+API.
+
+## Example
+
+Add this code to your website to receive chat messages with prefix `!`.
+
+```js
+moblin.subscribe({ chat: { prefix: "!" } });
+moblin.onmessage = (message) => {
+  if (message.chat !== undefined) {
+    console.log(message.chat.message);
+  }
+};
+```
+
+## Specification
+
+Topics to subscribe to are defined by `SubscribeTopic` in
+[BrowserEffectServer.swift](https://github.com/eerimoq/moblin/blob/main/Moblin/VideoEffects/BrowserEffect/BrowserEffectServer.swift).
+
+Messages passed to `onmessage` are defined by `Message` in
+[BrowserEffectServer.swift](https://github.com/eerimoq/moblin/blob/main/Moblin/VideoEffects/BrowserEffect/BrowserEffectServer.swift).
 
 # Similar software
 

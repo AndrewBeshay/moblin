@@ -2,15 +2,12 @@ import SwiftUI
 
 struct ChatSettingsView: View {
     @EnvironmentObject var model: Model
+    @ObservedObject var chat: SettingsChat
     @State var timestampColor: Color
     @State var usernameColor: Color
     @State var messageColor: Color
     @State var backgroundColor: Color
     @State var shadowColor: Color
-    @State var height: Double
-    @State var width: Double
-    @State var bottom: Double
-    @State var fontSize: Float
 
     func submitMaximumAge(value: String) {
         guard let maximumAge = Int(value) else {
@@ -19,16 +16,16 @@ struct ChatSettingsView: View {
         guard maximumAge > 0 else {
             return
         }
-        model.database.chat.maximumAge = maximumAge
+        chat.maximumAge = maximumAge
     }
 
     var body: some View {
         Form {
             Section {
                 Toggle("Enabled", isOn: Binding(get: {
-                    model.database.chat.enabled!
+                    chat.enabled
                 }, set: { value in
-                    model.database.chat.enabled = value
+                    chat.enabled = value
                     model.reloadChats()
                     model.objectWillChange.send()
                 }))
@@ -54,77 +51,75 @@ struct ChatSettingsView: View {
                 HStack {
                     Text("Font size")
                     Slider(
-                        value: $fontSize,
+                        value: $chat.fontSize,
                         in: 10 ... 30,
                         step: 1,
                         onEditingChanged: { begin in
                             guard !begin else {
                                 return
                             }
-                            model.database.chat.fontSize = fontSize
                             model.reloadChatMessages()
                         }
                     )
-                    .onChange(of: fontSize) { value in
-                        model.database.chat.fontSize = value
+                    .onChange(of: chat.fontSize) { _ in
                         model.reloadChatMessages()
                     }
-                    Text(String(Int(fontSize)))
+                    Text(String(Int(chat.fontSize)))
                         .frame(width: 25)
                 }
-                if model.database.showAllSettings! {
+                if model.database.showAllSettings {
                     Toggle(isOn: Binding(get: {
-                        model.database.chat.timestampColorEnabled
+                        chat.timestampColorEnabled
                     }, set: { value in
-                        model.database.chat.timestampColorEnabled = value
+                        chat.timestampColorEnabled = value
                         model.reloadChatMessages()
                     })) {
                         Text("Timestamp")
                     }
                     Toggle(isOn: Binding(get: {
-                        model.database.chat.boldUsername
+                        chat.boldUsername
                     }, set: { value in
-                        model.database.chat.boldUsername = value
+                        chat.boldUsername = value
                         model.reloadChatMessages()
                     })) {
                         Text("Bold username")
                     }
                     Toggle(isOn: Binding(get: {
-                        model.database.chat.boldMessage
+                        chat.boldMessage
                     }, set: { value in
-                        model.database.chat.boldMessage = value
+                        chat.boldMessage = value
                         model.reloadChatMessages()
                     })) {
                         Text("Bold message")
                     }
                     Toggle(isOn: Binding(get: {
-                        model.database.chat.badges!
+                        chat.badges
                     }, set: { value in
-                        model.database.chat.badges = value
+                        chat.badges = value
                         model.reloadChatMessages()
                     })) {
                         Text("Badges")
                     }
                     Toggle(isOn: Binding(get: {
-                        model.database.chat.animatedEmotes
+                        chat.animatedEmotes
                     }, set: { value in
-                        model.database.chat.animatedEmotes = value
+                        chat.animatedEmotes = value
                         model.reloadChatMessages()
                     })) {
                         Text("Animated emotes")
                     }
                     Toggle(isOn: Binding(get: {
-                        model.database.chat.newMessagesAtTop!
+                        chat.newMessagesAtTop
                     }, set: { value in
-                        model.database.chat.newMessagesAtTop = value
+                        chat.newMessagesAtTop = value
                         model.objectWillChange.send()
                     })) {
                         Text("New messages at top")
                     }
                     Toggle(isOn: Binding(get: {
-                        model.database.chat.mirrored!
+                        chat.mirrored
                     }, set: { value in
-                        model.database.chat.mirrored = value
+                        chat.mirrored = value
                         model.objectWillChange.send()
                     })) {
                         Text("Mirrored")
@@ -132,20 +127,20 @@ struct ChatSettingsView: View {
                     NavigationLink {
                         TextEditView(
                             title: String(localized: "Maximum age"),
-                            value: String(model.database.chat.maximumAge!),
+                            value: String(chat.maximumAge),
                             footers: [String(localized: "Maximum message age in seconds.")]
                         ) {
                             submitMaximumAge(value: $0)
                         }
                     } label: {
                         Toggle(isOn: Binding(get: {
-                            model.database.chat.maximumAgeEnabled!
+                            chat.maximumAgeEnabled
                         }, set: { value in
-                            model.database.chat.maximumAgeEnabled = value
+                            chat.maximumAgeEnabled = value
                         })) {
                             TextItemView(
                                 name: String(localized: "Maximum age"),
-                                value: String(model.database.chat.maximumAge!)
+                                value: String(chat.maximumAge)
                             )
                         }
                     }
@@ -156,15 +151,12 @@ struct ChatSettingsView: View {
                     Text("Usernames to ignore")
                 }
                 NavigationLink {
-                    ChatTextToSpeechSettingsView(
-                        rate: model.database.chat.textToSpeechRate!,
-                        volume: model.database.chat.textToSpeechSayVolume!
-                    )
+                    ChatTextToSpeechSettingsView(chat: chat)
                 } label: {
                     Toggle(isOn: Binding(get: {
-                        model.database.chat.textToSpeechEnabled!
+                        chat.textToSpeechEnabled
                     }, set: { value in
-                        model.database.chat.textToSpeechEnabled = value
+                        chat.textToSpeechEnabled = value
                         if !value {
                             model.chatTextToSpeech.reset(running: true)
                         }
@@ -175,11 +167,7 @@ struct ChatSettingsView: View {
                 NavigationLink {
                     ChatBotSettingsView()
                 } label: {
-                    Toggle(isOn: Binding(get: {
-                        model.database.chat.botEnabled!
-                    }, set: { value in
-                        model.database.chat.botEnabled = value
-                    })) {
+                    Toggle(isOn: $chat.botEnabled) {
                         Text("Bot")
                     }
                 }
@@ -194,72 +182,60 @@ struct ChatSettingsView: View {
                 HStack {
                     Text("Height")
                     Slider(
-                        value: $height,
+                        value: $chat.height,
                         in: 0.2 ... 1.0,
                         step: 0.01,
                         onEditingChanged: { begin in
                             guard !begin else {
                                 return
                             }
-                            model.database.chat.height = height
                             model.reloadChatMessages()
                         }
                     )
-                    .onChange(of: height) { value in
-                        model.database.chat.height = value
-                    }
-                    Text("\(Int(100 * height)) %")
-                        .frame(width: 55)
+                    Text("\(Int(100 * chat.height)) %")
+                        .frame(width: sliderValuePercentageWidth)
                 }
                 HStack {
                     Text("Width")
                     Slider(
-                        value: $width,
+                        value: $chat.width,
                         in: 0.2 ... 1.0,
                         step: 0.01,
                         onEditingChanged: { begin in
                             guard !begin else {
                                 return
                             }
-                            model.database.chat.width = width
                             model.reloadChatMessages()
                         }
                     )
-                    .onChange(of: width) { value in
-                        model.database.chat.width = value
-                    }
-                    Text("\(Int(100 * width)) %")
-                        .frame(width: 55)
+                    Text("\(Int(100 * chat.width)) %")
+                        .frame(width: sliderValuePercentageWidth)
                 }
                 HStack {
                     Text("Bottom")
                     Slider(
-                        value: $bottom,
+                        value: $chat.bottom,
                         in: 0.0 ... 0.5,
                         step: 0.01,
                         onEditingChanged: { begin in
                             guard !begin else {
                                 return
                             }
-                            model.database.chat.bottom = bottom
                             model.reloadChatMessages()
                         }
                     )
-                    .onChange(of: bottom) { value in
-                        model.database.chat.bottom = value
-                    }
-                    Text("\(Int(100 * bottom)) %")
-                        .frame(width: 55)
+                    Text("\(Int(100 * chat.bottom)) %")
+                        .frame(width: sliderValuePercentageWidth)
                 }
             }
-            if model.database.showAllSettings! {
+            if model.database.showAllSettings {
                 Section {
                     ColorPicker("Timestamp", selection: $timestampColor, supportsOpacity: false)
                         .onChange(of: timestampColor) { _ in
                             guard let color = timestampColor.toRgb() else {
                                 return
                             }
-                            model.database.chat.timestampColor = color
+                            chat.timestampColor = color
                             model.reloadChatMessages()
                         }
                     ColorPicker("Username", selection: $usernameColor, supportsOpacity: false)
@@ -267,7 +243,7 @@ struct ChatSettingsView: View {
                             guard let color = usernameColor.toRgb() else {
                                 return
                             }
-                            model.database.chat.usernameColor = color
+                            chat.usernameColor = color
                             model.reloadChatMessages()
                         }
                     ColorPicker("Message", selection: $messageColor, supportsOpacity: false)
@@ -275,13 +251,13 @@ struct ChatSettingsView: View {
                             guard let color = messageColor.toRgb() else {
                                 return
                             }
-                            model.database.chat.messageColor = color
+                            chat.messageColor = color
                             model.reloadChatMessages()
                         }
                     Toggle(isOn: Binding(get: {
-                        model.database.chat.backgroundColorEnabled
+                        chat.backgroundColorEnabled
                     }, set: { value in
-                        model.database.chat.backgroundColorEnabled = value
+                        chat.backgroundColorEnabled = value
                         model.reloadChatMessages()
                     })) {
                         ColorPicker("Background", selection: $backgroundColor, supportsOpacity: false)
@@ -289,14 +265,14 @@ struct ChatSettingsView: View {
                                 guard let color = backgroundColor.toRgb() else {
                                     return
                                 }
-                                model.database.chat.backgroundColor = color
+                                chat.backgroundColor = color
                                 model.reloadChatMessages()
                             }
                     }
                     Toggle(isOn: Binding(get: {
-                        model.database.chat.shadowColorEnabled
+                        chat.shadowColorEnabled
                     }, set: { value in
-                        model.database.chat.shadowColorEnabled = value
+                        chat.shadowColorEnabled = value
                         model.reloadChatMessages()
                     })) {
                         ColorPicker("Border", selection: $shadowColor, supportsOpacity: false)
@@ -304,14 +280,14 @@ struct ChatSettingsView: View {
                                 guard let color = shadowColor.toRgb() else {
                                     return
                                 }
-                                model.database.chat.shadowColor = color
+                                chat.shadowColor = color
                                 model.reloadChatMessages()
                             }
                     }
                     Toggle(isOn: Binding(get: {
-                        model.database.chat.meInUsernameColor!
+                        chat.meInUsernameColor
                     }, set: { value in
-                        model.database.chat.meInUsernameColor = value
+                        chat.meInUsernameColor = value
                     })) {
                         Text("Me in username color")
                     }
