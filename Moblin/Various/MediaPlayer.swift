@@ -177,7 +177,14 @@ class MediaPlayer {
         } catch {
             logger.info("media-player: Failed to create reader with error: \(error)")
         }
-        assetDuration = max(asset.duration.seconds, 1)
+        Task {
+            do {
+                let durationTime = try await asset.load(.duration)
+                self.assetDuration = max(durationTime.seconds, 1)
+            } catch {
+                self.assetDuration = 1
+            }
+        }
         asset.loadTracks(withMediaType: .video) { tracks, error in
             mediaPlayerQueue.async {
                 self.loadVideoTrackCompletion(tracks: tracks, error: error)
