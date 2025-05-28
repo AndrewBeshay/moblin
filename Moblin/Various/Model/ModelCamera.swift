@@ -25,7 +25,7 @@ extension Model {
             return
         }
         var focusPointOfInterest = focusPoint
-        if stream.portrait! {
+        if stream.portrait {
             focusPointOfInterest.x = focusPoint.y
             focusPointOfInterest.y = 1 - focusPoint.x
         } else if getOrientation() == .landscapeRight {
@@ -507,6 +507,10 @@ extension Model {
         return getCameraPositionId(settingsCameraId: videoSourceWidget?.toCameraId())
     }
 
+    func getCameraPositionId(vTuberWidget: SettingsWidgetVTuber?) -> String {
+        return getCameraPositionId(settingsCameraId: vTuberWidget?.toCameraId())
+    }
+
     func cameraIdToSettingsCameraId(cameraId: String) -> SettingsCameraId {
         if isSrtlaCamera(camera: cameraId) {
             return .srtla(id: getSrtlaStream(camera: cameraId)?.id ?? .init())
@@ -565,6 +569,10 @@ extension Model {
 
     func getCameraPositionName(videoSourceWidget: SettingsWidgetVideoSource?) -> String {
         return getCameraPositionName(settingsCameraId: videoSourceWidget?.toCameraId())
+    }
+
+    func getCameraPositionName(vTuberWidget: SettingsWidgetVTuber?) -> String {
+        return getCameraPositionName(settingsCameraId: vTuberWidget?.toCameraId())
     }
 
     private func getCameraPositionName(settingsCameraId: SettingsCameraId?) -> String {

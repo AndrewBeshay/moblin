@@ -72,7 +72,7 @@ final class VideoSourceEffect: VideoEffect {
         self.videoSourceId.mutate { $0 = videoSourceId }
     }
 
-    func setSceneWidget(sceneWidget: SettingsSceneWidget?) {
+    func setSceneWidget(sceneWidget: SettingsSceneWidget) {
         self.sceneWidget.mutate { $0 = sceneWidget }
     }
 
@@ -337,7 +337,7 @@ final class VideoSourceEffect: VideoEffect {
         } else {
             widgetImage = makeRoundedCornersImage(widgetImage, settings)
         }
-        return widgetImage
+        return applyEffects(widgetImage, info)
             .transformed(by: translation)
             .cropped(to: crop)
             .composited(over: backgroundImage)

@@ -156,6 +156,8 @@ struct RemoteControlRemoteSceneSettingsWidget: Codable {
             return nil
         case .scoreboard:
             return nil
+        case .vTuber:
+            return nil
         }
     }
 
@@ -236,17 +238,17 @@ struct RemoteControlRemoteSceneSettingsWidgetTypeText: Codable {
 
     init(text: SettingsWidgetText) {
         formatString = text.formatString
-        backgroundColor = text.backgroundColor!
-        clearBackgroundColor = text.clearBackgroundColor!
-        foregroundColor = text.foregroundColor!
-        clearForegroundColor = text.clearForegroundColor!
-        fontSize = text.fontSize!
-        fontDesign = text.fontDesign!
-        fontWeight = text.fontWeight!
-        fontMonospacedDigits = text.fontMonospacedDigits!
-        horizontalAlignment = .init(alignment: text.horizontalAlignment!)
-        verticalAlignment = .init(alignment: text.verticalAlignment!)
-        delay = text.delay!
+        backgroundColor = text.backgroundColor
+        clearBackgroundColor = text.clearBackgroundColor
+        foregroundColor = text.foregroundColor
+        clearForegroundColor = text.clearForegroundColor
+        fontSize = text.fontSize
+        fontDesign = text.fontDesign
+        fontWeight = text.fontWeight
+        fontMonospacedDigits = text.fontMonospacedDigits
+        horizontalAlignment = .init(alignment: text.horizontalAlignment)
+        verticalAlignment = .init(alignment: text.verticalAlignment)
+        delay = text.delay
     }
 
     func toSettings() -> SettingsWidgetText {

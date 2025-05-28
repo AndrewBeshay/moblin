@@ -19,14 +19,13 @@ extension Model {
                 guard let image = UIImage(data: data) else {
                     continue
                 }
-                imageEffects[widget.id] = ImageEffect(
+                let imageEffect = ImageEffect(
                     image: image,
-                    x: widget.x,
-                    y: widget.y,
-                    width: widget.width,
-                    height: widget.height,
-                    settingName: realWidget.name
+                    settingName: realWidget.name,
+                    widgetId: realWidget.id
                 )
+                imageEffect.effects = realWidget.getEffects()
+                imageEffects[widget.id] = imageEffect
             }
         }
     }
@@ -42,7 +41,7 @@ extension Model {
         media.unregisterEffect(pollEffect)
         media.unregisterEffect(whirlpoolEffect)
         media.unregisterEffect(pinchEffect)
-        media.unregisterEffect(horizonEffect)
+        media.unregisterEffect(fixedHorizonEffect)
         faceEffect = FaceEffect(fps: Float(stream.fps), onFindFaceChanged: handleFindFaceChanged(value:))
         updateFaceFilterSettings()
         movieEffect = MovieEffect()
@@ -54,16 +53,16 @@ extension Model {
         pollEffect = PollEffect()
         whirlpoolEffect = WhirlpoolEffect()
         pinchEffect = PinchEffect()
-        horizonEffect = HorizonEffect()
+        fixedHorizonEffect = FixedHorizonEffect()
     }
 
-    private func registerGlobalVideoEffects() -> [VideoEffect] {
+    private func registerGlobalVideoEffects(scene: SettingsScene) -> [VideoEffect] {
         var effects: [VideoEffect] = []
-        if isHorizonEnabled() {
-            horizonEffect.start()
-            effects.append(horizonEffect)
+        if isFixedHorizonEnabled(scene: scene) {
+            fixedHorizonEffect.start()
+            effects.append(fixedHorizonEffect)
         } else {
-            horizonEffect.stop()
+            fixedHorizonEffect.stop()
         }
         if isFaceEnabled() {
             effects.append(faceEffect)
@@ -121,6 +120,28 @@ extension Model {
         return nil
     }
 
+    func getVTuberEffect(id: UUID) -> VTuberEffect? {
+        for (vTuberEffectId, vTuberEffect) in vTuberEffects where id == vTuberEffectId {
+            return vTuberEffect
+        }
+        return nil
+    }
+
+    func getImageEffect(id: UUID) -> ImageEffect? {
+        return imageEffects.values.first(where: { $0.widgetId == id })
+    }
+
+    func getBrowserEffect(id: UUID) -> BrowserEffect? {
+        for (browserEffectId, browserEffect) in browserEffects where id == browserEffectId {
+            return browserEffect
+        }
+        return nil
+    }
+
+    func getEffectWithPossibleEffects(id: UUID) -> VideoEffect? {
+        return getVideoSourceEffect(id: id) ?? getImageEffect(id: id) ?? getBrowserEffect(id: id)
+    }
+
     func getVideoSourceSettings(id: UUID) -> SettingsWidget? {
         return database.widgets.first(where: { $0.id == id })
     }
@@ -134,22 +155,22 @@ extension Model {
         for widget in widgets where widget.type == .text {
             textEffects[widget.id] = TextEffect(
                 format: widget.text.formatString,
-                backgroundColor: widget.text.backgroundColor!,
-                foregroundColor: widget.text.foregroundColor!,
-                fontSize: CGFloat(widget.text.fontSize!),
-                fontDesign: widget.text.fontDesign!.toSystem(),
-                fontWeight: widget.text.fontWeight!.toSystem(),
-                fontMonospacedDigits: widget.text.fontMonospacedDigits!,
-                horizontalAlignment: widget.text.horizontalAlignment!.toSystem(),
-                verticalAlignment: widget.text.verticalAlignment!.toSystem(),
+                backgroundColor: widget.text.backgroundColor,
+                foregroundColor: widget.text.foregroundColor,
+                fontSize: CGFloat(widget.text.fontSize),
+                fontDesign: widget.text.fontDesign.toSystem(),
+                fontWeight: widget.text.fontWeight.toSystem(),
+                fontMonospacedDigits: widget.text.fontMonospacedDigits,
+                horizontalAlignment: widget.text.horizontalAlignment.toSystem(),
+                verticalAlignment: widget.text.verticalAlignment.toSystem(),
                 settingName: widget.name,
-                delay: widget.text.delay!,
-                timersEndTime: widget.text.timers!.map {
+                delay: widget.text.delay,
+                timersEndTime: widget.text.timers.map {
                     .now.advanced(by: .seconds(utcTimeDeltaFromNow(to: $0.endTime)))
                 },
-                checkboxes: widget.text.checkboxes!.map { $0.checked },
-                ratings: widget.text.ratings!.map { $0.rating },
-                lapTimes: widget.text.lapTimes!.map { $0.lapTimes }
+                checkboxes: widget.text.checkboxes.map { $0.checked },
+                ratings: widget.text.ratings.map { $0.rating },
+                lapTimes: widget.text.lapTimes.map { $0.lapTimes }
             )
         }
         for browserEffect in browserEffects.values {
@@ -162,7 +183,7 @@ extension Model {
             guard let url = URL(string: widget.browser.url) else {
                 continue
             }
-            browserEffects[widget.id] = BrowserEffect(
+            let browserEffect = BrowserEffect(
                 url: url,
                 styleSheet: widget.browser.styleSheet!,
                 widget: widget.browser,
@@ -170,6 +191,8 @@ extension Model {
                 settingName: widget.name,
                 moblinAccess: widget.browser.moblinAccess!
             )
+            browserEffect.effects = widget.getEffects()
+            browserEffects[widget.id] = browserEffect
         }
         for mapEffect in mapEffects.values {
             media.unregisterEffect(mapEffect)
@@ -190,7 +213,9 @@ extension Model {
         }
         videoSourceEffects.removeAll()
         for widget in widgets where widget.type == .videoSource {
-            videoSourceEffects[widget.id] = VideoSourceEffect()
+            let videoSourceEffect = VideoSourceEffect()
+            videoSourceEffect.effects = widget.getEffects()
+            videoSourceEffects[widget.id] = videoSourceEffect
         }
         for padelScoreboardEffect in padelScoreboardEffects.values {
             media.unregisterEffect(padelScoreboardEffect)
@@ -212,6 +237,17 @@ extension Model {
                 bundledSounds: database.alertsMediaGallery.bundledSounds
             )
         }
+        for vTuberEffect in vTuberEffects.values {
+            media.unregisterEffect(vTuberEffect)
+        }
+        vTuberEffects.removeAll()
+        for widget in widgets where widget.type == .vTuber {
+            vTuberEffects[widget.id] = VTuberEffect(
+                vrm: vTuberStorage.makePath(id: widget.vTuber.id),
+                cameraFieldOfView: widget.vTuber.cameraFieldOfView,
+                cameraPositionY: widget.vTuber.cameraPositionY
+            )
+        }
         browsers = browserEffects.map { _, browser in
             Browser(browserEffect: browser)
         }
@@ -229,8 +265,8 @@ extension Model {
             .showMoblin || settings.showBeauty
     }
 
-    private func isHorizonEnabled() -> Bool {
-        return database.debug.horizon
+    private func isFixedHorizonEnabled(scene: SettingsScene) -> Bool {
+        return database.fixedHorizon && scene.cameraPosition.isBuiltin()
     }
 
     func resetSelectedScene(changeScene: Bool = true) {
@@ -378,7 +414,7 @@ extension Model {
             }
             effects.append(lutEffect)
         }
-        effects += registerGlobalVideoEffects()
+        effects += registerGlobalVideoEffects(scene: scene)
         var usedBrowserEffects: [BrowserEffect] = []
         var usedMapEffects: [MapEffect] = []
         var usedPadelScoreboardEffects: [PadelScoreboardEffect] = []
@@ -404,7 +440,7 @@ extension Model {
             effects.append(drawOnStreamEffect)
         }
         effects += registerGlobalVideoEffectsOnTop()
-        media.setPendingAfterAttachEffects(effects: effects, rotation: scene.videoSourceRotation!)
+        media.setPendingAfterAttachEffects(effects: effects, rotation: scene.videoSourceRotation)
         for browserEffect in browserEffects.values where !usedBrowserEffects.contains(browserEffect) {
             browserEffect.setSceneWidget(sceneWidget: nil, crops: [])
         }
@@ -459,13 +495,14 @@ extension Model {
             switch widget.type {
             case .image:
                 if let imageEffect = imageEffects[sceneWidget.id] {
+                    imageEffect.setSceneWidget(sceneWidget: sceneWidget.clone())
                     effects.append(imageEffect)
                 }
             case .text:
                 if let textEffect = textEffects[widget.id] {
                     textEffect.setPosition(x: sceneWidget.x, y: sceneWidget.y)
                     effects.append(textEffect)
-                    if widget.text.needsSubtitles! {
+                    if widget.text.needsSubtitles {
                         needsSpeechToText = true
                     }
                 }
@@ -551,6 +588,18 @@ extension Model {
                     effects.append(padelScoreboardEffect)
                     usedPadelScoreboardEffects.append(padelScoreboardEffect)
                 }
+            case .vTuber:
+                if let vTuberEffect = vTuberEffects[widget.id] {
+                    if let videoSourceId = getVideoSourceId(cameraId: widget.vTuber.toCameraId()) {
+                        vTuberEffect.setVideoSourceId(videoSourceId: videoSourceId)
+                    }
+                    vTuberEffect.setSceneWidget(sceneWidget: sceneWidget.clone())
+                    vTuberEffect.setCameraSettings(
+                        cameraFieldOfView: widget.vTuber.cameraFieldOfView,
+                        cameraPositionY: widget.vTuber.cameraPositionY
+                    )
+                    effects.append(vTuberEffect)
+                }
             }
         }
     }
@@ -592,19 +641,19 @@ extension Model {
     func attachSingleLayout(scene: SettingsScene) {
         isFrontCameraSelected = false
         deactivateAllMediaPlayers()
-        switch scene.cameraPosition! {
+        switch scene.cameraPosition {
         case .back:
             attachCamera(scene: scene, position: .back)
         case .front:
             attachCamera(scene: scene, position: .front)
             isFrontCameraSelected = true
         case .rtmp:
-            attachBufferedCamera(cameraId: scene.rtmpCameraId!, scene: scene)
+            attachBufferedCamera(cameraId: scene.rtmpCameraId, scene: scene)
         case .srtla:
-            attachBufferedCamera(cameraId: scene.srtlaCameraId!, scene: scene)
+            attachBufferedCamera(cameraId: scene.srtlaCameraId, scene: scene)
         case .mediaPlayer:
-            mediaPlayers[scene.mediaPlayerCameraId!]?.activate()
-            attachBufferedCamera(cameraId: scene.mediaPlayerCameraId!, scene: scene)
+            mediaPlayers[scene.mediaPlayerCameraId]?.activate()
+            attachBufferedCamera(cameraId: scene.mediaPlayerCameraId, scene: scene)
         case .external:
             attachExternalCamera(scene: scene)
         case .screenCapture:
@@ -680,7 +729,7 @@ extension Model {
     }
 
     func getFillFrame(scene: SettingsScene) -> Bool {
-        return scene.fillFrame!
+        return scene.fillFrame
     }
 
     func widgetsInCurrentScene(onlyEnabled: Bool) -> [SettingsWidget] {
@@ -720,18 +769,18 @@ extension Model {
 
     private func updateTextWidgetsLapTimes(now: Date) {
         for widget in database.widgets where widget.type == .text {
-            guard !widget.text.lapTimes!.isEmpty else {
+            guard !widget.text.lapTimes.isEmpty else {
                 continue
             }
             let now = now.timeIntervalSince1970
-            for lapTimes in widget.text.lapTimes! {
+            for lapTimes in widget.text.lapTimes {
                 let lastIndex = lapTimes.lapTimes.endIndex - 1
                 guard lastIndex >= 0, let currentLapStartTime = lapTimes.currentLapStartTime else {
                     continue
                 }
                 lapTimes.lapTimes[lastIndex] = now - currentLapStartTime
             }
-            getTextEffect(id: widget.id)?.setLapTimes(lapTimes: widget.text.lapTimes!.map { $0.lapTimes })
+            getTextEffect(id: widget.id)?.setLapTimes(lapTimes: widget.text.lapTimes.map { $0.lapTimes })
         }
     }
 
@@ -822,19 +871,19 @@ extension Model {
     func isSceneVideoSourceActive(scene: SettingsScene) -> Bool {
         switch scene.cameraPosition {
         case .rtmp:
-            if let stream = getRtmpStream(id: scene.rtmpCameraId!) {
+            if let stream = getRtmpStream(id: scene.rtmpCameraId) {
                 return isRtmpStreamConnected(streamKey: stream.streamKey)
             } else {
                 return false
             }
         case .srtla:
-            if let stream = getSrtlaStream(id: scene.srtlaCameraId!) {
+            if let stream = getSrtlaStream(id: scene.srtlaCameraId) {
                 return isSrtlaStreamConnected(streamId: stream.streamId)
             } else {
                 return false
             }
         case .external:
-            return isExternalCameraConnected(id: scene.externalCameraId!)
+            return isExternalCameraConnected(id: scene.externalCameraId)
         default:
             return true
         }
@@ -867,29 +916,61 @@ extension Model {
             }
             switch widget.type {
             case .videoSource:
-                let cameraId: String?
-                switch widget.videoSource.cameraPosition! {
-                case .back:
-                    cameraId = widget.videoSource.backCameraId!
-                case .front:
-                    cameraId = widget.videoSource.frontCameraId!
-                case .external:
-                    cameraId = widget.videoSource.externalCameraId!
-                default:
-                    cameraId = nil
-                }
-                if let cameraId, let device = AVCaptureDevice(uniqueID: cameraId) {
-                    if !devices.contains(where: { $0.device == device }) {
-                        devices.append(makeCaptureDevice(device: device))
-                    }
-                }
+                getBuiltinCameraDevicesForVideoSourceWidget(videoSource: widget.videoSource, devices: &devices)
+            case .vTuber:
+                getBuiltinCameraDevicesForVTuberWidget(vTuber: widget.vTuber, devices: &devices)
             case .scene:
-                if let scene = database.scenes.first(where: { $0.id == widget.scene.sceneId }) {
-                    getBuiltinCameraDevicesInScene(scene: scene, devices: &devices)
-                }
+                getBuiltinCameraDevicesForSceneWidget(scene: widget.scene, devices: &devices)
             default:
                 break
             }
+        }
+    }
+
+    private func getBuiltinCameraDevicesForVideoSourceWidget(
+        videoSource: SettingsWidgetVideoSource,
+        devices: inout [CaptureDevice]
+    ) {
+        let cameraId: String?
+        switch videoSource.cameraPosition {
+        case .back:
+            cameraId = videoSource.backCameraId
+        case .front:
+            cameraId = videoSource.frontCameraId
+        case .external:
+            cameraId = videoSource.externalCameraId
+        default:
+            cameraId = nil
+        }
+        if let cameraId, let device = AVCaptureDevice(uniqueID: cameraId) {
+            if !devices.contains(where: { $0.device == device }) {
+                devices.append(makeCaptureDevice(device: device))
+            }
+        }
+    }
+
+    private func getBuiltinCameraDevicesForVTuberWidget(vTuber: SettingsWidgetVTuber, devices: inout [CaptureDevice]) {
+        let cameraId: String?
+        switch vTuber.cameraPosition {
+        case .back:
+            cameraId = vTuber.backCameraId
+        case .front:
+            cameraId = vTuber.frontCameraId
+        case .external:
+            cameraId = vTuber.externalCameraId
+        default:
+            cameraId = nil
+        }
+        if let cameraId, let device = AVCaptureDevice(uniqueID: cameraId) {
+            if !devices.contains(where: { $0.device == device }) {
+                devices.append(makeCaptureDevice(device: device))
+            }
+        }
+    }
+
+    private func getBuiltinCameraDevicesForSceneWidget(scene: SettingsWidgetScene, devices: inout [CaptureDevice]) {
+        if let scene = database.scenes.first(where: { $0.id == scene.sceneId }) {
+            getBuiltinCameraDevicesInScene(scene: scene, devices: &devices)
         }
     }
 }

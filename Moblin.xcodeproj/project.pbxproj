@@ -274,6 +274,12 @@
 		0376F6FE2B9511030056B3D2 /* MoblinWidgetApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0376F6FD2B9511030056B3D2 /* MoblinWidgetApp.swift */; };
 		0376F7002B9511040056B3D2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0376F6FF2B9511040056B3D2 /* Assets.xcassets */; };
 		0376F7042B9511040056B3D2 /* MoblinWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 0376F6F72B9511030056B3D2 /* MoblinWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		0377239A2DE35191007D040D /* VRMKit in Frameworks */ = {isa = PBXBuildFile; productRef = 037723992DE35191007D040D /* VRMKit */; };
+		0377239C2DE35191007D040D /* VRMSceneKit in Frameworks */ = {isa = PBXBuildFile; productRef = 0377239B2DE35191007D040D /* VRMSceneKit */; };
+		0377239E2DE354A7007D040D /* VTuberEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0377239D2DE354A2007D040D /* VTuberEffect.swift */; };
+		037723A22DE35CD3007D040D /* WidgetVTuberSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 037723A12DE35CCC007D040D /* WidgetVTuberSettingsView.swift */; };
+		037723A42DE36F81007D040D /* VTuberStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 037723A32DE36F81007D040D /* VTuberStorage.swift */; };
+		037798FC2DE1396D006D4526 /* RemoveBackgroundEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 037798FB2DE1395E006D4526 /* RemoveBackgroundEffect.swift */; };
 		0379BB882AA836B500B718B6 /* StreamVideoSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0379BB872AA836B500B718B6 /* StreamVideoSettingsView.swift */; };
 		0379BB8E2AA90D1900B718B6 /* DebugLogSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0379BB8D2AA90D1900B718B6 /* DebugLogSettingsView.swift */; };
 		0379BB902AABA7DC00B718B6 /* Log.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0379BB8F2AABA7DC00B718B6 /* Log.swift */; };
@@ -326,6 +332,7 @@
 		038E7BE32C32F391008994BA /* MediaPlayerSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 038E7BE22C32F391008994BA /* MediaPlayerSettingsView.swift */; };
 		038E7BE72C331272008994BA /* MediaPlayerFileSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 038E7BE62C331272008994BA /* MediaPlayerFileSettingsView.swift */; };
 		038ED3DB2B403664005DEC08 /* LocalOverlaysNetworkInterfaceNamesSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 038ED3DA2B403664005DEC08 /* LocalOverlaysNetworkInterfaceNamesSettingsView.swift */; };
+		038F03942DE426E900A72CA2 /* Detection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 038F03932DE426E500A72CA2 /* Detection.swift */; };
 		038F42ED2B6849D400E68752 /* LutEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 038F42EC2B6849D400E68752 /* LutEffect.swift */; };
 		038F42F42B685ACF00E68752 /* LUTs.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 038F42F32B685ACF00E68752 /* LUTs.bundle */; };
 		0391BB3D2B36CAC5004852EA /* AboutVersionHistorySettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0391BB3C2B36CAC5004852EA /* AboutVersionHistorySettingsView.swift */; };
@@ -515,7 +522,9 @@
 		03E877F72B2DB27800086355 /* QuickButtonsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E877F62B2DB27800086355 /* QuickButtonsSettingsView.swift */; };
 		03E8D69F2DDE2E2D0080BEB4 /* ModelZoom.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E8D69E2DDE2E2A0080BEB4 /* ModelZoom.swift */; };
 		03E8D6A12DDE435E0080BEB4 /* ModelKick.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E8D6A02DDE435C0080BEB4 /* ModelKick.swift */; };
-		03E8D6A32DDE5A560080BEB4 /* HorizonEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E8D6A22DDE5A4F0080BEB4 /* HorizonEffect.swift */; };
+		03E8D6A32DDE5A560080BEB4 /* FixedHorizonEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E8D6A22DDE5A4F0080BEB4 /* FixedHorizonEffect.swift */; };
+		03E8D6A52DDEE7300080BEB4 /* FixedHorizonView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E8D6A42DDEE7270080BEB4 /* FixedHorizonView.swift */; };
+		03E8D6A92DDEE8660080BEB4 /* CameraControlsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E8D6A82DDEE8610080BEB4 /* CameraControlsView.swift */; };
 		03E95AC62ADAF58900DAE2DF /* ZoomSwitchToSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E95AC52ADAF58900DAE2DF /* ZoomSwitchToSettingsView.swift */; };
 		03E95AE42ADB7B3D00DAE2DF /* TapScreenToFocusSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E95AE32ADB7B3D00DAE2DF /* TapScreenToFocusSettingsView.swift */; };
 		03E972CD2D3AB52700888FAB /* MoblinkScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03E972CC2D3AB52200888FAB /* MoblinkScanner.swift */; };
@@ -925,6 +934,10 @@
 		0376F6FD2B9511030056B3D2 /* MoblinWidgetApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoblinWidgetApp.swift; sourceTree = "<group>"; };
 		0376F6FF2B9511040056B3D2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		0376F7012B9511040056B3D2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		0377239D2DE354A2007D040D /* VTuberEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VTuberEffect.swift; sourceTree = "<group>"; };
+		037723A12DE35CCC007D040D /* WidgetVTuberSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetVTuberSettingsView.swift; sourceTree = "<group>"; };
+		037723A32DE36F81007D040D /* VTuberStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VTuberStorage.swift; sourceTree = "<group>"; };
+		037798FB2DE1395E006D4526 /* RemoveBackgroundEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoveBackgroundEffect.swift; sourceTree = "<group>"; };
 		0379BB872AA836B500B718B6 /* StreamVideoSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamVideoSettingsView.swift; sourceTree = "<group>"; };
 		0379BB8D2AA90D1900B718B6 /* DebugLogSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugLogSettingsView.swift; sourceTree = "<group>"; };
 		0379BB8F2AABA7DC00B718B6 /* Log.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Log.swift; sourceTree = "<group>"; };
@@ -976,6 +989,7 @@
 		038E7BE22C32F391008994BA /* MediaPlayerSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaPlayerSettingsView.swift; sourceTree = "<group>"; };
 		038E7BE62C331272008994BA /* MediaPlayerFileSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaPlayerFileSettingsView.swift; sourceTree = "<group>"; };
 		038ED3DA2B403664005DEC08 /* LocalOverlaysNetworkInterfaceNamesSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalOverlaysNetworkInterfaceNamesSettingsView.swift; sourceTree = "<group>"; };
+		038F03932DE426E500A72CA2 /* Detection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Detection.swift; sourceTree = "<group>"; };
 		038F42EC2B6849D400E68752 /* LutEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LutEffect.swift; sourceTree = "<group>"; };
 		038F42F32B685ACF00E68752 /* LUTs.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = LUTs.bundle; sourceTree = "<group>"; };
 		0391BB3C2B36CAC5004852EA /* AboutVersionHistorySettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutVersionHistorySettingsView.swift; sourceTree = "<group>"; };
@@ -1148,7 +1162,9 @@
 		03E877F62B2DB27800086355 /* QuickButtonsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickButtonsSettingsView.swift; sourceTree = "<group>"; };
 		03E8D69E2DDE2E2A0080BEB4 /* ModelZoom.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelZoom.swift; sourceTree = "<group>"; };
 		03E8D6A02DDE435C0080BEB4 /* ModelKick.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelKick.swift; sourceTree = "<group>"; };
-		03E8D6A22DDE5A4F0080BEB4 /* HorizonEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HorizonEffect.swift; sourceTree = "<group>"; };
+		03E8D6A22DDE5A4F0080BEB4 /* FixedHorizonEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixedHorizonEffect.swift; sourceTree = "<group>"; };
+		03E8D6A42DDEE7270080BEB4 /* FixedHorizonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixedHorizonView.swift; sourceTree = "<group>"; };
+		03E8D6A82DDEE8610080BEB4 /* CameraControlsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraControlsView.swift; sourceTree = "<group>"; };
 		03E95AC52ADAF58900DAE2DF /* ZoomSwitchToSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZoomSwitchToSettingsView.swift; sourceTree = "<group>"; };
 		03E95AE32ADB7B3D00DAE2DF /* TapScreenToFocusSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TapScreenToFocusSettingsView.swift; sourceTree = "<group>"; };
 		03E972CC2D3AB52200888FAB /* MoblinkScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoblinkScanner.swift; sourceTree = "<group>"; };
@@ -1211,10 +1227,12 @@
 				03AE56142BEA74D500FE8427 /* Rist in Frameworks */,
 				03F465EC2C441D1400630708 /* CrcSwift in Frameworks */,
 				0359F9092BD3DA61005BFDA8 /* libsrt.xcframework in Frameworks */,
+				0377239A2DE35191007D040D /* VRMKit in Frameworks */,
 				03B279832D45EB9C007DEDB2 /* SwiftCube in Frameworks */,
 				03D151AF2BFA73C100D29D8E /* MetalPetal in Frameworks */,
 				03A974282AC137A000610E21 /* Collections in Frameworks */,
 				03A08B7C2AC295620018BA95 /* AlertToast in Frameworks */,
+				0377239C2DE35191007D040D /* VRMSceneKit in Frameworks */,
 				03BC116B2AE56C2200C38FC4 /* SDWebImageWebPCoder in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1457,6 +1475,7 @@
 				033FD71C2CC8A4940073C6EC /* Scoreboard */,
 				037132CC2C29FEED00393605 /* Text */,
 				030C762E2CBBF52B0062D8FD /* VideoSource */,
+				037723A02DE35CC2007D040D /* VTuber */,
 				03A983602A9A05D7008FF0DB /* WidgetSettingsView.swift */,
 			);
 			path = Widget;
@@ -2148,6 +2167,14 @@
 			path = "Moblin Widget";
 			sourceTree = "<group>";
 		};
+		037723A02DE35CC2007D040D /* VTuber */ = {
+			isa = PBXGroup;
+			children = (
+				037723A12DE35CCC007D040D /* WidgetVTuberSettingsView.swift */,
+			);
+			path = VTuber;
+			sourceTree = "<group>";
+		};
 		0379BB712AA4BFA500B718B6 /* Twitch */ = {
 			isa = PBXGroup;
 			children = (
@@ -2524,6 +2551,8 @@
 		03B16A2A2B35D70D00E5AB07 /* Camera */ = {
 			isa = PBXGroup;
 			children = (
+				03E8D6A72DDEE8570080BEB4 /* CameraControls */,
+				03E8D6A62DDEE7410080BEB4 /* FixedHorizon */,
 				03CBFC732BFD3C650029A888 /* MirrorFrontCamera */,
 				03E95AE22ADB7B2200DAE2DF /* TapScreenToFocus */,
 				03A14BE02ACC902B00D180FF /* Zoom */,
@@ -2634,7 +2663,7 @@
 				03559E7D2BDCEB14002D0886 /* FaceEffect.swift */,
 				0324ECA72C1EADAB007CB0B3 /* FourThreeEffect.swift */,
 				03B374012AA0354C0028DDD5 /* GrayScaleEffect.swift */,
-				03E8D6A22DDE5A4F0080BEB4 /* HorizonEffect.swift */,
+				03E8D6A22DDE5A4F0080BEB4 /* FixedHorizonEffect.swift */,
 				03B374082AA0EA700028DDD5 /* ImageEffect.swift */,
 				038F42EC2B6849D400E68752 /* LutEffect.swift */,
 				03828C2B2C3AEF6D00F5A8AC /* MapEffect.swift */,
@@ -2643,11 +2672,13 @@
 				03085C0E2B487D950009DAB6 /* PixellateEffect.swift */,
 				038C0F682C312C3900A258C6 /* PollEffect.swift */,
 				030499642C4039EF003488F4 /* QrCodeEffect.swift */,
+				037798FB2DE1395E006D4526 /* RemoveBackgroundEffect.swift */,
 				0317646C2DB66CD1000080A5 /* ReplayEffect.swift */,
 				0379BB932AACF16600B718B6 /* SepiaEffect.swift */,
 				03F3BF182ADAAA94009A8D3E /* TextEffect.swift */,
 				032815DE2AC9885C001F8A85 /* TripleEffect.swift */,
 				038C76962CAC99D900564200 /* VideoSourceEffect.swift */,
+				0377239D2DE354A2007D040D /* VTuberEffect.swift */,
 				03CD92A62DC9D23100202D49 /* WhirlpoolEffect.swift */,
 			);
 			path = VideoEffects;
@@ -2816,6 +2847,7 @@
 				03D445E12AE5966B00A0F6E9 /* CacheAsyncImage.swift */,
 				03C357362D0803B100B8B29F /* ChatBotCommand.swift */,
 				03C380DB2BC24F7800394625 /* ChatTextToSpeech.swift */,
+				038F03932DE426E500A72CA2 /* Detection.swift */,
 				0323F3822D21346F00A57AC2 /* DnsLookup.swift */,
 				031863C62C8C4BEA00CECA33 /* FaxReceiver.swift */,
 				03C5AE472C5515B20056B6C7 /* GeographyManager.swift */,
@@ -2840,6 +2872,7 @@
 				03AD38D12C5280B300824980 /* TextFormatStringLoader.swift */,
 				03D37EDF2CE08921006D14C2 /* UrlSession.swift */,
 				03A707BF2B8F0FAE003BB7BE /* Utils.swift */,
+				037723A32DE36F81007D040D /* VTuberStorage.swift */,
 				03C5AE412C536FE10056B6C7 /* WeatherManager.swift */,
 				03762FE22D797A94003BD2E2 /* WebBrowserController.swift */,
 				0384C0372C10E14900B82216 /* WebSocketClient.swift */,
@@ -3035,6 +3068,22 @@
 			path = QuickButtons;
 			sourceTree = "<group>";
 		};
+		03E8D6A62DDEE7410080BEB4 /* FixedHorizon */ = {
+			isa = PBXGroup;
+			children = (
+				03E8D6A42DDEE7270080BEB4 /* FixedHorizonView.swift */,
+			);
+			path = FixedHorizon;
+			sourceTree = "<group>";
+		};
+		03E8D6A72DDEE8570080BEB4 /* CameraControls */ = {
+			isa = PBXGroup;
+			children = (
+				03E8D6A82DDEE8610080BEB4 /* CameraControlsView.swift */,
+			);
+			path = CameraControls;
+			sourceTree = "<group>";
+		};
 		03E95AE22ADB7B2200DAE2DF /* TapScreenToFocus */ = {
 			isa = PBXGroup;
 			children = (
@@ -3195,6 +3244,8 @@
 				03C3572C2D0416CD00B8B29F /* AppleGPUInfo */,
 				03AC6B942D17786700832A7E /* TrueTime */,
 				03B279822D45EB9C007DEDB2 /* SwiftCube */,
+				037723992DE35191007D040D /* VRMKit */,
+				0377239B2DE35191007D040D /* VRMSceneKit */,
 			);
 			productName = Mobs;
 			productReference = 035E9E332A9A02D6009D4F5A /* Moblin.app */;
@@ -3312,6 +3363,7 @@
 				03C3572B2D0416CD00B8B29F /* XCRemoteSwiftPackageReference "applegpuinfo" */,
 				03AC6B932D17786700832A7E /* XCRemoteSwiftPackageReference "TrueTime" */,
 				03B279812D45EB9C007DEDB2 /* XCRemoteSwiftPackageReference "SwiftCube" */,
+				037723982DE35191007D040D /* XCRemoteSwiftPackageReference "VRMKit" */,
 			);
 			productRefGroup = 035E9E342A9A02D6009D4F5A /* Products */;
 			projectDirPath = "";
@@ -3410,6 +3462,7 @@
 				03AD440A2B78A8A700B1B9B9 /* StreamButtonsSettingsView.swift in Sources */,
 				03A9836B2A9A05D7008FF0DB /* StreamOverlayView.swift in Sources */,
 				0359F8EA2BD3DA61005BFDA8 /* RtmpEventDispatcher.swift in Sources */,
+				038F03942DE426E900A72CA2 /* Detection.swift in Sources */,
 				03DBD1032B300D55004B0BE6 /* StreamWizardNetworkSetupBelaboxSettingsView.swift in Sources */,
 				0359F8B22BD3DA61005BFDA8 /* VTSessionProperty.swift in Sources */,
 				0315A37A2AA39DA800295443 /* TextItemView.swift in Sources */,
@@ -3418,6 +3471,7 @@
 				0379BBA22AAD824600B718B6 /* StreamOverlayIconAndTextView.swift in Sources */,
 				035735802BC62FDC00F4E87D /* WatchLocalOverlaysSettingsView.swift in Sources */,
 				03BA73A42DDC562D00075CD6 /* ModelReplay.swift in Sources */,
+				0377239E2DE354A7007D040D /* VTuberEffect.swift in Sources */,
 				03D445E22AE5966B00A0F6E9 /* CacheAsyncImage.swift in Sources */,
 				03F3BF192ADAAA94009A8D3E /* TextEffect.swift in Sources */,
 				038ED3DB2B403664005DEC08 /* LocalOverlaysNetworkInterfaceNamesSettingsView.swift in Sources */,
@@ -3461,6 +3515,7 @@
 				03A983622A9A05D7008FF0DB /* MainView.swift in Sources */,
 				03B374042AA036D10028DDD5 /* QuickButtonsView.swift in Sources */,
 				0359F8FB2BD3DA61005BFDA8 /* SrtPerformanceData.swift in Sources */,
+				037798FC2DE1396D006D4526 /* RemoveBackgroundEffect.swift in Sources */,
 				03161FE22BF308C000E750D6 /* StreamWizardCustomRistSettingsView.swift in Sources */,
 				0359F8ED2BD3DA61005BFDA8 /* RtmpHandshake.swift in Sources */,
 				0391BB3D2B36CAC5004852EA /* AboutVersionHistorySettingsView.swift in Sources */,
@@ -3513,6 +3568,7 @@
 				037EBE772B666F66004D5774 /* DrawOnStreamView.swift in Sources */,
 				03B16A242B35612000E5AB07 /* RecordingsSettingsView.swift in Sources */,
 				031F413F2C6F167400790EEC /* WidgetAlertsSoundSettingsView.swift in Sources */,
+				03E8D6A52DDEE7300080BEB4 /* FixedHorizonView.swift in Sources */,
 				035F24402CB5B4BB008288C7 /* SnapshotIntent.swift in Sources */,
 				0379E66F2C89802B0021AB59 /* CatPrinterSettingsView.swift in Sources */,
 				030499652C4039EF003488F4 /* QrCodeEffect.swift in Sources */,
@@ -3538,11 +3594,13 @@
 				03D691532B36EDB600038F13 /* TextValueView.swift in Sources */,
 				03EEC76B2CED8C9000749D4E /* DriftTracker.swift in Sources */,
 				03E363812DB0BB61007A3CBB /* QrCodeImageView.swift in Sources */,
+				03E8D6A92DDEE8660080BEB4 /* CameraControlsView.swift in Sources */,
 				032B4EDA2C3491A100204547 /* ZoomPresetSelctorView.swift in Sources */,
 				0359F8D22BD3DA61005BFDA8 /* Recorder.swift in Sources */,
 				0323F3732D1DCDA800A57AC2 /* MoblinkStreamer.swift in Sources */,
 				0364662E2B456B3B005AB9FA /* StreamWizardCustomRtmpSettingsView.swift in Sources */,
 				0379BBA02AAD823900B718B6 /* StreamOverlayTextView.swift in Sources */,
+				037723A42DE36F81007D040D /* VTuberStorage.swift in Sources */,
 				03B374072AA0EA650028DDD5 /* MovieEffect.swift in Sources */,
 				0359F9072BD3DA61005BFDA8 /* MD5.swift in Sources */,
 				0305D6B72D3449F9006EA5DE /* QuickButtonDjiDevicesView.swift in Sources */,
@@ -3782,6 +3840,7 @@
 				0342F1A12C627A70004DD3EA /* MirlClient.swift in Sources */,
 				03D15CF42DACC878007DA935 /* AirPrinter.swift in Sources */,
 				03A983632A9A05D7008FF0DB /* SettingsView.swift in Sources */,
+				037723A22DE35CD3007D040D /* WidgetVTuberSettingsView.swift in Sources */,
 				0359F8D42BD3DA61005BFDA8 /* PreviewView.swift in Sources */,
 				032B4ED42C34910A00204547 /* MediaPlayerControlsView.swift in Sources */,
 				0391D2072CB30142008AB44B /* MoblinShortcuts.swift in Sources */,
@@ -3856,7 +3915,7 @@
 				0359F8C22BD3DA61005BFDA8 /* URL+Extension.swift in Sources */,
 				032FDBFC2B0B1183007BE85E /* ValueEditView.swift in Sources */,
 				0318391B2AF79DDF00320FB2 /* StreamSrtAdaptiveBitrateSettingsView.swift in Sources */,
-				03E8D6A32DDE5A560080BEB4 /* HorizonEffect.swift in Sources */,
+				03E8D6A32DDE5A560080BEB4 /* FixedHorizonEffect.swift in Sources */,
 				03C3573B2D08150300B8B29F /* Flv.swift in Sources */,
 				03F5A8E52AD6FF8E00F354D2 /* StreamOverlayDebugView.swift in Sources */,
 				0359F8BE2BD3DA61005BFDA8 /* CVPixelBuffer+Extension.swift in Sources */,
@@ -4520,6 +4579,14 @@
 				kind = branch;
 			};
 		};
+		037723982DE35191007D040D /* XCRemoteSwiftPackageReference "VRMKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/eerimoq/VRMKit";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
 		03A08B7A2AC295620018BA95 /* XCRemoteSwiftPackageReference "AlertToast" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/elai950/AlertToast.git";
@@ -4643,6 +4710,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 033BEAC22C0FCC0B005F4E06 /* XCRemoteSwiftPackageReference "NWWebSocket" */;
 			productName = NWWebSocket;
+		};
+		037723992DE35191007D040D /* VRMKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 037723982DE35191007D040D /* XCRemoteSwiftPackageReference "VRMKit" */;
+			productName = VRMKit;
+		};
+		0377239B2DE35191007D040D /* VRMSceneKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 037723982DE35191007D040D /* XCRemoteSwiftPackageReference "VRMKit" */;
+			productName = VRMSceneKit;
 		};
 		03A08B7B2AC295620018BA95 /* AlertToast */ = {
 			isa = XCSwiftPackageProductDependency;

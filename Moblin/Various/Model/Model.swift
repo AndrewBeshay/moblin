@@ -234,6 +234,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     var drawOnStreamEffect = DrawOnStreamEffect()
     var lutEffect = LutEffect()
     var padelScoreboardEffects: [UUID: PadelScoreboardEffect] = [:]
+    var vTuberEffects: [UUID: VTuberEffect] = [:]
     var speechToTextAlertMatchOffset = 0
     @Published var browsers: [Browser] = []
     @Published var sceneIndex = 0
@@ -246,6 +247,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     var logsStorage = LogsStorage()
     var mediaStorage = MediaPlayerStorage()
     var alertMediaStorage = AlertMediaStorage()
+    var vTuberStorage = VTuberStorage()
     @Published var buttonPairs: [[QuickButtonPair]] = Array(repeating: [], count: controlBarPages)
     var controlBarPage = 1
     var reconnectTimer: Timer?
@@ -570,7 +572,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     func isPortrait() -> Bool {
-        return stream.portrait! || database.portrait
+        return stream.portrait || database.portrait
     }
 
     @Published var myIcons: [Icon] = []
@@ -593,7 +595,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     var twinEffect = TwinEffect()
     var pixellateEffect = PixellateEffect(strength: 0.0)
     var pollEffect = PollEffect()
-    var horizonEffect = HorizonEffect()
+    var fixedHorizonEffect = FixedHorizonEffect()
     var replayEffect: ReplayEffect?
     var locationManager = Location()
     var realtimeIrl: RealtimeIrl?
@@ -864,6 +866,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         updateQuickButtonStates()
         removeUnusedImages()
         removeUnusedAlertMedias()
+        removeUnusedVTubers()
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(orientationDidChange),
                                                name: UIDevice.orientationDidChangeNotification,
@@ -987,7 +990,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             guard widget.type == .text else {
                 continue
             }
-            guard widget.text.needsGForce! else {
+            guard widget.text.needsGForce else {
                 continue
             }
             return true
@@ -1022,8 +1025,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     func reloadNtpClient() {
         stopNtpClient()
         if isTimecodesEnabled() {
-            logger.info("Starting NTP client for pool \(stream.ntpPoolAddress!)")
-            TrueTimeClient.sharedInstance.start(pool: [stream.ntpPoolAddress!])
+            logger.info("Starting NTP client for pool \(stream.ntpPoolAddress)")
+            TrueTimeClient.sharedInstance.start(pool: [stream.ntpPoolAddress])
         }
     }
 
@@ -1037,7 +1040,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             guard widget.type == .text else {
                 continue
             }
-            guard widget.text.needsWeather! else {
+            guard widget.text.needsWeather else {
                 continue
             }
             return true
@@ -1055,7 +1058,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             guard widget.type == .text else {
                 continue
             }
-            guard widget.text.needsGeography! else {
+            guard widget.text.needsGeography else {
                 continue
             }
             return true
@@ -1225,7 +1228,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             stopHeartRateDevices()
             stopRemoteControlAssistant()
             stopDjiGimbalDevices()
-            horizonEffect.stop()
+            fixedHorizonEffect.stop()
         }
     }
 
@@ -1304,7 +1307,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     private func shouldStreamInBackground() -> Bool {
-        if (isLive || isRecording) && stream.backgroundStreaming! {
+        if (isLive || isRecording) && stream.backgroundStreaming {
             return true
         }
         if isLive || isRecording {
@@ -1322,7 +1325,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     func updateOrientation() {
-        if stream.portrait! {
+        if stream.portrait {
             media.setVideoOrientation(value: .portrait)
         } else {
             switch UIDevice.current.orientation {
@@ -1481,6 +1484,15 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
                     break
                 }
             }
+            for widget in database.widgets {
+                if widget.type != .vTuber {
+                    continue
+                }
+                if widget.vTuber.id == id {
+                    used = true
+                    break
+                }
+            }
             if database.color.diskLutsPng!.contains(where: { lut in lut.id == id }) {
                 used = true
             }
@@ -1572,6 +1584,19 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         }
     }
 
+    private func removeUnusedVTubers() {
+        for vTuberId in vTuberStorage.ids() {
+            var found = false
+            for widget in database.widgets where widget.vTuber.id == vTuberId {
+                found = true
+                break
+            }
+            if !found {
+                vTuberStorage.remove(id: vTuberId)
+            }
+        }
+    }
+
     func getAllAlertImages() -> [SettingsAlertsMediaGalleryItem] {
         return database.alertsMediaGallery.bundledImages + database.alertsMediaGallery.customImages
     }
@@ -1655,7 +1680,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     func updateOrientationLock() {
-        if stream.portrait! {
+        if stream.portrait {
             AppDelegate.orientationLock = .portrait
             streamPreviewView.isPortrait = true
             externalDisplayStreamPreviewView.isPortrait = true
@@ -1802,7 +1827,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     func isTimecodesEnabled() -> Bool {
-        return database.debug.timecodesEnabled && stream.timecodesEnabled! && !stream.ntpPoolAddress!.isEmpty
+        return database.debug.timecodesEnabled && stream.timecodesEnabled && !stream.ntpPoolAddress.isEmpty
     }
 
     func setPixellateStrength(strength: Float) {
@@ -1836,7 +1861,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     func isYouTubeLiveChatConfigured() -> Bool {
-        return database.chat.enabled && stream.youTubeVideoId! != ""
+        return database.chat.enabled && stream.youTubeVideoId != ""
     }
 
     func isYouTubeLiveChatConnected() -> Bool {
@@ -1848,7 +1873,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     func isAfreecaTvChatConfigured() -> Bool {
-        return database.chat.enabled && stream.afreecaTvChannelName! != "" && stream.afreecaTvStreamId! != ""
+        return database.chat.enabled && stream.afreecaTvChannelName != "" && stream.afreecaTvStreamId != ""
     }
 
     func isAfreecaTvChatConnected() -> Bool {
@@ -1860,8 +1885,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     func isOpenStreamingPlatformChatConfigured() -> Bool {
-        return database.chat.enabled && stream.openStreamingPlatformUrl! != "" && stream
-            .openStreamingPlatformChannelId! != ""
+        return database.chat.enabled && stream.openStreamingPlatformUrl != "" && stream
+            .openStreamingPlatformChannelId != ""
     }
 
     func isOpenStreamingPlatformChatConnected() -> Bool {
@@ -1882,8 +1907,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         if isYouTubeLiveChatConfigured(), !isChatRemoteControl() {
             youTubeLiveChat = YouTubeLiveChat(
                 model: self,
-                videoId: stream.youTubeVideoId!,
-                settings: stream.chat!
+                videoId: stream.youTubeVideoId,
+                settings: stream.chat
             )
             youTubeLiveChat!.start()
         }
@@ -1896,8 +1921,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         if isAfreecaTvChatConfigured(), !isChatRemoteControl() {
             afreecaTvChat = AfreecaTvChat(
                 model: self,
-                channelName: stream.afreecaTvChannelName!,
-                streamId: stream.afreecaTvStreamId!
+                channelName: stream.afreecaTvChannelName,
+                streamId: stream.afreecaTvStreamId
             )
             afreecaTvChat!.start()
         }
@@ -1909,8 +1934,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         if isOpenStreamingPlatformChatConfigured(), !isChatRemoteControl() {
             openStreamingPlatformChat = OpenStreamingPlatformChat(
                 model: self,
-                url: stream.openStreamingPlatformUrl!,
-                channelId: stream.openStreamingPlatformChannelId!
+                url: stream.openStreamingPlatformUrl,
+                channelId: stream.openStreamingPlatformChannelId
             )
             openStreamingPlatformChat!.start()
         }
@@ -2218,7 +2243,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     private func updateCameraPreviewRotation() {
-        if stream.portrait! {
+        if stream.portrait {
             cameraPreviewLayer?.connection?.videoOrientation = .portrait
         } else {
             switch UIDevice.current.orientation {
@@ -2234,7 +2259,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
 
     private func getVideoMirroredOnStream() -> Bool {
         if cameraPosition == .front {
-            if stream.portrait! {
+            if stream.portrait {
                 return true
             } else {
                 return database.mirrorFrontCameraOnStream
@@ -2245,7 +2270,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
 
     private func getVideoMirroredOnScreen() -> Bool {
         if cameraPosition == .front {
-            if stream.portrait! {
+            if stream.portrait {
                 return false
             } else {
                 return !database.mirrorFrontCameraOnStream
@@ -2437,8 +2462,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     private func getVideoStabilizationMode(scene: SettingsScene) -> AVCaptureVideoStabilizationMode {
-        if scene.overrideVideoStabilizationMode! {
-            return getVideoStabilization(mode: scene.videoStabilizationMode!)
+        if scene.overrideVideoStabilizationMode {
+            return getVideoStabilization(mode: scene.videoStabilizationMode)
         } else {
             return getVideoStabilization(mode: database.videoStabilizationMode)
         }
@@ -2531,11 +2556,11 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     func preferredCamera(position: AVCaptureDevice.Position) -> AVCaptureDevice? {
         if let scene = findEnabledScene(id: selectedSceneId) {
             if position == .back {
-                return AVCaptureDevice(uniqueID: scene.backCameraId!)
+                return AVCaptureDevice(uniqueID: scene.backCameraId)
             } else if position == .front {
-                return AVCaptureDevice(uniqueID: scene.frontCameraId!)
+                return AVCaptureDevice(uniqueID: scene.frontCameraId)
             } else {
-                return AVCaptureDevice(uniqueID: scene.externalCameraId!)
+                return AVCaptureDevice(uniqueID: scene.externalCameraId)
             }
         } else {
             return nil
@@ -2660,7 +2685,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     func isShowingStatusReplay() -> Bool {
-        return stream.replay!.enabled
+        return stream.replay.enabled
     }
 
     func isShowingStatusBrowserWidgets() -> Bool {
