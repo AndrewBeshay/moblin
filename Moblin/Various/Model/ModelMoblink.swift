@@ -56,6 +56,10 @@ extension Model {
         guard !moblinkRelays.contains(where: { $0.streamerUrl == streamerUrl }) else {
             return
         }
+        guard !isMoblinkRelayOnThisDevice(streamerUrl: streamerUrl) else {
+            return
+        }
+        // logger.info("xxx relay \(streamerUrl)")
         let relay = MoblinkRelay(
             name: database.moblink.client.name,
             streamerUrl: streamerUrl,
@@ -80,6 +84,18 @@ extension Model {
 
     func areMoblinkRelaysOk() -> Bool {
         return moblinkRelayState == .connected || moblinkRelayState == .waitingForStreamers
+    }
+
+    func moblinkIpStatusesUpdated() {
+        // logger.info("xxx statuses")
+        // for status in ipStatuses {
+        //     logger.info("xxx   status \(status)")
+        // }
+    }
+
+    private func isMoblinkRelayOnThisDevice(streamerUrl _: URL) -> Bool {
+        // logger.info("xxx is on this device \(streamerUrl)")
+        return false
     }
 
     func stopMoblinkRelay() {
@@ -173,6 +189,7 @@ extension Model: MoblinkRelayDelegate {
 
 extension Model: MoblinkScannerDelegate {
     func moblinkScannerDiscoveredStreamers(streamers: [MoblinkScannerStreamer]) {
+        // logger.info("xxx xxx \(streamers)")
         moblinkScannerDiscoveredStreamers = streamers
         if !database.moblink.client.manual {
             startMoblinkRelayAutomatic()

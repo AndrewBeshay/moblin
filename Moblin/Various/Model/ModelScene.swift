@@ -51,8 +51,8 @@ extension Model {
         twinEffect = TwinEffect()
         pixellateEffect = PixellateEffect(strength: database.pixellateStrength)
         pollEffect = PollEffect()
-        whirlpoolEffect = WhirlpoolEffect()
-        pinchEffect = PinchEffect()
+        whirlpoolEffect = WhirlpoolEffect(angle: database.whirlpoolAngle)
+        pinchEffect = PinchEffect(scale: database.pinchScale)
         fixedHorizonEffect = FixedHorizonEffect()
     }
 
@@ -60,8 +60,10 @@ extension Model {
         var effects: [VideoEffect] = []
         if isFixedHorizonEnabled(scene: scene) {
             fixedHorizonEffect.start()
+            fixedHorizonStatus = "Enabled"
             effects.append(fixedHorizonEffect)
         } else {
+            fixedHorizonStatus = "Disabled"
             fixedHorizonEffect.stop()
         }
         if isFaceEnabled() {
@@ -92,7 +94,7 @@ extension Model {
             effects.append(twinEffect)
         }
         if isGlobalButtonOn(type: .pixellate) {
-            pixellateEffect.strength.mutate { $0 = database.pixellateStrength }
+            pixellateEffect.setSettings(strength: database.pixellateStrength)
             effects.append(pixellateEffect)
         }
         return effects
@@ -123,6 +125,13 @@ extension Model {
     func getVTuberEffect(id: UUID) -> VTuberEffect? {
         for (vTuberEffectId, vTuberEffect) in vTuberEffects where id == vTuberEffectId {
             return vTuberEffect
+        }
+        return nil
+    }
+
+    func getPngTuberEffect(id: UUID) -> PngTuberEffect? {
+        for (pngTuberEffectId, pngTuberEffect) in pngTuberEffects where id == pngTuberEffectId {
+            return pngTuberEffect
         }
         return nil
     }
@@ -248,6 +257,16 @@ extension Model {
                 cameraPositionY: widget.vTuber.cameraPositionY
             )
         }
+        for pngTuberEffect in pngTuberEffects.values {
+            media.unregisterEffect(pngTuberEffect)
+        }
+        pngTuberEffects.removeAll()
+        for widget in widgets where widget.type == .pngTuber {
+            pngTuberEffects[widget.id] = PngTuberEffect(
+                model: pngTuberStorage.makePath(id: widget.pngTuber.id),
+                costume: 1
+            )
+        }
         browsers = browserEffects.map { _, browser in
             Browser(browserEffect: browser)
         }
@@ -265,7 +284,7 @@ extension Model {
             .showMoblin || settings.showBeauty
     }
 
-    private func isFixedHorizonEnabled(scene: SettingsScene) -> Bool {
+    func isFixedHorizonEnabled(scene: SettingsScene) -> Bool {
         return database.fixedHorizon && scene.cameraPosition.isBuiltin()
     }
 
@@ -594,11 +613,21 @@ extension Model {
                         vTuberEffect.setVideoSourceId(videoSourceId: videoSourceId)
                     }
                     vTuberEffect.setSceneWidget(sceneWidget: sceneWidget.clone())
-                    vTuberEffect.setCameraSettings(
+                    vTuberEffect.setSettings(
                         cameraFieldOfView: widget.vTuber.cameraFieldOfView,
-                        cameraPositionY: widget.vTuber.cameraPositionY
+                        cameraPositionY: widget.vTuber.cameraPositionY,
+                        mirror: widget.vTuber.mirror
                     )
                     effects.append(vTuberEffect)
+                }
+            case .pngTuber:
+                if let pngTuberEffect = pngTuberEffects[widget.id] {
+                    if let videoSourceId = getVideoSourceId(cameraId: widget.pngTuber.toCameraId()) {
+                        pngTuberEffect.setVideoSourceId(videoSourceId: videoSourceId)
+                    }
+                    pngTuberEffect.setSceneWidget(sceneWidget: sceneWidget.clone())
+                    pngTuberEffect.setSettings(mirror: widget.pngTuber.mirror)
+                    effects.append(pngTuberEffect)
                 }
             }
         }
@@ -706,23 +735,68 @@ extension Model {
         return nil
     }
 
-    func isCaptureDeviceVideoSoureWidget(widget: SettingsWidget) -> Bool {
-        guard widget.type == .videoSource else {
+    func isCaptureDeviceWidget(widget: SettingsWidget) -> Bool {
+        switch widget.type {
+        case .scene:
+            if let scene = database.scenes.first(where: { $0.id == widget.scene.sceneId }) {
+                for widget in getSceneWidgets(scene: scene, onlyEnabled: false) where
+                    isCaptureDeviceWidget(widget: widget)
+                {
+                    return true
+                }
+            }
             return false
-        }
-        switch widget.videoSource.cameraPosition {
-        case .back:
-            return true
-        case .backWideDualLowEnergy:
-            return true
-        case .backDualLowEnergy:
-            return true
-        case .backTripleLowEnergy:
-            return true
-        case .front:
-            return true
-        case .external:
-            return true
+        case .videoSource:
+            switch widget.videoSource.cameraPosition {
+            case .back:
+                return true
+            case .backWideDualLowEnergy:
+                return true
+            case .backDualLowEnergy:
+                return true
+            case .backTripleLowEnergy:
+                return true
+            case .front:
+                return true
+            case .external:
+                return true
+            default:
+                return false
+            }
+        case .vTuber:
+            switch widget.vTuber.cameraPosition {
+            case .back:
+                return true
+            case .backWideDualLowEnergy:
+                return true
+            case .backDualLowEnergy:
+                return true
+            case .backTripleLowEnergy:
+                return true
+            case .front:
+                return true
+            case .external:
+                return true
+            default:
+                return false
+            }
+        case .pngTuber:
+            switch widget.pngTuber.cameraPosition {
+            case .back:
+                return true
+            case .backWideDualLowEnergy:
+                return true
+            case .backDualLowEnergy:
+                return true
+            case .backTripleLowEnergy:
+                return true
+            case .front:
+                return true
+            case .external:
+                return true
+            default:
+                return false
+            }
         default:
             return false
         }
@@ -919,6 +993,8 @@ extension Model {
                 getBuiltinCameraDevicesForVideoSourceWidget(videoSource: widget.videoSource, devices: &devices)
             case .vTuber:
                 getBuiltinCameraDevicesForVTuberWidget(vTuber: widget.vTuber, devices: &devices)
+            case .pngTuber:
+                getBuiltinCameraDevicesForPngTuberWidget(pngTuber: widget.pngTuber, devices: &devices)
             case .scene:
                 getBuiltinCameraDevicesForSceneWidget(scene: widget.scene, devices: &devices)
             default:
@@ -968,9 +1044,42 @@ extension Model {
         }
     }
 
+    private func getBuiltinCameraDevicesForPngTuberWidget(
+        pngTuber: SettingsWidgetPngTuber,
+        devices: inout [CaptureDevice]
+    ) {
+        let cameraId: String?
+        switch pngTuber.cameraPosition {
+        case .back:
+            cameraId = pngTuber.backCameraId
+        case .front:
+            cameraId = pngTuber.frontCameraId
+        case .external:
+            cameraId = pngTuber.externalCameraId
+        default:
+            cameraId = nil
+        }
+        if let cameraId, let device = AVCaptureDevice(uniqueID: cameraId) {
+            if !devices.contains(where: { $0.device == device }) {
+                devices.append(makeCaptureDevice(device: device))
+            }
+        }
+    }
+
     private func getBuiltinCameraDevicesForSceneWidget(scene: SettingsWidgetScene, devices: inout [CaptureDevice]) {
         if let scene = database.scenes.first(where: { $0.id == scene.sceneId }) {
             getBuiltinCameraDevicesInScene(scene: scene, devices: &devices)
         }
+    }
+
+    func switchToNextSceneRoundRobin() {
+        guard let currentSceneIndex = enabledScenes.firstIndex(where: { $0.id == selectedSceneId }) else {
+            return
+        }
+        let nextSceneIndex = (currentSceneIndex + 1) % enabledScenes.count
+        guard nextSceneIndex != currentSceneIndex else {
+            return
+        }
+        selectScene(id: enabledScenes[nextSceneIndex].id)
     }
 }

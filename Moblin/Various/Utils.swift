@@ -65,7 +65,9 @@ func widgetImage(widget: SettingsWidget) -> String {
     case .scoreboard:
         return "rectangle.split.2x1"
     case .vTuber:
-        return "face.smiling"
+        return "person.crop.circle"
+    case .pngTuber:
+        return "person.crop.circle.dashed"
     }
 }
 

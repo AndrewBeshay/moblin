@@ -23,20 +23,21 @@ struct WidgetVTuberSettingsView: View {
 
     private func onUrl(url: URL) {
         vTuber.modelName = url.lastPathComponent
-        model.vTuberStorage.add(id: widget.vTuber.id, url: url)
+        model.vTuberStorage.add(id: vTuber.id, url: url)
         model.resetSelectedScene(changeScene: false)
     }
 
     private func onCameraChange(cameraId: String) {
-        widget.vTuber.updateCameraId(settingsCameraId: model.cameraIdToSettingsCameraId(cameraId: cameraId))
+        vTuber.updateCameraId(settingsCameraId: model.cameraIdToSettingsCameraId(cameraId: cameraId))
         model.sceneUpdated(attachCamera: true, updateRemoteScene: false)
     }
 
     private func setEffectSettings() {
         model.getVTuberEffect(id: widget.id)?
-            .setCameraSettings(
-                cameraFieldOfView: widget.vTuber.cameraFieldOfView,
-                cameraPositionY: widget.vTuber.cameraPositionY
+            .setSettings(
+                cameraFieldOfView: vTuber.cameraFieldOfView,
+                cameraPositionY: vTuber.cameraPositionY,
+                mirror: vTuber.mirror
             )
     }
 
@@ -62,17 +63,12 @@ struct WidgetVTuberSettingsView: View {
             }
         }
         Section {
-            HStack {
-                Text("Name")
-                Spacer()
-                Text(vTuber.modelName)
-            }
             Button {
                 showPicker = true
                 model.onDocumentPickerUrl = onUrl
             } label: {
                 HCenter {
-                    Text("Select model")
+                    Text(vTuber.modelName.isEmpty ? String(localized: "Select model") : vTuber.modelName)
                 }
             }
             .sheet(isPresented: $showPicker) {
@@ -80,6 +76,8 @@ struct WidgetVTuberSettingsView: View {
             }
         } header: {
             Text("Model")
+        } footer: {
+            Text("Most VRM 0.0 files are supported.")
         }
         Section {
             HStack {
@@ -101,6 +99,14 @@ struct WidgetVTuberSettingsView: View {
                     step: 1.0
                 )
                 .onChange(of: vTuber.cameraFieldOfView) { _ in
+                    setEffectSettings()
+                }
+            }
+            Section {
+                Toggle(isOn: $vTuber.mirror) {
+                    Text("Mirror")
+                }
+                .onChange(of: vTuber.mirror) { _ in
                     setEffectSettings()
                 }
             }

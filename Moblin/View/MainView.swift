@@ -1,4 +1,7 @@
+import AVFoundation
+import MediaPlayer
 import SwiftUI
+import UIKit
 import WebKit
 
 private struct CloseButtonView: View {
@@ -133,7 +136,7 @@ private struct MenuView: View {
             NavigationStack {
                 QuickButtonAutoSceneSwitcherView(
                     autoSceneSwitcher: model.autoSceneSwitcher,
-                    autoSceneSwitchers: model.database.autoSceneSwitchers!
+                    autoSceneSwitchers: model.database.autoSceneSwitchers
                 )
             }
         case .quickButtonSettings:

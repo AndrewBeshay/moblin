@@ -5,6 +5,7 @@ import Combine
 import CoreMotion
 import GameController
 import HealthKit
+import MediaPlayer
 import NetworkExtension
 import PhotosUI
 import SDWebImageSwiftUI
@@ -167,6 +168,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     @Published var catPrinterStatus = noValue
     @Published var cyclingPowerDeviceStatus = noValue
     @Published var heartRateDeviceStatus = noValue
+    @Published var fixedHorizonStatus = noValue
     private var browserWidgetsStatusChanged = false
     private var subscriptions = Set<AnyCancellable>()
     var streamUptime = StreamUptimeProvider()
@@ -235,6 +237,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     var lutEffect = LutEffect()
     var padelScoreboardEffects: [UUID: PadelScoreboardEffect] = [:]
     var vTuberEffects: [UUID: VTuberEffect] = [:]
+    var pngTuberEffects: [UUID: PngTuberEffect] = [:]
     var speechToTextAlertMatchOffset = 0
     @Published var browsers: [Browser] = []
     @Published var sceneIndex = 0
@@ -248,6 +251,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     var mediaStorage = MediaPlayerStorage()
     var alertMediaStorage = AlertMediaStorage()
     var vTuberStorage = VTuberStorage()
+    var pngTuberStorage = PngTuberStorage()
     @Published var buttonPairs: [[QuickButtonPair]] = Array(repeating: [], count: controlBarPages)
     var controlBarPage = 1
     var reconnectTimer: Timer?
@@ -292,6 +296,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     @Published var showingCameraIso = false
     @Published var showingCameraFocus = false
     @Published var showingPixellate = false
+    @Published var showingWhirlpool = false
+    @Published var showingPinch = false
     @Published var showingGrid = false
     @Published var showingRemoteControl = false
     @Published var obsScenes: [String] = []
@@ -541,6 +547,13 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
 
     var builtinCameraIds: [String: UUID] = [:]
 
+    var isAppActive = true
+    var initialVolume: Float?
+    let volumeView = MPVolumeView(frame: .zero)
+    var volumeObservation: NSKeyValueObservation?
+    var audioSessionWanted = false
+    var volumeObservationSetupTimer = SimpleTimer(queue: .main)
+
     weak var currentStream: NetStream? {
         didSet {
             oldValue?.mixer.video.drawable = nil
@@ -586,8 +599,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     @Published var ipStatuses: [IPMonitor.Status] = []
     var faceEffect = FaceEffect(fps: 30)
     var movieEffect = MovieEffect()
-    var whirlpoolEffect = WhirlpoolEffect()
-    var pinchEffect = PinchEffect()
+    var whirlpoolEffect = WhirlpoolEffect(angle: .pi / 2)
+    var pinchEffect = PinchEffect(scale: 0.5)
     var fourThreeEffect = FourThreeEffect()
     var grayScaleEffect = GrayScaleEffect()
     var sepiaEffect = SepiaEffect()
@@ -825,7 +838,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         showFirstTimeChatterMessage = database.chat.showFirstTimeChatterMessage
         showNewFollowerMessage = database.chat.showNewFollowerMessage
         verboseStatuses = database.verboseStatuses
-        autoSceneSwitcher.currentSwitcherId = database.autoSceneSwitchers!.switcherId
+        autoSceneSwitcher.currentSwitcherId = database.autoSceneSwitchers.switcherId
         supportsAppleLog = hasAppleLog()
         interactiveChat = getGlobalButton(type: .interactiveChat)?.isOn ?? false
         _ = updateShowCameraPreview()
@@ -867,6 +880,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         removeUnusedImages()
         removeUnusedAlertMedias()
         removeUnusedVTubers()
+        removeUnusedPngTubers()
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(orientationDidChange),
                                                name: UIDevice.orientationDidChangeNotification,
@@ -880,6 +894,14 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
                 self.updateIconImageFromDatabase()
             }
         }
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(applicationDidChangeActive),
+                                               name: UIApplication.willResignActiveNotification,
+                                               object: nil)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(applicationDidChangeActive),
+                                               name: UIApplication.didBecomeActiveNotification,
+                                               object: nil)
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(handleAudioRouteChange),
                                                name: AVAudioSession.routeChangeNotification,
@@ -975,6 +997,10 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         replay.speed = database.replay.speed
         gForceManager = GForceManager(motionManager: motionManager)
         startGForceManager()
+    }
+
+    @objc func applicationDidChangeActive(notification: NSNotification) {
+        isAppActive = notification.name == UIApplication.didBecomeActiveNotification
     }
 
     func startGForceManager() {
@@ -1169,22 +1195,19 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         ipStatuses = statuses
         for status in statuses where status.interfaceType == .wiredEthernet {
             for stream in database.streams
-                where !stream.srt.connectionPriorities!.priorities.contains(where: { priority in
-                    priority.name == status.name
-                })
+                where !stream.srt.connectionPriorities!.priorities.contains(where: { $0.name == status.name })
             {
                 stream.srt.connectionPriorities!.priorities
                     .append(SettingsStreamSrtConnectionPriority(name: status.name))
             }
-            if !database.networkInterfaceNames.contains(where: { interface in
-                interface.interfaceName == status.name
-            }) {
+            if !database.networkInterfaceNames.contains(where: { $0.interfaceName == status.name }) {
                 let interface = SettingsNetworkInterfaceName()
                 interface.interfaceName = status.name
                 interface.name = status.name
                 database.networkInterfaceNames.append(interface)
             }
         }
+        moblinkIpStatusesUpdated()
     }
 
     @objc func handleCaptureDeviceWasConnected(_: Notification) {
@@ -1484,15 +1507,6 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
                     break
                 }
             }
-            for widget in database.widgets {
-                if widget.type != .vTuber {
-                    continue
-                }
-                if widget.vTuber.id == id {
-                    used = true
-                    break
-                }
-            }
             if database.color.diskLutsPng!.contains(where: { lut in lut.id == id }) {
                 used = true
             }
@@ -1593,6 +1607,19 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             }
             if !found {
                 vTuberStorage.remove(id: vTuberId)
+            }
+        }
+    }
+
+    private func removeUnusedPngTubers() {
+        for pngTuberId in pngTuberStorage.ids() {
+            var found = false
+            for widget in database.widgets where widget.pngTuber.id == pngTuberId {
+                found = true
+                break
+            }
+            if !found {
+                pngTuberStorage.remove(id: pngTuberId)
             }
         }
     }
@@ -1831,7 +1858,15 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     func setPixellateStrength(strength: Float) {
-        pixellateEffect.strength.mutate { $0 = strength }
+        pixellateEffect.setSettings(strength: strength)
+    }
+
+    func setWhirlpoolAngle(angle: Float) {
+        whirlpoolEffect.setSettings(angle: angle)
+    }
+
+    func setPinchScale(scale: Float) {
+        pinchEffect.setSettings(scale: scale)
     }
 
     func setDebugLogging(on: Bool) {
@@ -2702,6 +2737,14 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
 
     func isShowingStatusHeartRateDevice() -> Bool {
         return database.show.heartRateDevice! && isAnyHeartRateDeviceConfigured()
+    }
+
+    func isShowingStatusFixedHorizon() -> Bool {
+        if let scene = getSelectedScene() {
+            return isFixedHorizonEnabled(scene: scene)
+        } else {
+            return false
+        }
     }
 
     func isStatusBrowserWidgetsActive() -> Bool {

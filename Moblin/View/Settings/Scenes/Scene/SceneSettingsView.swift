@@ -53,6 +53,16 @@ struct SceneSettingsView: View {
             sceneWidget.y = 72
             sceneWidget.width = 28
             sceneWidget.height = 28
+        case .vTuber:
+            sceneWidget.x = 80
+            sceneWidget.y = 60
+            sceneWidget.width = 28
+            sceneWidget.height = 28
+        case .pngTuber:
+            sceneWidget.x = 85
+            sceneWidget.y = 72
+            sceneWidget.width = 28
+            sceneWidget.height = 28
         default:
             break
         }
@@ -162,7 +172,7 @@ struct SceneSettingsView: View {
                                     widget.enabled = value
                                     model
                                         .sceneUpdated(attachCamera: model
-                                            .isCaptureDeviceVideoSoureWidget(widget: widget))
+                                            .isCaptureDeviceWidget(widget: widget))
                                 })) {
                                     HStack {
                                         DraggableItemPrefixView()
@@ -186,7 +196,7 @@ struct SceneSettingsView: View {
                         if scene.id == model.getSelectedScene()?.id {
                             for offset in offsets {
                                 if let widget = model.findWidget(id: scene.widgets[offset].widgetId) {
-                                    attachCamera = model.isCaptureDeviceVideoSoureWidget(widget: widget)
+                                    attachCamera = model.isCaptureDeviceWidget(widget: widget)
                                 }
                             }
                         }
@@ -223,7 +233,7 @@ struct SceneSettingsView: View {
                                             scene.widgets.append(createSceneWidget(widget: widget))
                                             var attachCamera = false
                                             if scene.id == model.getSelectedScene()?.id {
-                                                attachCamera = model.isCaptureDeviceVideoSoureWidget(widget: widget)
+                                                attachCamera = model.isCaptureDeviceWidget(widget: widget)
                                             }
                                             model.sceneUpdated(
                                                 imageEffectChanged: true,

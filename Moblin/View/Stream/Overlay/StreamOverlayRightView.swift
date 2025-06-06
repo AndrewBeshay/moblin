@@ -343,6 +343,12 @@ private struct StatusesView: View {
             textPlacement: textPlacement,
             color: heartRateDeviceColor()
         )
+        StreamOverlayIconAndTextView(
+            show: model.isShowingStatusFixedHorizon(),
+            icon: "circle.and.line.horizontal",
+            text: model.fixedHorizonStatus,
+            textPlacement: textPlacement
+        )
     }
 }
 
@@ -401,7 +407,13 @@ struct RightOverlayBottomView: View {
                         StreamOverlayRightMediaPlayerControlsView()
                     } else {
                         if model.showingPixellate {
-                            StreamOverlayRightPixellateView(strength: model.database.pixellateStrength)
+                            StreamOverlayRightPixellateView(database: model.database)
+                        }
+                        if model.showingWhirlpool {
+                            StreamOverlayRightWhirlpoolView(database: model.database)
+                        }
+                        if model.showingPinch {
+                            StreamOverlayRightPinchView(database: model.database)
                         }
                         if model.showingCamera {
                             StreamOverlayRightCameraSettingsControlView()

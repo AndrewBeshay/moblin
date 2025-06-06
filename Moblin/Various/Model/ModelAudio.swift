@@ -1,4 +1,6 @@
 import AVFAudio
+import MediaPlayer
+import UIKit
 
 class AudioProvider: ObservableObject {
     @Published var showing = false
@@ -14,6 +16,7 @@ extension Model {
     }
 
     func setupAudioSession() {
+        audioSessionWanted = true
         let bluetoothOutputOnly = database.debug.bluetoothOutputOnly
         netStreamLockQueue.async {
             let session = AVAudioSession.sharedInstance()
@@ -29,6 +32,19 @@ extension Model {
                     options: [.mixWithOthers, bluetoothOption, .defaultToSpeaker]
                 )
                 try session.setActive(true)
+                // For some reason volume can change when starting the app, so delay observing a bit.
+                // Still unexpectedly switches scene sometimes.
+                DispatchQueue.main.async {
+                    self.volumeObservationSetupTimer.startSingleShot(timeout: 1.0) {
+                        guard self.audioSessionWanted else {
+                            return
+                        }
+                        self.volumeObservation?.invalidate()
+                        self.volumeObservation = session.observe(\.outputVolume,
+                                                                 options: [.old, .new, .initial],
+                                                                 changeHandler: self.volumeDidChange)
+                    }
+                }
             } catch {
                 logger.error("app: Session error \(error)")
             }
@@ -37,11 +53,43 @@ extension Model {
     }
 
     func teardownAudioSession() {
+        audioSessionWanted = false
         netStreamLockQueue.async {
             do {
                 try AVAudioSession.sharedInstance().setActive(false)
             } catch {
                 logger.info("Failed to stop audio session with error: \(error)")
+            }
+            DispatchQueue.main.async {
+                self.volumeObservationSetupTimer.stop()
+                self.volumeObservation?.invalidate()
+                self.volumeObservation = nil
+            }
+        }
+    }
+
+    private func volumeDidChange(_ session: AVAudioSession, _ event: NSKeyValueObservedChange<Float>) {
+        if database.selfieStick.buttonEnabled, isAppActive {
+            if event.oldValue == nil {
+                initialVolume = event.newValue
+            }
+            guard let initialVolume else {
+                return
+            }
+            guard event.newValue != initialVolume else {
+                return
+            }
+            setSystemVolume(initialVolume)
+            switchToNextSceneRoundRobin()
+        } else {
+            initialVolume = session.outputVolume
+        }
+    }
+
+    private func setSystemVolume(_ volume: Float) {
+        if let volumeSlider = volumeView.subviews.first(where: { $0 is UISlider }) as? UISlider {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                volumeSlider.value = Float(volume)
             }
         }
     }
