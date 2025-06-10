@@ -5,28 +5,20 @@ import SwiftUI
 extension Model {
     private func reloadImageEffects() {
         imageEffects.removeAll()
-        for scene in database.scenes {
-            for widget in scene.widgets {
-                guard let realWidget = findWidget(id: widget.widgetId) else {
-                    continue
-                }
-                if realWidget.type != .image {
-                    continue
-                }
-                guard let data = imageStorage.read(id: widget.widgetId) else {
-                    continue
-                }
-                guard let image = UIImage(data: data) else {
-                    continue
-                }
-                let imageEffect = ImageEffect(
-                    image: image,
-                    settingName: realWidget.name,
-                    widgetId: realWidget.id
-                )
-                imageEffect.effects = realWidget.getEffects()
-                imageEffects[widget.id] = imageEffect
+        for widget in database.widgets where widget.type == .image {
+            guard let data = imageStorage.read(id: widget.id) else {
+                continue
             }
+            guard let image = CIImage(data: data, options: [.applyOrientationProperty: true]) else {
+                continue
+            }
+            let imageEffect = ImageEffect(
+                image: image,
+                settingName: widget.name,
+                widgetId: widget.id
+            )
+            imageEffect.effects = widget.getEffects()
+            imageEffects[widget.id] = imageEffect
         }
     }
 
@@ -136,19 +128,32 @@ extension Model {
         return nil
     }
 
-    func getImageEffect(id: UUID) -> ImageEffect? {
-        return imageEffects.values.first(where: { $0.widgetId == id })
+    private func getImageEffect(id: UUID) -> ImageEffect? {
+        for (imageEffectId, imageEffect) in imageEffects where id == imageEffectId {
+            return imageEffect
+        }
+        return nil
     }
 
-    func getBrowserEffect(id: UUID) -> BrowserEffect? {
+    private func getBrowserEffect(id: UUID) -> BrowserEffect? {
         for (browserEffectId, browserEffect) in browserEffects where id == browserEffectId {
             return browserEffect
         }
         return nil
     }
 
+    private func getMapEffect(id: UUID) -> MapEffect? {
+        for (mapEffectId, mapEffect) in mapEffects where id == mapEffectId {
+            return mapEffect
+        }
+        return nil
+    }
+
     func getEffectWithPossibleEffects(id: UUID) -> VideoEffect? {
-        return getVideoSourceEffect(id: id) ?? getImageEffect(id: id) ?? getBrowserEffect(id: id)
+        return getVideoSourceEffect(id: id)
+            ?? getImageEffect(id: id)
+            ?? getBrowserEffect(id: id)
+            ?? getMapEffect(id: id)
     }
 
     func getVideoSourceSettings(id: UUID) -> SettingsWidget? {
@@ -208,7 +213,9 @@ extension Model {
         }
         mapEffects.removeAll()
         for widget in widgets where widget.type == .map {
-            mapEffects[widget.id] = MapEffect(widget: widget.map)
+            let mapEffect = MapEffect(widget: widget.map)
+            mapEffect.effects = widget.getEffects()
+            mapEffects[widget.id] = mapEffect
         }
         for qrCodeEffect in qrCodeEffects.values {
             media.unregisterEffect(qrCodeEffect)
@@ -513,7 +520,7 @@ extension Model {
             }
             switch widget.type {
             case .image:
-                if let imageEffect = imageEffects[sceneWidget.id] {
+                if let imageEffect = imageEffects[widget.id] {
                     imageEffect.setSceneWidget(sceneWidget: sceneWidget.clone())
                     effects.append(imageEffect)
                 }

@@ -4,9 +4,10 @@ let settingsHalfWidth = 350.0
 
 struct SettingsView: View {
     @EnvironmentObject var model: Model
+    @ObservedObject var database: Database
 
     var chat: SettingsChat {
-        model.database.chat
+        database.chat
     }
 
     var body: some View {
@@ -24,7 +25,7 @@ struct SettingsView: View {
             }
             Section {
                 NavigationLink {
-                    StreamsSettingsView(database: model.database)
+                    StreamsSettingsView(database: database)
                 } label: {
                     IconAndTextView(
                         image: "dot.radiowaves.left.and.right",
@@ -38,7 +39,7 @@ struct SettingsView: View {
                 }
                 NavigationLink {
                     ChatSettingsView(
-                        chat: model.database.chat,
+                        chat: database.chat,
                         timestampColor: chat.timestampColor.color(),
                         usernameColor: chat.usernameColor.color(),
                         messageColor: chat.messageColor.color(),
@@ -49,7 +50,7 @@ struct SettingsView: View {
                     IconAndTextView(image: "message", text: String(localized: "Chat"))
                 }
                 NavigationLink {
-                    DisplaySettingsView()
+                    DisplaySettingsView(database: database)
                 } label: {
                     IconAndTextView(
                         image: "rectangle.inset.topright.fill",
@@ -61,14 +62,14 @@ struct SettingsView: View {
                 } label: {
                     IconAndTextView(image: "camera", text: String(localized: "Camera"))
                 }
-                if model.database.showAllSettings {
+                if database.showAllSettings {
                     NavigationLink {
-                        AudioSettingsView()
+                        AudioSettingsView(database: model.database)
                     } label: {
                         IconAndTextView(image: "waveform", text: String(localized: "Audio"))
                     }
                     NavigationLink {
-                        BitratePresetsSettingsView()
+                        BitratePresetsSettingsView(database: model.database)
                     } label: {
                         IconAndTextView(image: "speedometer", text: String(localized: "Bitrate presets"))
                     }
@@ -78,7 +79,7 @@ struct SettingsView: View {
                 } label: {
                     IconAndTextView(image: "location", text: String(localized: "Location"))
                 }
-                if model.database.showAllSettings {
+                if database.showAllSettings {
                     NavigationLink {
                         WebBrowserSettingsView()
                     } label: {
@@ -87,59 +88,59 @@ struct SettingsView: View {
                 }
             }
             Section {
-                if model.database.showAllSettings {
+                if database.showAllSettings {
                     NavigationLink {
-                        RtmpServerSettingsView()
+                        RtmpServerSettingsView(database: model.database)
                     } label: {
                         IconAndTextView(image: "server.rack", text: String(localized: "RTMP server"))
                     }
                     NavigationLink {
-                        SrtlaServerSettingsView()
+                        SrtlaServerSettingsView(database: model.database)
                     } label: {
                         IconAndTextView(image: "server.rack", text: String(localized: "SRT(LA) server"))
                     }
                 }
                 NavigationLink {
-                    MoblinkSettingsView(streamerEnabled: model.database.moblink.server.enabled)
+                    MoblinkSettingsView(streamerEnabled: database.moblink.server.enabled)
                 } label: {
                     IconAndTextView(image: "app.connected.to.app.below.fill", text: String(localized: "Moblink"))
                 }
-                if model.database.showAllSettings {
+                if database.showAllSettings {
                     NavigationLink {
-                        MediaPlayersSettingsView()
+                        MediaPlayersSettingsView(database: model.database)
                     } label: {
                         IconAndTextView(image: "play.rectangle.on.rectangle", text: String(localized: "Media players"))
                     }
                 }
             }
-            if model.database.showAllSettings {
+            if database.showAllSettings {
                 Section {
                     NavigationLink {
-                        SelfieStickSettingsView(selfieStick: model.database.selfieStick)
+                        SelfieStickSettingsView(selfieStick: database.selfieStick)
                     } label: {
                         IconAndTextView(image: "line.diagonal", text: String(localized: "Selfie stick"))
                     }
                     NavigationLink {
-                        GameControllersSettingsView()
+                        GameControllersSettingsView(database: model.database)
                     } label: {
                         IconAndTextView(image: "gamecontroller", text: String(localized: "Game controllers"))
                     }
                     if #available(iOS 17.0, *) {
                         NavigationLink {
-                            KeyboardSettingsView()
+                            KeyboardSettingsView(keyboard: model.database.keyboard)
                         } label: {
                             IconAndTextView(image: "keyboard", text: String(localized: "Keyboard"))
                         }
                     }
                     NavigationLink {
-                        RemoteControlSettingsView()
+                        RemoteControlSettingsView(database: model.database)
                     } label: {
                         IconAndTextView(image: "appletvremote.gen1", text: String(localized: "Remote control"))
                     }
                 }
                 Section {
                     NavigationLink {
-                        DjiDevicesSettingsView()
+                        DjiDevicesSettingsView(djiDevices: model.database.djiDevices)
                     } label: {
                         IconAndTextView(image: "appletvremote.gen1", text: String(localized: "DJI devices"))
                     }
@@ -149,7 +150,7 @@ struct SettingsView: View {
                         IconAndTextView(image: "appletvremote.gen1", text: String(localized: "GoPro"))
                     }
                     NavigationLink {
-                        CatPrintersSettingsView()
+                        CatPrintersSettingsView(catPrinters: model.database.catPrinters)
                     } label: {
                         IconAndTextView(image: "pawprint", text: String(localized: "Cat printers"))
                     }
@@ -188,7 +189,7 @@ struct SettingsView: View {
                 } label: {
                     IconAndTextView(image: "photo.on.rectangle.angled", text: String(localized: "Recordings"))
                 }
-                if model.database.showAllSettings {
+                if database.showAllSettings {
                     NavigationLink {
                         StreamingHistorySettingsView()
                     } label: {
@@ -196,7 +197,7 @@ struct SettingsView: View {
                     }
                 }
             }
-            if model.database.showAllSettings {
+            if database.showAllSettings {
                 Section {
                     NavigationLink {
                         WatchSettingsView()
@@ -211,20 +212,20 @@ struct SettingsView: View {
                 } label: {
                     IconAndTextView(image: "questionmark.circle", text: String(localized: "Help and support"))
                 }
-                if model.database.showAllSettings {
+                if database.showAllSettings {
                     NavigationLink {
                         AboutSettingsView()
                     } label: {
                         IconAndTextView(image: "info.circle", text: String(localized: "About"))
                     }
                     NavigationLink {
-                        DebugSettingsView(debug: model.database.debug)
+                        DebugSettingsView(debug: database.debug)
                     } label: {
                         IconAndTextView(image: "ladybug", text: String(localized: "Debug"))
                     }
                 }
             }
-            if model.database.showAllSettings {
+            if database.showAllSettings {
                 Section {
                     NavigationLink {
                         ImportExportSettingsView()
@@ -232,19 +233,14 @@ struct SettingsView: View {
                         IconAndTextView(image: "gearshape", text: String(localized: "Import and export settings"))
                     }
                     NavigationLink {
-                        DeepLinkCreatorSettingsView()
+                        DeepLinkCreatorSettingsView(deepLinkCreator: model.database.deepLinkCreator)
                     } label: {
                         IconAndTextView(image: "link.badge.plus", text: String(localized: "Deep link creator"))
                     }
                 }
             }
             Section {
-                Toggle("Show all settings", isOn: Binding(get: {
-                    model.database.showAllSettings
-                }, set: { value in
-                    model.database.showAllSettings = value
-                    model.objectWillChange.send()
-                }))
+                Toggle("Show all settings", isOn: $database.showAllSettings)
             }
             Section {
                 ResetSettingsView()

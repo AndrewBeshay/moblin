@@ -2,6 +2,7 @@ import AlertToast
 import AppIntents
 import Collections
 import Combine
+import CoreBluetooth
 import CoreMotion
 import GameController
 import HealthKit
@@ -486,6 +487,9 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     var recordingsStorage = RecordingsStorage()
     var latestLowBitrateTime = ContinuousClock.now
 
+    var bluetoothCentralManger: CBCentralManager?
+    @Published var bluetoothAllowed = false
+
     var rtmpServer: RtmpServer?
     @Published var serversSpeedAndTotal = noValue
     var moblinkRelayState: MoblinkRelayState = .waitingForStreamers
@@ -549,10 +553,9 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
 
     var isAppActive = true
     var initialVolume: Float?
+    var latestVolumeChangeSequenceNumber: Int?
     let volumeView = MPVolumeView(frame: .zero)
-    var volumeObservation: NSKeyValueObservation?
-    var audioSessionWanted = false
-    var volumeObservationSetupTimer = SimpleTimer(queue: .main)
+    var latestSetVolumeTime = ContinuousClock.now
 
     weak var currentStream: NetStream? {
         didSet {
@@ -823,6 +826,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     func setup() {
+        bluetoothCentralManger = CBCentralManager(delegate: self, queue: .main)
         deleteTrash()
         cameraPreviewLayer = cameraPreviewView.previewLayer
         media.delegate = self
@@ -894,6 +898,10 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
                 self.updateIconImageFromDatabase()
             }
         }
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(systemVolumeDidChange),
+                                               name: Notification.Name("SystemVolumeDidChange"),
+                                               object: nil)
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(applicationDidChangeActive),
                                                name: UIApplication.willResignActiveNotification,
@@ -1336,7 +1344,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         if isLive || isRecording {
             return false
         }
-        return database.moblink.client.enabled || database.catPrinters.backgroundPrinting!
+        return database.moblink.client.enabled || database.catPrinters.backgroundPrinting
     }
 
     @objc func handleBatteryStateDidChangeNotification() {
