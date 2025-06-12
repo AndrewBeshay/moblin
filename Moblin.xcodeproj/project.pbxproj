@@ -4309,7 +4309,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.400.0;
+				MARKETING_VERSION = 26.0.0;
 				MTL_HEADER_SEARCH_PATHS = "$(HEADER_SEARCH_PATHS)";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_IDENTIFIER_IOS)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4366,7 +4366,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.400.0;
+				MARKETING_VERSION = 26.0.0;
 				MTL_HEADER_SEARCH_PATHS = "$(HEADER_SEARCH_PATHS)";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_IDENTIFIER_IOS)";
 				PRODUCT_NAME = "$(TARGET_NAME)";

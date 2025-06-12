@@ -55,7 +55,7 @@ private struct DeepLinkCreatorStreamVideoView: View {
                     InlinePickerView(
                         title: String(localized: "FPS"),
                         onChange: { video.fps = Int($0)! },
-                        items: InlinePickerItem.fromStrings(values: fpss),
+                        items: InlinePickerItem.fromStrings(values: fpss.map { String($0) }),
                         selectedId: String(video.fps)
                     )
                 } label: {
@@ -201,8 +201,7 @@ private struct DeepLinkCreatorStreamObsView: View {
                     title: String(localized: "URL"),
                     value: obs.webSocketUrl,
                     onSubmit: submitWebSocketUrl,
-                    footers: [String(localized: "For example ws://232.32.45.332:4567.")],
-                    keyboardType: .URL
+                    footers: [String(localized: "For example ws://232.32.45.332:4567.")]
                 )
                 TextEditNavigationView(
                     title: String(localized: "Password"),
