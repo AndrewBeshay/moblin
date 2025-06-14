@@ -65,62 +65,32 @@ struct ChatSettingsView: View {
                         .frame(width: 25)
                 }
                 if model.database.showAllSettings {
-                    Toggle(isOn: Binding(get: {
-                        chat.timestampColorEnabled
-                    }, set: { value in
-                        chat.timestampColorEnabled = value
-                        model.reloadChatMessages()
-                    })) {
-                        Text("Timestamp")
-                    }
-                    Toggle(isOn: Binding(get: {
-                        chat.boldUsername
-                    }, set: { value in
-                        chat.boldUsername = value
-                        model.reloadChatMessages()
-                    })) {
-                        Text("Bold username")
-                    }
-                    Toggle(isOn: Binding(get: {
-                        chat.boldMessage
-                    }, set: { value in
-                        chat.boldMessage = value
-                        model.reloadChatMessages()
-                    })) {
-                        Text("Bold message")
-                    }
-                    Toggle(isOn: Binding(get: {
-                        chat.badges
-                    }, set: { value in
-                        chat.badges = value
-                        model.reloadChatMessages()
-                    })) {
-                        Text("Badges")
-                    }
-                    Toggle(isOn: Binding(get: {
-                        chat.animatedEmotes
-                    }, set: { value in
-                        chat.animatedEmotes = value
-                        model.reloadChatMessages()
-                    })) {
-                        Text("Animated emotes")
-                    }
-                    Toggle(isOn: Binding(get: {
-                        chat.newMessagesAtTop
-                    }, set: { value in
-                        chat.newMessagesAtTop = value
-                        model.objectWillChange.send()
-                    })) {
-                        Text("New messages at top")
-                    }
-                    Toggle(isOn: Binding(get: {
-                        chat.mirrored
-                    }, set: { value in
-                        chat.mirrored = value
-                        model.objectWillChange.send()
-                    })) {
-                        Text("Mirrored")
-                    }
+                    Toggle("Timestamp", isOn: $chat.timestampColorEnabled)
+                        .onChange(of: chat.timestampColorEnabled) { _ in
+                            model.reloadChatMessages()
+                        }
+                    Toggle("Bold username", isOn: $chat.boldUsername)
+                        .onChange(of: chat.boldUsername) { _ in
+                            model.reloadChatMessages()
+                        }
+                    Toggle("Bold message", isOn: $chat.boldMessage)
+                        .onChange(of: chat.boldMessage) { _ in
+                            model.reloadChatMessages()
+                        }
+                    Toggle("Badges", isOn: $chat.badges)
+                        .onChange(of: chat.badges) { _ in
+                            model.reloadChatMessages()
+                        }
+                    Toggle("Streaming platform", isOn: $chat.platform)
+                        .onChange(of: chat.platform) { _ in
+                            model.reloadChatMessages()
+                        }
+                    Toggle("Animated emotes", isOn: $chat.animatedEmotes)
+                        .onChange(of: chat.animatedEmotes) { _ in
+                            model.reloadChatMessages()
+                        }
+                    Toggle("New messages at top", isOn: $chat.newMessagesAtTop)
+                    Toggle("Mirrored", isOn: $chat.mirrored)
                     NavigationLink {
                         TextEditView(
                             title: String(localized: "Maximum age"),

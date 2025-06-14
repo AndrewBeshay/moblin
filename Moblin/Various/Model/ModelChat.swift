@@ -90,6 +90,7 @@ struct ChatPost: Identifiable, Equatable {
     var highlight: ChatHighlight?
     var live: Bool
     var filter: SettingsChatFilter?
+    var platform: Platform?
 }
 
 class ChatProvider: ObservableObject {
@@ -99,6 +100,8 @@ class ChatProvider: ObservableObject {
     @Published var pausedPostsCount: Int = 0
     @Published var paused = false
     private let maximumNumberOfMessages: Int
+    @Published var moreThanOneStreamingPlatform = false
+    @Published var interactiveChat = false
 
     init(maximumNumberOfMessages: Int) {
         self.maximumNumberOfMessages = maximumNumberOfMessages
@@ -122,7 +125,10 @@ class ChatProvider: ObservableObject {
 
     func update() {
         if paused {
-            pausedPostsCount = max(pausedPosts.count - 1, 0)
+            let count = max(pausedPosts.count - 1, 0)
+            if count != pausedPostsCount {
+                pausedPostsCount = count
+            }
         } else {
             while let post = newPosts.popFirst() {
                 if posts.count > maximumNumberOfMessages - 1 {
@@ -163,7 +169,8 @@ extension Model {
             bits: nil,
             highlight: nil,
             live: true,
-            filter: nil
+            filter: nil,
+            platform: nil
         )
     }
 
@@ -314,6 +321,33 @@ extension Model {
         reloadOpenStreamingPlatformChat()
     }
 
+    func updateChatMoreThanOneChatConfigured() {
+        let moreThanOneStreamingPlatform = isMoreThanOneChatConfigured()
+        chat.moreThanOneStreamingPlatform = moreThanOneStreamingPlatform
+        quickButtonChat.moreThanOneStreamingPlatform = moreThanOneStreamingPlatform
+        externalDisplayChat.moreThanOneStreamingPlatform = moreThanOneStreamingPlatform
+    }
+
+    private func isMoreThanOneChatConfigured() -> Bool {
+        var numberOfChats = 0
+        if isTwitchChatConfigured() {
+            numberOfChats += 1
+        }
+        if isKickPusherConfigured() {
+            numberOfChats += 1
+        }
+        if isYouTubeLiveChatConfigured() {
+            numberOfChats += 1
+        }
+        if isAfreecaTvChatConfigured() {
+            numberOfChats += 1
+        }
+        if isOpenStreamingPlatformChatConfigured() {
+            numberOfChats += 1
+        }
+        return numberOfChats > 1
+    }
+
     func isChatConfigured() -> Bool {
         return isTwitchChatConfigured() || isKickPusherConfigured() ||
             isYouTubeLiveChatConfigured() || isAfreecaTvChatConfigured() ||
@@ -424,7 +458,8 @@ extension Model {
             bits: bits,
             highlight: highlight,
             live: live,
-            filter: filter
+            filter: filter,
+            platform: platform
         )
         chatPostId += 1
         if filter?.showOnScreen != false || filter?.textToSpeech != false {

@@ -2945,11 +2945,11 @@ class SettingsChat: Codable, ObservableObject {
     var backgroundColorEnabled: Bool = false
     var shadowColor: RgbColor = .init(red: 0, green: 0, blue: 0)
     var shadowColorEnabled: Bool = true
-    var boldUsername: Bool = true
-    var boldMessage: Bool = true
-    var animatedEmotes: Bool = false
+    @Published var boldUsername: Bool = true
+    @Published var boldMessage: Bool = true
+    @Published var animatedEmotes: Bool = false
     var timestampColor: RgbColor = .init(red: 180, green: 180, blue: 180)
-    var timestampColorEnabled: Bool = false
+    @Published var timestampColorEnabled: Bool = false
     @Published var height: Double = 0.7
     @Published var width: Double = 1.0
     @Published var maximumAge: Int = 30
@@ -2966,17 +2966,18 @@ class SettingsChat: Codable, ObservableObject {
     var textToSpeechSubscribersOnly: Bool = false
     var textToSpeechFilter: Bool = true
     var textToSpeechFilterMentions: Bool = true
-    var mirrored: Bool = false
+    @Published var mirrored: Bool = false
     @Published var botEnabled: Bool = false
     var botCommandPermissions: SettingsChatBotPermissions = .init()
     var botSendLowBatteryWarning: Bool = false
-    var badges: Bool = true
+    @Published var badges: Bool = true
     var showFirstTimeChatterMessage: Bool = true
     var showNewFollowerMessage: Bool = true
     @Published var bottom: Double = 0.0
     @Published var bottomPoints: Double = 80
-    var newMessagesAtTop: Bool = false
+    @Published var newMessagesAtTop: Bool = false
     @Published var textToSpeechPauseBetweenMessages: Double = 1.0
+    @Published var platform: Bool = true
 
     enum CodingKeys: CodingKey {
         case fontSize,
@@ -3017,7 +3018,8 @@ class SettingsChat: Codable, ObservableObject {
              bottom,
              bottomPoints,
              newMessagesAtTop,
-             textToSpeechPauseBetweenMessages
+             textToSpeechPauseBetweenMessages,
+             platform
     }
 
     func encode(to encoder: Encoder) throws {
@@ -3061,6 +3063,7 @@ class SettingsChat: Codable, ObservableObject {
         try container.encode(.bottomPoints, bottomPoints)
         try container.encode(.newMessagesAtTop, newMessagesAtTop)
         try container.encode(.textToSpeechPauseBetweenMessages, textToSpeechPauseBetweenMessages)
+        try container.encode(.platform, platform)
     }
 
     init() {}
@@ -3109,6 +3112,31 @@ class SettingsChat: Codable, ObservableObject {
         )
         newMessagesAtTop = container.decode(.newMessagesAtTop, Bool.self, false)
         textToSpeechPauseBetweenMessages = container.decode(.textToSpeechPauseBetweenMessages, Double.self, 1.0)
+        platform = container.decode(.platform, Bool.self, true)
+    }
+
+    func getRotation() -> Double {
+        if newMessagesAtTop {
+            return 0.0
+        } else {
+            return 180.0
+        }
+    }
+
+    func getScaleX() -> Double {
+        if newMessagesAtTop {
+            return 1.0
+        } else {
+            return -1.0
+        }
+    }
+
+    func isMirrored() -> CGFloat {
+        if mirrored {
+            return -1
+        } else {
+            return 1
+        }
     }
 }
 
@@ -4085,6 +4113,78 @@ class SettingsHeartRateDevices: Codable {
     var devices: [SettingsHeartRateDevice] = []
 }
 
+private let defaultRgbLightColor = RgbColor(red: 0, green: 255, blue: 0)
+
+class SettingsPhoneCoolerDevice: Codable, Identifiable, ObservableObject {
+    var id: UUID = .init()
+    @Published var name: String = ""
+    @Published var enabled: Bool = false
+    @Published var bluetoothPeripheralName: String?
+    @Published var bluetoothPeripheralId: UUID?
+    @Published var rgbLightEnabled: Bool = false
+    var rgbLightColor: RgbColor = defaultRgbLightColor
+    @Published var rgbLightColorColor: Color = defaultRgbLightColor.color()
+    @Published var rgbLightBrightness: Double = 100.0
+
+    enum CodingKeys: CodingKey {
+        case id,
+             name,
+             enabled,
+             bluetoothPeripheralName,
+             bluetoothPeripheralId,
+             rgbLightEnabled,
+             rgbLightColor,
+             rgbLightBrightness
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(.id, id)
+        try container.encode(.name, name)
+        try container.encode(.enabled, enabled)
+        try container.encode(.bluetoothPeripheralName, bluetoothPeripheralName)
+        try container.encode(.bluetoothPeripheralId, bluetoothPeripheralId)
+        try container.encode(.rgbLightEnabled, rgbLightEnabled)
+        try container.encode(.rgbLightColor, rgbLightColor)
+        try container.encode(.rgbLightBrightness, rgbLightBrightness)
+    }
+
+    init() {}
+
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = container.decode(.id, UUID.self, .init())
+        name = container.decode(.name, String.self, "")
+        enabled = container.decode(.enabled, Bool.self, false)
+        bluetoothPeripheralName = try? container.decode(String.self, forKey: .bluetoothPeripheralName)
+        bluetoothPeripheralId = try? container.decode(UUID.self, forKey: .bluetoothPeripheralId)
+        rgbLightEnabled = container.decode(.rgbLightEnabled, Bool.self, false)
+        rgbLightColor = container.decode(.rgbLightColor, RgbColor.self, defaultRgbLightColor)
+        rgbLightColorColor = rgbLightColor.color()
+        rgbLightBrightness = container.decode(.rgbLightBrightness, Double.self, 100.0)
+    }
+}
+
+class SettingsPhoneCoolerDevices: Codable, ObservableObject {
+    @Published var devices: [SettingsPhoneCoolerDevice] = []
+
+    enum CodingKeys: CodingKey {
+        case devices
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(.devices, devices)
+    }
+
+    init() {}
+
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        devices = container.decode(.devices, [SettingsPhoneCoolerDevice].self, [])
+    }
+}
+
 class SettingsQuickButtons: Codable, ObservableObject {
     @Published var twoColumns: Bool = true
     @Published var showName: Bool = true
@@ -4107,9 +4207,9 @@ class SettingsQuickButtons: Codable, ObservableObject {
 
     required init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        twoColumns = try container.decode(Bool.self, forKey: .twoColumns)
-        showName = try container.decode(Bool.self, forKey: .showName)
-        enableScroll = try container.decode(Bool.self, forKey: .enableScroll)
+        twoColumns = container.decode(.twoColumns, Bool.self, true)
+        showName = container.decode(.showName, Bool.self, true)
+        enableScroll = container.decode(.enableScroll, Bool.self, true)
     }
 }
 
@@ -5004,6 +5104,7 @@ class Database: Codable, ObservableObject {
     @Published var externalDisplayContent: SettingsExternalDisplayContent = .stream
     var cyclingPowerDevices: SettingsCyclingPowerDevices = .init()
     var heartRateDevices: SettingsHeartRateDevices = .init()
+    var phoneCoolerDevices: SettingsPhoneCoolerDevices = .init()
     var djiGimbalDevices: SettingsDjiGimbalDevices = .init()
     var remoteSceneId: UUID?
     var sceneNumericInput: Bool = false
@@ -5096,6 +5197,7 @@ class Database: Codable, ObservableObject {
              cyclingPowerDevices,
              heartRateDevices,
              djiGimbalDevices,
+             phoneCoolerDevices,
              remoteSceneId,
              sceneNumericInput,
              goPro,
@@ -5161,6 +5263,7 @@ class Database: Codable, ObservableObject {
         try container.encode(.cyclingPowerDevices, cyclingPowerDevices)
         try container.encode(.heartRateDevices, heartRateDevices)
         try container.encode(.djiGimbalDevices, djiGimbalDevices)
+        try container.encode(.phoneCoolerDevices, phoneCoolerDevices)
         try container.encode(.remoteSceneId, remoteSceneId)
         try container.encode(.sceneNumericInput, sceneNumericInput)
         try container.encode(.goPro, goPro)
@@ -5228,6 +5331,7 @@ class Database: Codable, ObservableObject {
         cyclingPowerDevices = container.decode(.cyclingPowerDevices, SettingsCyclingPowerDevices.self, .init())
         heartRateDevices = container.decode(.heartRateDevices, SettingsHeartRateDevices.self, .init())
         djiGimbalDevices = container.decode(.djiGimbalDevices, SettingsDjiGimbalDevices.self, .init())
+        phoneCoolerDevices = container.decode(.phoneCoolerDevices, SettingsPhoneCoolerDevices.self, .init())
         remoteSceneId = try? container.decode(UUID?.self, forKey: .remoteSceneId)
         sceneNumericInput = container.decode(.sceneNumericInput, Bool.self, false)
         goPro = container.decode(.goPro, SettingsGoPro.self, .init())

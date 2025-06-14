@@ -368,7 +368,7 @@ extension Model: RemoteControlStreamerDelegate {
             topRight.audioInfo!.audioLevel = .value(audio.level)
         }
         if isServersConfigured() {
-            topRight.rtmpServer = RemoteControlStatusItem(message: serversSpeedAndTotal)
+            topRight.rtmpServer = RemoteControlStatusItem(message: servers.speedAndTotal)
         }
         if isAnyRemoteControlConfigured() {
             topRight.remoteControl = RemoteControlStatusItem(message: remoteControlStatus)
@@ -377,7 +377,7 @@ extension Model: RemoteControlStreamerDelegate {
             topRight.gameController = RemoteControlStatusItem(message: gameControllersTotal)
         }
         if isLive {
-            topRight.bitrate = RemoteControlStatusItem(message: speedAndTotal)
+            topRight.bitrate = RemoteControlStatusItem(message: bitrate.speedAndTotal)
         }
         if isLive {
             topRight.uptime = RemoteControlStatusItem(message: streamUptime.uptime)
@@ -386,10 +386,10 @@ extension Model: RemoteControlStreamerDelegate {
             topRight.location = RemoteControlStatusItem(message: location)
         }
         if isStatusBondingActive() {
-            topRight.srtla = RemoteControlStatusItem(message: bondingStatistics)
+            topRight.srtla = RemoteControlStatusItem(message: bonding.statistics)
         }
         if isStatusBondingRttsActive() {
-            topRight.srtlaRtts = RemoteControlStatusItem(message: bondingRtts)
+            topRight.srtlaRtts = RemoteControlStatusItem(message: bonding.rtts)
         }
         if isRecording {
             topRight.recording = RemoteControlStatusItem(message: recording.length)
@@ -401,7 +401,7 @@ extension Model: RemoteControlStreamerDelegate {
             topRight.browserWidgets = RemoteControlStatusItem(message: browserWidgetsStatus)
         }
         if isAnyMoblinkConfigured() {
-            topRight.moblink = RemoteControlStatusItem(message: moblinkStatus)
+            topRight.moblink = RemoteControlStatusItem(message: moblink.status)
         }
         if !djiDevicesStatus.isEmpty {
             topRight.djiDevices = RemoteControlStatusItem(message: djiDevicesStatus)

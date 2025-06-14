@@ -55,7 +55,8 @@ private struct HighlightMessageView: View {
 
 private struct LineView: View {
     var post: ChatPost
-    var chat: SettingsChat
+    @ObservedObject var chat: SettingsChat
+    var platform: Bool
 
     private func usernameColor() -> Color {
         return post.userColor.color()
@@ -99,6 +100,13 @@ private struct LineView: View {
             if chat.timestampColorEnabled {
                 Text("\(post.timestamp) ")
                     .foregroundColor(timestampColor)
+            }
+            if chat.platform, platform, let image = post.platform?.imageName() {
+                Image(image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .padding(2)
+                    .frame(height: CGFloat(chat.fontSize * 1.4))
             }
             if chat.badges {
                 ForEach(post.userBadges, id: \.self) { url in
@@ -164,36 +172,13 @@ private struct LineView: View {
 private let startId = UUID()
 
 struct StreamOverlayChatView: View {
-    @EnvironmentObject var model: Model
+    var model: Model
+    @ObservedObject var chatSettings: SettingsChat
     @ObservedObject var chat: ChatProvider
 
-    private func getRotation() -> Double {
-        if model.database.chat.newMessagesAtTop {
-            return 0.0
-        } else {
-            return 180.0
-        }
-    }
-
-    private func getScaleX() -> Double {
-        if model.database.chat.newMessagesAtTop {
-            return 1.0
-        } else {
-            return -1.0
-        }
-    }
-
-    private func isMirrored() -> CGFloat {
-        if model.database.chat.mirrored {
-            return -1
-        } else {
-            return 1
-        }
-    }
-
     var body: some View {
-        let rotation = getRotation()
-        let scaleX = getScaleX()
+        let rotation = chatSettings.getRotation()
+        let scaleX = chatSettings.getScaleX()
         GeometryReader { metrics in
             VStack {
                 Spacer()
@@ -202,7 +187,7 @@ struct StreamOverlayChatView: View {
                         LazyVStack(alignment: .leading, spacing: 1) {
                             Color.clear
                                 .onAppear {
-                                    guard model.interactiveChat else {
+                                    guard chat.interactiveChat else {
                                         return
                                     }
                                     if chat.paused {
@@ -210,7 +195,7 @@ struct StreamOverlayChatView: View {
                                     }
                                 }
                                 .onDisappear {
-                                    guard model.interactiveChat else {
+                                    guard chat.interactiveChat else {
                                         return
                                     }
                                     if !chat.paused {
@@ -230,20 +215,21 @@ struct StreamOverlayChatView: View {
                                                 .foregroundColor(highlight.color)
                                             VStack(alignment: .leading, spacing: 1) {
                                                 HighlightMessageView(
-                                                    chat: model.database.chat,
+                                                    chat: chatSettings,
                                                     image: highlight.image,
                                                     name: highlight.title
                                                 )
-                                                LineView(
-                                                    post: post,
-                                                    chat: model.database.chat
-                                                )
+                                                LineView(post: post,
+                                                         chat: chatSettings,
+                                                         platform: chat.moreThanOneStreamingPlatform)
                                             }
                                         }
                                         .rotationEffect(Angle(degrees: rotation))
                                         .scaleEffect(x: scaleX, y: 1.0, anchor: .center)
                                     } else {
-                                        LineView(post: post, chat: model.database.chat)
+                                        LineView(post: post,
+                                                 chat: chatSettings,
+                                                 platform: chat.moreThanOneStreamingPlatform)
                                             .padding([.leading], 3)
                                             .rotationEffect(Angle(degrees: rotation))
                                             .scaleEffect(x: scaleX, y: 1.0, anchor: .center)
@@ -262,10 +248,10 @@ struct StreamOverlayChatView: View {
                     }
                     .foregroundColor(.white)
                     .rotationEffect(Angle(degrees: rotation))
-                    .scaleEffect(x: scaleX * isMirrored(), y: 1.0, anchor: .center)
-                    .frame(width: metrics.size.width * model.database.chat.width,
-                           height: metrics.size.height * model.database.chat.height)
-                    .onChange(of: model.interactiveChat) { _ in
+                    .scaleEffect(x: scaleX * chatSettings.isMirrored(), y: 1.0, anchor: .center)
+                    .frame(width: metrics.size.width * chatSettings.width,
+                           height: metrics.size.height * chatSettings.height)
+                    .onChange(of: chat.interactiveChat) { _ in
                         proxy.scrollTo(startId, anchor: .bottom)
                     }
                 }

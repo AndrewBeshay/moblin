@@ -109,6 +109,42 @@ class StreamUptimeProvider: ObservableObject {
     @Published var uptime = noValue
 }
 
+class HypeTrain: ObservableObject {
+    @Published var status = noValue
+    @Published var level: Int?
+    @Published var progress: Int?
+    @Published var goal: Int?
+    var timer = SimpleTimer(queue: .main)
+}
+
+class Moblink: ObservableObject {
+    var streamer: MoblinkStreamer?
+    var relays: [MoblinkRelay] = []
+    var scanner: MoblinkScanner?
+    var relayState: MoblinkRelayState = .waitingForStreamers
+    @Published var streamerOk = true
+    @Published var status = noValue
+    @Published var scannerDiscoveredStreamers: [MoblinkScannerStreamer] = []
+}
+
+class Servers: ObservableObject {
+    var rtmp: RtmpServer?
+    var srtla: SrtlaServer?
+    @Published var speedAndTotal = noValue
+}
+
+class Bitrate: ObservableObject {
+    @Published var speedAndTotal = noValue
+    @Published var speedMbpsOneDecimal = noValue
+}
+
+class Bonding: ObservableObject {
+    @Published var statistics = noValue
+    @Published var rtts = noValue
+    @Published var pieChartPercentages: [BondingPercentage] = []
+    var statisticsFormatter = BondingStatisticsFormatter()
+}
+
 final class Model: NSObject, ObservableObject, @unchecked Sendable {
     let media = Media()
     var streamState = StreamState.disconnected {
@@ -116,6 +152,14 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             logger.info("stream: State \(oldValue) -> \(streamState)")
         }
     }
+
+    @Published var isPresentingWidgetWizard = false
+
+    let hypeTrain = HypeTrain()
+    let moblink = Moblink()
+    let servers = Servers()
+    let bitrate = Bitrate()
+    let bonding = Bonding()
 
     @Published var goProLaunchLiveStreamSelection: UUID?
     @Published var goProWifiCredentialsSelection: UUID?
@@ -173,9 +217,6 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     private var browserWidgetsStatusChanged = false
     private var subscriptions = Set<AnyCancellable>()
     var streamUptime = StreamUptimeProvider()
-    @Published var bondingStatistics = noValue
-    @Published var bondingRtts = noValue
-    var bondingStatisticsFormatter = BondingStatisticsFormatter()
     let audio = AudioProvider()
     var settings = Settings()
     @Published var digitalClock = noValue
@@ -191,7 +232,6 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     private var openStreamingPlatformChat: OpenStreamingPlatformChat!
     var obsWebSocket: ObsWebSocket?
     var chatPostId = 0
-    @Published var interactiveChat = false
     var chat = ChatProvider(maximumNumberOfMessages: maximumNumberOfChatMessages)
     var quickButtonChat = ChatProvider(maximumNumberOfMessages: maximumNumberOfInteractiveChatMessages)
     var externalDisplayChat = ChatProvider(maximumNumberOfMessages: 50)
@@ -212,8 +252,6 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     @Published var batteryLevel = Double(UIDevice.current.batteryLevel)
     private var batteryLevelLowCounter = -1
     @Published var batteryState: UIDevice.BatteryState = .full
-    @Published var speedAndTotal = noValue
-    @Published var speedMbpsOneDecimal = noValue
     @Published var bitrateStatusColor: Color = .white
     @Published var bitrateStatusIconColor: Color?
     var previousBitrateStatusColorSrtDroppedPacketsTotal: Int32 = 0
@@ -266,16 +304,15 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
 
     private var serversSpeed: Int64 = 0
 
-    @Published var hypeTrainLevel: Int?
-    @Published var hypeTrainProgress: Int?
-    @Published var hypeTrainGoal: Int?
-    @Published var hypeTrainStatus = noValue
     @Published var adsRemainingTimerStatus = noValue
     var adsEndDate: Date?
-    var hypeTrainTimer = SimpleTimer(queue: .main)
     var urlSession = URLSession.shared
 
     var heartRates: [String: Int?] = [:]
+
+    @Published var phoneCoolerPhoneTemp: Int?
+    @Published var phoneCoolerExhaustTemp: Int?
+
     var workoutActiveEnergyBurned: Int?
     var workoutDistance: Int?
     var workoutPower: Int?
@@ -345,8 +382,6 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     var twitchAuthOnComplete: ((_ accessToken: String) -> Void)?
 
     var numberOfTwitchViewers: Int?
-
-    @Published var bondingPieChartPercentages: [BondingPercentage] = []
 
     @Published var verboseStatuses = false
     @Published var showDrawOnStream = false
@@ -469,6 +504,10 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     var currentHeartRateDeviceSettings: SettingsHeartRateDevice?
     var heartRateDevices: [UUID: HeartRateDevice] = [:]
 
+    @Published var phoneCoolerDeviceState: PhoneCoolerDeviceState?
+    var currentPhoneCoolerDeviceSettings: SettingsPhoneCoolerDevice?
+    var phoneCoolerDevices: [UUID: PhoneCoolerDevice] = [:]
+
     var cameraDevice: AVCaptureDevice?
     var cameraZoomLevelToXScale: Float = 1.0
     var cameraZoomXMinimum: Float = 1.0
@@ -490,13 +529,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     var bluetoothCentralManger: CBCentralManager?
     @Published var bluetoothAllowed = false
 
-    var rtmpServer: RtmpServer?
-    @Published var serversSpeedAndTotal = noValue
-    var moblinkRelayState: MoblinkRelayState = .waitingForStreamers
-    @Published var moblinkStreamerOk = true
-    @Published var moblinkStatus = noValue
     @Published var djiDevicesStatus = noValue
-    @Published var moblinkScannerDiscoveredStreamers: [MoblinkScannerStreamer] = []
 
     var sceneSettingsPanelScene = SettingsScene(name: "")
     @Published var sceneSettingsPanelSceneId = 1
@@ -504,8 +537,6 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     @Published var snapshotCountdown = 0
     @Published var currentSnapshotJob: SnapshotJob?
     var snapshotJobs: Deque<SnapshotJob> = []
-
-    var srtlaServer: SrtlaServer?
 
     var gameControllers: [GCController?] = []
     @Published var gameControllersTotal = noValue
@@ -533,10 +564,6 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     private let sampleBufferReceiver = SampleBufferReceiver()
 
     let faxReceiver = FaxReceiver()
-
-    var moblinkStreamer: MoblinkStreamer?
-    var moblinkRelays: [MoblinkRelay] = []
-    var moblinkScanner: MoblinkScanner?
 
     @Published var cameraControlEnabled = false
     var twitchStreamUpdateTime = ContinuousClock.now
@@ -844,7 +871,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         verboseStatuses = database.verboseStatuses
         autoSceneSwitcher.currentSwitcherId = database.autoSceneSwitchers.switcherId
         supportsAppleLog = hasAppleLog()
-        interactiveChat = getGlobalButton(type: .interactiveChat)?.isOn ?? false
+        chat.interactiveChat = getGlobalButton(type: .interactiveChat)?.isOn ?? false
         _ = updateShowCameraPreview()
         setDisplayPortrait(portrait: database.portrait)
         setBitrateDropFix()
@@ -984,11 +1011,12 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         autoStartCatPrinters()
         autoStartCyclingPowerDevices()
         autoStartHeartRateDevices()
+        autoStartPhoneCoolerDevices()
         startWeatherManager()
         startGeographyManager()
         twitchAuth.setOnAccessToken(onAccessToken: handleTwitchAccessToken)
         MoblinShortcuts.updateAppShortcutParameters()
-        bondingStatisticsFormatter.setNetworkInterfaceNames(database.networkInterfaceNames)
+        bonding.statisticsFormatter.setNetworkInterfaceNames(database.networkInterfaceNames)
         reloadTeslaVehicle()
         updateFaceFilterButtonState()
         updateLutsButtonState()
@@ -1292,6 +1320,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             autoStartCyclingPowerDevices()
             autoStartHeartRateDevices()
             autoStartDjiGimbalDevices()
+            autoStartPhoneCoolerDevices()
         }
     }
 
@@ -1462,7 +1491,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             self.updateCurrentSsid()
             self.rtmpServerInfo()
             self.teslaGetChargeState()
-            self.moblinkStreamer?.updateStatus()
+            self.moblink.streamer?.updateStatus()
             self.updateDjiDevicesStatus()
             self.updateTwitchStream(monotonicNow: monotonicNow)
             self.updateAvailableDiskSpace()
@@ -1688,7 +1717,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
 
     func networkInterfaceNamesUpdated() {
         media.setNetworkInterfaceNames(networkInterfaceNames: database.networkInterfaceNames)
-        bondingStatisticsFormatter.setNetworkInterfaceNames(database.networkInterfaceNames)
+        bonding.statisticsFormatter.setNetworkInterfaceNames(database.networkInterfaceNames)
     }
 
     @MainActor
@@ -1955,6 +1984,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             )
             youTubeLiveChat!.start()
         }
+        updateChatMoreThanOneChatConfigured()
     }
 
     func reloadAfreecaTvChat() {
@@ -1969,6 +1999,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             )
             afreecaTvChat!.start()
         }
+        updateChatMoreThanOneChatConfigured()
     }
 
     func reloadOpenStreamingPlatformChat() {
@@ -1982,6 +2013,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             )
             openStreamingPlatformChat!.start()
         }
+        updateChatMoreThanOneChatConfigured()
     }
 
     func youTubeVideoIdUpdated() {
@@ -2046,7 +2078,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
 
     private func logStatus() {
         if logger.debugEnabled, isLive {
-            logger.debug("Status: Bitrate: \(speedAndTotal), Uptime: \(streamUptime.uptime)")
+            logger.debug("Status: Bitrate: \(bitrate.speedAndTotal), Uptime: \(streamUptime.uptime)")
         }
     }
 
@@ -2183,7 +2215,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         var speed: UInt64 = 0
         var total: UInt64 = 0
         var numberOfClients = 0
-        if let rtmpServer {
+        if let rtmpServer = servers.rtmp {
             let stats = rtmpServer.updateStats()
             numberOfClients += rtmpServer.numberOfClients()
             if rtmpServer.numberOfClients() > 0 {
@@ -2192,7 +2224,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             }
             anyServerEnabled = true
         }
-        if let srtlaServer {
+        if let srtlaServer = servers.srtla {
             let stats = srtlaServer.updateStats()
             numberOfClients += srtlaServer.getNumberOfClients()
             if srtlaServer.getNumberOfClients() > 0 {
@@ -2214,8 +2246,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
         } else {
             message = noValue
         }
-        if message != serversSpeedAndTotal {
-            serversSpeedAndTotal = message
+        if message != servers.speedAndTotal {
+            servers.speedAndTotal = message
         }
     }
 
@@ -2676,7 +2708,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     func isShowingStatusHypeTrain() -> Bool {
-        return hypeTrainStatus != noValue
+        return hypeTrain.status != noValue
     }
 
     func isShowingStatusAdsRemainingTimer() -> Bool {

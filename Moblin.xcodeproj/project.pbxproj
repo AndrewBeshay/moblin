@@ -489,6 +489,7 @@
 		03C5AE482C5515B20056B6C7 /* GeographyManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03C5AE472C5515B20056B6C7 /* GeographyManager.swift */; };
 		03C656112C02E13000E017B2 /* SampleBufferSender.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03C656102C02E13000E017B2 /* SampleBufferSender.swift */; };
 		03C656152C02E23900E017B2 /* SampleBufferReceiver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03C656132C02E14600E017B2 /* SampleBufferReceiver.swift */; };
+		03C9A13F2DFD881300817B57 /* MultiLineTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03C9A13E2DFD880C00817B57 /* MultiLineTextField.swift */; };
 		03CB8BCD2B5090C700B96530 /* StreamGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03CB8BCC2B5090C700B96530 /* StreamGridView.swift */; };
 		03CBFC752BFD3C7E0029A888 /* MirrorFrontCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03CBFC742BFD3C7E0029A888 /* MirrorFrontCameraView.swift */; };
 		03CD92A72DC9D23700202D49 /* WhirlpoolEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03CD92A62DC9D23100202D49 /* WhirlpoolEffect.swift */; };
@@ -566,6 +567,12 @@
 		03FE41462DE9E0180085D4E1 /* StreamOverlayRightWhirlpoolView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03FE41452DE9E0180085D4E1 /* StreamOverlayRightWhirlpoolView.swift */; };
 		03FE41482DE9E0200085D4E1 /* StreamOverlayRightPinchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03FE41472DE9E0200085D4E1 /* StreamOverlayRightPinchView.swift */; };
 		45E3E780842910145791546F /* DjiDeviceScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45E3EAA92F1B2253BB2ED4FC /* DjiDeviceScanner.swift */; };
+		882D0C0E2DF72CCD0035BFAF /* ModelPhoneCoolerDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 882D0C0D2DF72CC60035BFAF /* ModelPhoneCoolerDevice.swift */; };
+		882D0C162DF76F5B0035BFAF /* BlackSharkLib in Frameworks */ = {isa = PBXBuildFile; productRef = 882D0C152DF76F5B0035BFAF /* BlackSharkLib */; };
+		882D0C222DF785520035BFAF /* PhoneCoolerDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 882D0C202DF785520035BFAF /* PhoneCoolerDevice.swift */; };
+		88DBCC772DF8D3CA0048C50E /* PhoneCoolerDeviceScannerSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88DBCC732DF8D3CA0048C50E /* PhoneCoolerDeviceScannerSettingsView.swift */; };
+		88DBCC782DF8D3CA0048C50E /* PhoneCoolerDeviceSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88DBCC742DF8D3CA0048C50E /* PhoneCoolerDeviceSettingsView.swift */; };
+		88DBCC792DF8D3CA0048C50E /* PhoneCoolerDevicesSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88DBCC752DF8D3CA0048C50E /* PhoneCoolerDevicesSettingsView.swift */; };
 		ABF045852C1CEAF800D07696 /* AdaptiveBitrateSrtBela.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABF045842C1CEAF800D07696 /* AdaptiveBitrateSrtBela.swift */; };
 		C7E682562BC2E3FE004EB747 /* ThermalStateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03B373FE2A9FCA790028DDD5 /* ThermalStateView.swift */; };
 /* End PBXBuildFile section */
@@ -1140,6 +1147,7 @@
 		03C5AE472C5515B20056B6C7 /* GeographyManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeographyManager.swift; sourceTree = "<group>"; };
 		03C656102C02E13000E017B2 /* SampleBufferSender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleBufferSender.swift; sourceTree = "<group>"; };
 		03C656132C02E14600E017B2 /* SampleBufferReceiver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleBufferReceiver.swift; sourceTree = "<group>"; };
+		03C9A13E2DFD880C00817B57 /* MultiLineTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiLineTextField.swift; sourceTree = "<group>"; };
 		03CB8BCC2B5090C700B96530 /* StreamGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamGridView.swift; sourceTree = "<group>"; };
 		03CBFC742BFD3C7E0029A888 /* MirrorFrontCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MirrorFrontCameraView.swift; sourceTree = "<group>"; };
 		03CD92A62DC9D23100202D49 /* WhirlpoolEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhirlpoolEffect.swift; sourceTree = "<group>"; };
@@ -1213,7 +1221,11 @@
 		03FE41452DE9E0180085D4E1 /* StreamOverlayRightWhirlpoolView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamOverlayRightWhirlpoolView.swift; sourceTree = "<group>"; };
 		03FE41472DE9E0200085D4E1 /* StreamOverlayRightPinchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamOverlayRightPinchView.swift; sourceTree = "<group>"; };
 		45E3EAA92F1B2253BB2ED4FC /* DjiDeviceScanner.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DjiDeviceScanner.swift; sourceTree = "<group>"; };
-		49091F092DB3E85E009BF061 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		882D0C0D2DF72CC60035BFAF /* ModelPhoneCoolerDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelPhoneCoolerDevice.swift; sourceTree = "<group>"; };
+		882D0C202DF785520035BFAF /* PhoneCoolerDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneCoolerDevice.swift; sourceTree = "<group>"; };
+		88DBCC732DF8D3CA0048C50E /* PhoneCoolerDeviceScannerSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneCoolerDeviceScannerSettingsView.swift; sourceTree = "<group>"; };
+		88DBCC742DF8D3CA0048C50E /* PhoneCoolerDeviceSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneCoolerDeviceSettingsView.swift; sourceTree = "<group>"; };
+		88DBCC752DF8D3CA0048C50E /* PhoneCoolerDevicesSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneCoolerDevicesSettingsView.swift; sourceTree = "<group>"; };
 		ABF045842C1CEAF800D07696 /* AdaptiveBitrateSrtBela.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdaptiveBitrateSrtBela.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -1245,6 +1257,7 @@
 				0359F9092BD3DA61005BFDA8 /* libsrt.xcframework in Frameworks */,
 				0377239A2DE35191007D040D /* VRMKit in Frameworks */,
 				03B279832D45EB9C007DEDB2 /* SwiftCube in Frameworks */,
+				882D0C162DF76F5B0035BFAF /* BlackSharkLib in Frameworks */,
 				03D151AF2BFA73C100D29D8E /* MetalPetal in Frameworks */,
 				03A974282AC137A000610E21 /* Collections in Frameworks */,
 				03A08B7C2AC295620018BA95 /* AlertToast in Frameworks */,
@@ -1459,6 +1472,7 @@
 				03C354672CF98DD600B8B29F /* HCenter.swift */,
 				035D37272AB0EBB500045B92 /* IconAndTextView.swift */,
 				03C088362B0AFFA8000990DA /* InlinePickerView.swift */,
+				03C9A13E2DFD880C00817B57 /* MultiLineTextField.swift */,
 				0315A37B2AA439B500295443 /* NameEditView.swift */,
 				032FDBFE2B0B11B0007BE85E /* PositionEditView.swift */,
 				03E363802DB0BB59007A3CBB /* QrCodeImageView.swift */,
@@ -2620,7 +2634,6 @@
 		03B373F42A9EF8BD0028DDD5 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
-				039ACB652DED6D9600D35E4D /* SelfieStick */,
 				0379BBAB2AAD962700B718B6 /* About */,
 				037CE22B2BC17EA3004E9B18 /* Audio */,
 				03FB4B2C2AD8CF6B005AA183 /* BitratePresets */,
@@ -2643,11 +2656,13 @@
 				03ACC7C52B7C94AA003B6CD6 /* Location */,
 				0323F37C2D1E8EC600A57AC2 /* Moblink */,
 				038E7BDE2C32F362008994BA /* MediaPlayer */,
+				88DBCC762DF8D3CA0048C50E /* PhoneCoolers */,
 				03B16A222B35610100E5AB07 /* Recordings */,
 				034844F32B57AB5B0089B874 /* RemoteControl */,
 				0379BBB02AAD97EA00B718B6 /* Reset */,
 				0332EF5B2B3CAED000BC3C16 /* RtmpServer */,
 				0379BB972AAD802C00B718B6 /* Scenes */,
+				039ACB652DED6D9600D35E4D /* SelfieStick */,
 				03D2B0DE2C11BD7D0051BFB5 /* SrtlaServer */,
 				03487F222B334AB4003D9ED9 /* StreamingHistory */,
 				0379BB982AAD804F00B718B6 /* Streams */,
@@ -2803,6 +2818,7 @@
 				03BA73B82DDCD98600075CD6 /* ModelDjiGimbalDevice.swift */,
 				032F81C12DDCF4C000E14CC5 /* ModelGameController.swift */,
 				03BA73A72DDC582B00075CD6 /* ModelHeartRateDevice.swift */,
+				882D0C0D2DF72CC60035BFAF /* ModelPhoneCoolerDevice.swift */,
 				032D85852DDD7F4B00A6128A /* ModelKeyboard.swift */,
 				03E8D6A02DDE435C0080BEB4 /* ModelKick.swift */,
 				032F81BF2DDCF32D00E14CC5 /* ModelLocation.swift */,
@@ -3017,6 +3033,7 @@
 				030621EA2D862956001EE50B /* Dji */,
 				03BC115B2AE4BD6200C38FC4 /* Emotes */,
 				0386053A2D8006BE00B9C3CE /* HeartRateDevice */,
+				882D0C212DF785520035BFAF /* PhoneCooler */,
 				03279CF02B4D2AD3006CEA5A /* RealtimeIrl */,
 				0318D3622CF4FB2300E12F3B /* Tesla */,
 			);
@@ -3229,6 +3246,24 @@
 			path = BitratePresets;
 			sourceTree = "<group>";
 		};
+		882D0C212DF785520035BFAF /* PhoneCooler */ = {
+			isa = PBXGroup;
+			children = (
+				882D0C202DF785520035BFAF /* PhoneCoolerDevice.swift */,
+			);
+			path = PhoneCooler;
+			sourceTree = "<group>";
+		};
+		88DBCC762DF8D3CA0048C50E /* PhoneCoolers */ = {
+			isa = PBXGroup;
+			children = (
+				88DBCC732DF8D3CA0048C50E /* PhoneCoolerDeviceScannerSettingsView.swift */,
+				88DBCC742DF8D3CA0048C50E /* PhoneCoolerDeviceSettingsView.swift */,
+				88DBCC752DF8D3CA0048C50E /* PhoneCoolerDevicesSettingsView.swift */,
+			);
+			path = PhoneCoolers;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -3286,6 +3321,7 @@
 				03B279822D45EB9C007DEDB2 /* SwiftCube */,
 				037723992DE35191007D040D /* VRMKit */,
 				0377239B2DE35191007D040D /* VRMSceneKit */,
+				882D0C152DF76F5B0035BFAF /* BlackSharkLib */,
 			);
 			productName = Mobs;
 			productReference = 035E9E332A9A02D6009D4F5A /* Moblin.app */;
@@ -3404,6 +3440,7 @@
 				03AC6B932D17786700832A7E /* XCRemoteSwiftPackageReference "TrueTime" */,
 				03B279812D45EB9C007DEDB2 /* XCRemoteSwiftPackageReference "SwiftCube" */,
 				037723982DE35191007D040D /* XCRemoteSwiftPackageReference "VRMKit" */,
+				882D0C142DF76F5B0035BFAF /* XCRemoteSwiftPackageReference "BlackSharkLib" */,
 			);
 			productRefGroup = 035E9E342A9A02D6009D4F5A /* Products */;
 			projectDirPath = "";
@@ -3568,6 +3605,7 @@
 				03D37EE02CE0892B006D14C2 /* UrlSession.swift in Sources */,
 				0359F8E52BD3DA61005BFDA8 /* NetStream.swift in Sources */,
 				038E7BE32C32F391008994BA /* MediaPlayerSettingsView.swift in Sources */,
+				882D0C222DF785520035BFAF /* PhoneCoolerDevice.swift in Sources */,
 				03E3E3922C431E0900932B00 /* DjiDeviceSettingsView.swift in Sources */,
 				03B16A282B35614100E5AB07 /* RecordingsRecordingSettingsView.swift in Sources */,
 				0323F37B2D1E7AD600A57AC2 /* MoblinkProtocol.swift in Sources */,
@@ -3596,6 +3634,9 @@
 				03D3C0512B452D61006BAEAC /* StreamRecordingSettingsView.swift in Sources */,
 				0342F1A52C627A8F004DD3EA /* MirlCommon.swift in Sources */,
 				0325D0B42BB29713007EE85B /* ChatFiltersSettingsView.swift in Sources */,
+				88DBCC772DF8D3CA0048C50E /* PhoneCoolerDeviceScannerSettingsView.swift in Sources */,
+				88DBCC782DF8D3CA0048C50E /* PhoneCoolerDeviceSettingsView.swift in Sources */,
+				88DBCC792DF8D3CA0048C50E /* PhoneCoolerDevicesSettingsView.swift in Sources */,
 				03980C552C5E74A9000ED476 /* VoicesView.swift in Sources */,
 				0302F07F2B320B0500B06FF0 /* StreamWizardChatSettingsView.swift in Sources */,
 				032D85862DDD7F4E00A6128A /* ModelKeyboard.swift in Sources */,
@@ -3713,6 +3754,7 @@
 				03A983692A9A05D7008FF0DB /* CreateButtonView.swift in Sources */,
 				0364662C2B456B25005AB9FA /* StreamWizardCustomSrtSettingsView.swift in Sources */,
 				03828C312C3B0A1600F5A8AC /* WidgetMapSettingsView.swift in Sources */,
+				03C9A13F2DFD881300817B57 /* MultiLineTextField.swift in Sources */,
 				03C380DC2BC24F7800394625 /* ChatTextToSpeech.swift in Sources */,
 				03BA73C32DDCE24E00075CD6 /* ModelAudio.swift in Sources */,
 				03A173F12B37E5E600ACC4F8 /* FormFieldError.swift in Sources */,
@@ -3917,6 +3959,7 @@
 				0351F8FB2DD2965300F37D9C /* AutoSwitchersSettingsView.swift in Sources */,
 				03A983662A9A05D7008FF0DB /* AddButtonView.swift in Sources */,
 				032F81BA2DDCEE1500E14CC5 /* ModelScreenCapture.swift in Sources */,
+				882D0C0E2DF72CCD0035BFAF /* ModelPhoneCoolerDevice.swift in Sources */,
 				032F81C02DDCF33000E14CC5 /* ModelLocation.swift in Sources */,
 				0359F9012BD3DA61005BFDA8 /* Atomic.swift in Sources */,
 				03A983612A9A05D7008FF0DB /* StreamsSettingsView.swift in Sources */,
@@ -4309,7 +4352,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 26.0.0;
+				MARKETING_VERSION = 26.1.0;
 				MTL_HEADER_SEARCH_PATHS = "$(HEADER_SEARCH_PATHS)";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_IDENTIFIER_IOS)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4366,7 +4409,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 26.0.0;
+				MARKETING_VERSION = 26.1.0;
 				MTL_HEADER_SEARCH_PATHS = "$(HEADER_SEARCH_PATHS)";
 				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_IDENTIFIER_IOS)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -4731,6 +4774,14 @@
 				minimumVersion = 0.0.3;
 			};
 		};
+		882D0C142DF76F5B0035BFAF /* XCRemoteSwiftPackageReference "BlackSharkLib" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Spillmaker/BlackSharkLib.swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.1.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -4838,6 +4889,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 03F465EA2C441D1400630708 /* XCRemoteSwiftPackageReference "CrcSwift" */;
 			productName = CrcSwift;
+		};
+		882D0C152DF76F5B0035BFAF /* BlackSharkLib */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 882D0C142DF76F5B0035BFAF /* XCRemoteSwiftPackageReference "BlackSharkLib" */;
+			productName = BlackSharkLib;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

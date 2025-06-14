@@ -24,14 +24,11 @@ private struct HighlightMessageView: View {
 
 private struct LineView: View {
     var post: ChatPost
-    var chat: SettingsChat
-
-    private func usernameColor() -> Color {
-        return post.userColor.color()
-    }
+    @ObservedObject var chat: SettingsChat
+    var platform: Bool
 
     var body: some View {
-        let usernameColor = usernameColor()
+        let usernameColor = post.userColor.color()
         WrappingHStack(
             alignment: .leading,
             horizontalSpacing: 0,
@@ -41,6 +38,13 @@ private struct LineView: View {
             if chat.timestampColorEnabled {
                 Text("\(post.timestamp) ")
                     .foregroundColor(.gray)
+            }
+            if chat.platform, platform, let image = post.platform?.imageName() {
+                Image(image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .padding(2)
+                    .frame(height: CGFloat(chat.fontSize * 1.4))
             }
             if chat.badges {
                 ForEach(post.userBadges, id: \.self) { url in
@@ -95,36 +99,13 @@ private struct LineView: View {
 }
 
 private struct MessagesView: View {
-    @EnvironmentObject var model: Model
+    var model: Model
+    @ObservedObject var chatSettings: SettingsChat
     @ObservedObject var chat: ChatProvider
 
-    private func getRotation() -> Double {
-        if model.database.chat.newMessagesAtTop {
-            return 0.0
-        } else {
-            return 180.0
-        }
-    }
-
-    private func getScaleX() -> Double {
-        if model.database.chat.newMessagesAtTop {
-            return 1.0
-        } else {
-            return -1.0
-        }
-    }
-
-    private func isMirrored() -> CGFloat {
-        if model.database.chat.mirrored {
-            return -1
-        } else {
-            return 1
-        }
-    }
-
     var body: some View {
-        let rotation = getRotation()
-        let scaleX = getScaleX()
+        let rotation = chatSettings.getRotation()
+        let scaleX = chatSettings.getScaleX()
         GeometryReader { metrics in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 1) {
@@ -148,16 +129,17 @@ private struct MessagesView: View {
                                             image: highlight.image,
                                             name: highlight.title
                                         )
-                                        LineView(
-                                            post: post,
-                                            chat: model.database.chat
-                                        )
+                                        LineView(post: post,
+                                                 chat: chatSettings,
+                                                 platform: chat.moreThanOneStreamingPlatform)
                                     }
                                 }
                                 .rotationEffect(Angle(degrees: rotation))
                                 .scaleEffect(x: scaleX, y: 1.0, anchor: .center)
                             } else {
-                                LineView(post: post, chat: model.database.chat)
+                                LineView(post: post,
+                                         chat: chatSettings,
+                                         platform: chat.moreThanOneStreamingPlatform)
                                     .padding([.leading], 3)
                                     .rotationEffect(Angle(degrees: rotation))
                                     .scaleEffect(x: scaleX, y: 1.0, anchor: .center)
@@ -178,12 +160,13 @@ private struct MessagesView: View {
         }
         .foregroundColor(.white)
         .rotationEffect(Angle(degrees: rotation))
-        .scaleEffect(x: scaleX * isMirrored(), y: 1.0, anchor: .center)
+        .scaleEffect(x: scaleX * chatSettings.isMirrored(), y: 1.0, anchor: .center)
     }
 }
 
 private struct HypeTrainView: View {
-    @EnvironmentObject var model: Model
+    var model: Model
+    @ObservedObject var hypeTrain: HypeTrain
 
     var body: some View {
         VStack(spacing: 0) {
@@ -192,7 +175,7 @@ private struct HypeTrainView: View {
                 .background(.clear)
                 .frame(height: 1)
             VStack {
-                if let level = model.hypeTrainLevel {
+                if let level = hypeTrain.level {
                     HStack(spacing: 0) {
                         let train = HStack(spacing: 0) {
                             Image(systemName: "train.side.rear.car")
@@ -228,7 +211,7 @@ private struct HypeTrainView: View {
                     .foregroundColor(.white)
                     .padding(10)
                 }
-                if let progress = model.hypeTrainProgress, let goal = model.hypeTrainGoal {
+                if let progress = hypeTrain.progress, let goal = hypeTrain.goal {
                     ProgressView(value: Float(progress), total: Float(goal))
                         .accentColor(.white)
                         .scaleEffect(x: 1, y: 4, anchor: .center)
@@ -243,24 +226,27 @@ private struct HypeTrainView: View {
 }
 
 private struct ChatView: View {
+    var model: Model
     @ObservedObject var chat: ChatProvider
 
     var body: some View {
         ZStack {
-            MessagesView(chat: chat)
+            MessagesView(model: model, chatSettings: model.database.chat, chat: chat)
             if chat.paused {
                 ChatInfo(
                     message: String(localized: "Chat paused: \(chat.pausedPostsCount) new messages")
                 )
                 .padding(2)
             }
-            HypeTrainView()
+            HypeTrainView(model: model, hypeTrain: model.hypeTrain)
         }
     }
 }
 
 private struct AlertsMessagesView: View {
     @EnvironmentObject var model: Model
+    @ObservedObject var chatSettings: SettingsChat
+    @ObservedObject var chat: ChatProvider
 
     private func shouldShowMessage(highlight: ChatHighlight) -> Bool {
         if highlight.kind == .firstMessage && !model.showFirstTimeChatterMessage {
@@ -275,33 +261,9 @@ private struct AlertsMessagesView: View {
         return true
     }
 
-    private func getRotation() -> Double {
-        if model.database.chat.newMessagesAtTop {
-            return 0.0
-        } else {
-            return 180.0
-        }
-    }
-
-    private func getScaleX() -> Double {
-        if model.database.chat.newMessagesAtTop {
-            return 1.0
-        } else {
-            return -1.0
-        }
-    }
-
-    private func isMirrored() -> CGFloat {
-        if model.database.chat.mirrored {
-            return -1
-        } else {
-            return 1
-        }
-    }
-
     var body: some View {
-        let rotation = getRotation()
-        let scaleX = getScaleX()
+        let rotation = chatSettings.getRotation()
+        let scaleX = chatSettings.getScaleX()
         GeometryReader { metrics in
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 1) {
@@ -326,17 +288,18 @@ private struct AlertsMessagesView: View {
                                                 image: highlight.image,
                                                 name: highlight.title
                                             )
-                                            LineView(
-                                                post: post,
-                                                chat: model.database.chat
-                                            )
+                                            LineView(post: post,
+                                                     chat: chatSettings,
+                                                     platform: chat.moreThanOneStreamingPlatform)
                                         }
                                     }
                                     .rotationEffect(Angle(degrees: rotation))
                                     .scaleEffect(x: scaleX, y: 1.0, anchor: .center)
                                 }
                             } else {
-                                LineView(post: post, chat: model.database.chat)
+                                LineView(post: post,
+                                         chat: chatSettings,
+                                         platform: chat.moreThanOneStreamingPlatform)
                                     .padding([.leading], 3)
                                     .rotationEffect(Angle(degrees: rotation))
                                     .scaleEffect(x: scaleX, y: 1.0, anchor: .center)
@@ -357,7 +320,7 @@ private struct AlertsMessagesView: View {
         }
         .foregroundColor(.white)
         .rotationEffect(Angle(degrees: rotation))
-        .scaleEffect(x: scaleX * isMirrored(), y: 1.0, anchor: .center)
+        .scaleEffect(x: scaleX * chatSettings.isMirrored(), y: 1.0, anchor: .center)
     }
 }
 
@@ -366,14 +329,14 @@ private struct ChatAlertsView: View {
 
     var body: some View {
         ZStack {
-            AlertsMessagesView()
+            AlertsMessagesView(chatSettings: model.database.chat, chat: model.chat)
             if model.quickButtonChatAlertsPaused {
                 ChatInfo(
                     message: String(localized: "Chat paused: \(model.pausedQuickButtonChatAlertsPostsCount) new alerts")
                 )
                 .padding(2)
             }
-            HypeTrainView()
+            HypeTrainView(model: model, hypeTrain: model.hypeTrain)
         }
     }
 }
@@ -449,7 +412,7 @@ struct QuickButtonChatView: View {
     var body: some View {
         VStack {
             if model.showAllQuickButtonChatMessage {
-                ChatView(chat: model.quickButtonChat)
+                ChatView(model: model, chat: model.quickButtonChat)
             } else {
                 ChatAlertsView()
             }
