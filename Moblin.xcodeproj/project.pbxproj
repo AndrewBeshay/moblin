@@ -490,6 +490,8 @@
 		03C656112C02E13000E017B2 /* SampleBufferSender.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03C656102C02E13000E017B2 /* SampleBufferSender.swift */; };
 		03C656152C02E23900E017B2 /* SampleBufferReceiver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03C656132C02E14600E017B2 /* SampleBufferReceiver.swift */; };
 		03C9A13F2DFD881300817B57 /* MultiLineTextField.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03C9A13E2DFD880C00817B57 /* MultiLineTextField.swift */; };
+		03C9A1412DFDCC5000817B57 /* ControlBarUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03C9A1402DFDCC4B00817B57 /* ControlBarUtils.swift */; };
+		03C9A1442DFDEAF200817B57 /* GoLiveNotificationSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03C9A1432DFDEAE900817B57 /* GoLiveNotificationSettingsView.swift */; };
 		03CB8BCD2B5090C700B96530 /* StreamGridView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03CB8BCC2B5090C700B96530 /* StreamGridView.swift */; };
 		03CBFC752BFD3C7E0029A888 /* MirrorFrontCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03CBFC742BFD3C7E0029A888 /* MirrorFrontCameraView.swift */; };
 		03CD92A72DC9D23700202D49 /* WhirlpoolEffect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 03CD92A62DC9D23100202D49 /* WhirlpoolEffect.swift */; };
@@ -1148,6 +1150,8 @@
 		03C656102C02E13000E017B2 /* SampleBufferSender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleBufferSender.swift; sourceTree = "<group>"; };
 		03C656132C02E14600E017B2 /* SampleBufferReceiver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SampleBufferReceiver.swift; sourceTree = "<group>"; };
 		03C9A13E2DFD880C00817B57 /* MultiLineTextField.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultiLineTextField.swift; sourceTree = "<group>"; };
+		03C9A1402DFDCC4B00817B57 /* ControlBarUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControlBarUtils.swift; sourceTree = "<group>"; };
+		03C9A1432DFDEAE900817B57 /* GoLiveNotificationSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoLiveNotificationSettingsView.swift; sourceTree = "<group>"; };
 		03CB8BCC2B5090C700B96530 /* StreamGridView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamGridView.swift; sourceTree = "<group>"; };
 		03CBFC742BFD3C7E0029A888 /* MirrorFrontCameraView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MirrorFrontCameraView.swift; sourceTree = "<group>"; };
 		03CD92A62DC9D23100202D49 /* WhirlpoolEffect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WhirlpoolEffect.swift; sourceTree = "<group>"; };
@@ -1421,12 +1425,13 @@
 		0315A3402AA31ADC00295443 /* Stream */ = {
 			isa = PBXGroup;
 			children = (
-				03B7DAB62BA6EE4300CEFC1B /* OpenStreamingPlatform */,
 				03EF34B72B1B027000A19221 /* AfreecaTv */,
 				031A4DC42B2CED2D0053F67D /* Audio */,
 				03BBAE972B2EB4CE0033D425 /* Chat */,
+				03C9A1422DFDEAE100817B57 /* GoLiveNotification */,
 				036BE2D02ABD51770048F9C5 /* Kick */,
 				03BDE2242B24654E00DF193A /* ObsRemoteControl */,
+				03B7DAB62BA6EE4300CEFC1B /* OpenStreamingPlatform */,
 				034CE2EA2B4D2E5A00E2C1BD /* RealtimeIrl */,
 				03D3C04F2B452D14006BAEAC /* Recording */,
 				034517CE2DC1FC0E006ECA92 /* Replay */,
@@ -2682,6 +2687,7 @@
 				03B373F82A9EFB340028DDD5 /* BatteryView.swift */,
 				03B373F52A9EF98E0028DDD5 /* ControlBarLandscapeView.swift */,
 				0364B6222BD3683F002F828D /* ControlBarPortraitView.swift */,
+				03C9A1402DFDCC4B00817B57 /* ControlBarUtils.swift */,
 				03B374032AA036D10028DDD5 /* QuickButtonsView.swift */,
 				0364B6202BD36806002F828D /* StreamButton.swift */,
 			);
@@ -3013,6 +3019,14 @@
 				03C357472D081CF200B8B29F /* RtmpWindowAcknowledgementSizeMessage.swift */,
 			);
 			path = Message;
+			sourceTree = "<group>";
+		};
+		03C9A1422DFDEAE100817B57 /* GoLiveNotification */ = {
+			isa = PBXGroup;
+			children = (
+				03C9A1432DFDEAE900817B57 /* GoLiveNotificationSettingsView.swift */,
+			);
+			path = GoLiveNotification;
 			sourceTree = "<group>";
 		};
 		03CBFC732BFD3C650029A888 /* MirrorFrontCamera */ = {
@@ -3732,6 +3746,7 @@
 				038605302D7DF6A300B9C3CE /* CyclingPowerDevice.swift in Sources */,
 				03B16A2D2B35D72F00E5AB07 /* CameraSettingsView.swift in Sources */,
 				030621E92D8608E1001EE50B /* DjiGimbalDeviceScannerSettingsView.swift in Sources */,
+				03C9A1412DFDCC5000817B57 /* ControlBarUtils.swift in Sources */,
 				0359F8E72BD3DA61005BFDA8 /* Amf0Serializer.swift in Sources */,
 				031F41442C6FB3B900790EEC /* AboutAttributionsSettingsView.swift in Sources */,
 				03DC9DAF2C4F846D005E2104 /* CMBlockBuffer+Extension.swift in Sources */,
@@ -3952,6 +3967,7 @@
 				038F42ED2B6849D400E68752 /* LutEffect.swift in Sources */,
 				0379BB902AABA7DC00B718B6 /* Log.swift in Sources */,
 				03B77ADA2B9446210053F106 /* WatchSettings.swift in Sources */,
+				03C9A1442DFDEAF200817B57 /* GoLiveNotificationSettingsView.swift in Sources */,
 				03941A252C0CE18C0061DA81 /* DeepLinkCreatorQuickButtonsSettingsView.swift in Sources */,
 				0304A50C2B45ADC300310842 /* GameControllersControllerSettingsView.swift in Sources */,
 				03279CE72B4CD245006CEA5A /* Location.swift in Sources */,

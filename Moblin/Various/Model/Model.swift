@@ -468,6 +468,8 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     @Published var remoteControlAssistantShowPreview = true
     @Published var remoteControlAssistantShowPreviewFullScreen = false
     var isRemoteControlAssistantRequestingPreview = false
+    var isRemoteControlAssistantRequestingStatus = false
+    var remoteControlAssistantRequestingStatusFilter: RemoteControlStartStatusFilter?
     var remoteControlAssistantPreviewUsers: Set<RemoteControlAssistantPreviewUser> = .init()
     var remoteControlStreamerLatestReceivedChatMessageId = -1
     var useRemoteControlForChatAndEvents = false
@@ -1259,7 +1261,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     @objc func handleDidEnterBackgroundNotification() {
         store()
         replaysStorage.store()
-        guard !ProcessInfo().isiOSAppOnMac else {
+        guard !isMac() else {
             return
         }
         if !shouldStreamInBackground() {
@@ -1292,7 +1294,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     }
 
     @objc func handleWillEnterForegroundNotification() {
-        guard !ProcessInfo().isiOSAppOnMac else {
+        guard !isMac() else {
             return
         }
         if !shouldStreamInBackground() {
@@ -1467,6 +1469,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
             self.updateStatusEventsText()
             self.updateStatusChatText()
             self.updateAutoSceneSwitcher(now: monotonicNow)
+            self.sendPeriodicRemoteControlStreamerStatus()
         }
         periodicTimer3s.startPeriodic(interval: 3) {
             self.teslaGetDriveState()
@@ -2189,7 +2192,7 @@ final class Model: NSObject, ObservableObject, @unchecked Sendable {
     private func updateBatteryLevel() {
         batteryLevel = Double(UIDevice.current.batteryLevel)
         streamingHistoryStream?.updateLowestBatteryLevel(level: batteryLevel)
-        if batteryLevel <= 0.07, !isBatteryCharging(), !ProcessInfo().isiOSAppOnMac {
+        if batteryLevel <= 0.07, !isBatteryCharging(), !isMac() {
             batteryLevelLowCounter += 1
             if (batteryLevelLowCounter % 3) == 0 {
                 makeWarningToast(title: lowBatteryMessage, vibrate: true)

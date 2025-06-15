@@ -6,10 +6,6 @@ struct SettingsView: View {
     @EnvironmentObject var model: Model
     @ObservedObject var database: Database
 
-    var chat: SettingsChat {
-        database.chat
-    }
-
     var body: some View {
         Form {
             if model.isLive {
@@ -17,9 +13,7 @@ struct SettingsView: View {
                     HStack {
                         Image(systemName: "info.circle.fill")
                             .foregroundColor(.blue)
-                        Text(
-                            "Settings that would stop the stream are disabled when live."
-                        )
+                        Text("Settings that would stop the stream are disabled when live.")
                     }
                 }
             }
@@ -35,14 +29,7 @@ struct SettingsView: View {
                     Label("Scenes", systemImage: "photo.on.rectangle")
                 }
                 NavigationLink {
-                    ChatSettingsView(
-                        chat: database.chat,
-                        timestampColor: chat.timestampColor.color(),
-                        usernameColor: chat.usernameColor.color(),
-                        messageColor: chat.messageColor.color(),
-                        backgroundColor: chat.backgroundColor.color(),
-                        shadowColor: chat.shadowColor.color()
-                    )
+                    ChatSettingsView(chat: database.chat)
                 } label: {
                     Label("Chat", systemImage: "message")
                 }
@@ -61,11 +48,6 @@ struct SettingsView: View {
                         AudioSettingsView(database: database)
                     } label: {
                         Label("Audio", systemImage: "waveform")
-                    }
-                    NavigationLink {
-                        BitratePresetsSettingsView(database: database)
-                    } label: {
-                        Label("Bitrate presets", systemImage: "speedometer")
                     }
                 }
                 NavigationLink {

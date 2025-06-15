@@ -422,7 +422,7 @@ class SettingsStream: Codable, Identifiable, Equatable, ObservableObject {
     var obsAutoStopRecording: Bool = false
     var discordSnapshotWebhook: String = ""
     var discordChatBotSnapshotWebhook: String = ""
-    var discordSnapshotWebhookOnlyWhenLive: Bool = true
+    @Published var discordSnapshotWebhookOnlyWhenLive: Bool = true
     @Published var resolution: SettingsStreamResolution = .r1920x1080
     @Published var fps: Int = 30
     @Published var autoFps: Bool = false
@@ -449,6 +449,9 @@ class SettingsStream: Codable, Identifiable, Equatable, ObservableObject {
     @Published var ntpPoolAddress: String = "time.apple.com"
     @Published var timecodesEnabled: Bool = false
     var replay: SettingsStreamReplay = .init()
+    @Published var goLiveNotificationDiscordMessage: String = ""
+    @Published var goLiveNotificationDiscordWebhookUrl: String = ""
+    @Published var goLiveNotificationDiscordIAmLive: Bool = false
 
     static func == (lhs: SettingsStream, rhs: SettingsStream) -> Bool {
         lhs.id == rhs.id
@@ -516,7 +519,10 @@ class SettingsStream: Codable, Identifiable, Equatable, ObservableObject {
              twitchMultiTrackEnabled,
              ntpPoolAddress,
              timecodesEnabled,
-             replay
+             replay,
+             goLiveNotificationDiscordMessage,
+             goLiveNotificationDiscordWebhookUrl,
+             goLiveNotificationDiscordIAmLive
     }
 
     func encode(to encoder: Encoder) throws {
@@ -579,6 +585,9 @@ class SettingsStream: Codable, Identifiable, Equatable, ObservableObject {
         try container.encode(.ntpPoolAddress, ntpPoolAddress)
         try container.encode(.timecodesEnabled, timecodesEnabled)
         try container.encode(.replay, replay)
+        try container.encode(.goLiveNotificationDiscordMessage, goLiveNotificationDiscordMessage)
+        try container.encode(.goLiveNotificationDiscordWebhookUrl, goLiveNotificationDiscordWebhookUrl)
+        try container.encode(.goLiveNotificationDiscordIAmLive, goLiveNotificationDiscordIAmLive)
     }
 
     required init(from decoder: Decoder) throws {
@@ -641,6 +650,9 @@ class SettingsStream: Codable, Identifiable, Equatable, ObservableObject {
         ntpPoolAddress = container.decode(.ntpPoolAddress, String.self, "time.apple.com")
         timecodesEnabled = container.decode(.timecodesEnabled, Bool.self, false)
         replay = container.decode(.replay, SettingsStreamReplay.self, .init())
+        goLiveNotificationDiscordMessage = container.decode(.goLiveNotificationDiscordMessage, String.self, "")
+        goLiveNotificationDiscordWebhookUrl = container.decode(.goLiveNotificationDiscordWebhookUrl, String.self, "")
+        goLiveNotificationDiscordIAmLive = container.decode(.goLiveNotificationDiscordIAmLive, Bool.self, false)
     }
 
     func clone() -> SettingsStream {
@@ -694,6 +706,9 @@ class SettingsStream: Codable, Identifiable, Equatable, ObservableObject {
         new.ntpPoolAddress = ntpPoolAddress
         new.timecodesEnabled = timecodesEnabled
         new.replay = replay.clone()
+        new.goLiveNotificationDiscordMessage = goLiveNotificationDiscordMessage
+        new.goLiveNotificationDiscordWebhookUrl = goLiveNotificationDiscordWebhookUrl
+        new.goLiveNotificationDiscordIAmLive = goLiveNotificationDiscordIAmLive
         return new
     }
 
@@ -1353,15 +1368,52 @@ class SettingsWidgetCrop: Codable {
     var height: Int = 200
 }
 
-class SettingsWidgetBrowser: Codable {
-    var url: String = ""
-    var width: Int = 500
-    var height: Int = 500
-    var audioOnly: Bool? = false
-    var scaleToFitVideo: Bool? = false
-    var fps: Float? = 5.0
-    var styleSheet: String? = ""
-    var moblinAccess: Bool? = false
+class SettingsWidgetBrowser: Codable, ObservableObject {
+    @Published var url: String = ""
+    @Published var width: Int = 500
+    @Published var height: Int = 500
+    @Published var audioOnly: Bool = false
+    @Published var scaleToFitVideo: Bool = false
+    @Published var fps: Float = 5.0
+    @Published var styleSheet: String = ""
+    @Published var moblinAccess: Bool = false
+
+    init() {}
+
+    enum CodingKeys: CodingKey {
+        case url,
+             width,
+             height,
+             audioOnly,
+             scaleToFitVideo,
+             fps,
+             styleSheet,
+             moblinAccess
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(.url, url)
+        try container.encode(.width, width)
+        try container.encode(.height, height)
+        try container.encode(.audioOnly, audioOnly)
+        try container.encode(.scaleToFitVideo, scaleToFitVideo)
+        try container.encode(.fps, fps)
+        try container.encode(.styleSheet, styleSheet)
+        try container.encode(.moblinAccess, moblinAccess)
+    }
+
+    required init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        url = container.decode(.url, String.self, "")
+        width = container.decode(.width, Int.self, 500)
+        height = container.decode(.height, Int.self, 500)
+        audioOnly = container.decode(.audioOnly, Bool.self, false)
+        scaleToFitVideo = container.decode(.scaleToFitVideo, Bool.self, false)
+        fps = container.decode(.fps, Float.self, 5.0)
+        styleSheet = container.decode(.styleSheet, String.self, "")
+        moblinAccess = container.decode(.moblinAccess, Bool.self, false)
+    }
 }
 
 class SettingsWidgetMap: Codable {
@@ -2940,15 +2992,20 @@ class SettingsChatBotPermissions: Codable {
 class SettingsChat: Codable, ObservableObject {
     @Published var fontSize: Float = 19.0
     var usernameColor: RgbColor = .init(red: 255, green: 163, blue: 0)
+    @Published var usernameColorColor: Color = RgbColor(red: 255, green: 163, blue: 0).color()
     var messageColor: RgbColor = .init(red: 255, green: 255, blue: 255)
+    @Published var messageColorColor: Color = RgbColor(red: 255, green: 255, blue: 255).color()
     var backgroundColor: RgbColor = .init(red: 0, green: 0, blue: 0)
-    var backgroundColorEnabled: Bool = false
+    @Published var backgroundColorColor: Color = RgbColor(red: 0, green: 0, blue: 0).color()
+    @Published var backgroundColorEnabled: Bool = false
     var shadowColor: RgbColor = .init(red: 0, green: 0, blue: 0)
-    var shadowColorEnabled: Bool = true
+    @Published var shadowColorColor: Color = RgbColor(red: 0, green: 0, blue: 0).color()
+    @Published var shadowColorEnabled: Bool = true
     @Published var boldUsername: Bool = true
     @Published var boldMessage: Bool = true
     @Published var animatedEmotes: Bool = false
     var timestampColor: RgbColor = .init(red: 180, green: 180, blue: 180)
+    @Published var timestampColorColor: Color = RgbColor(red: 180, green: 180, blue: 180).color()
     @Published var timestampColorEnabled: Bool = false
     @Published var height: Double = 0.7
     @Published var width: Double = 1.0
@@ -3072,15 +3129,20 @@ class SettingsChat: Codable, ObservableObject {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         fontSize = try container.decode(Float.self, forKey: .fontSize)
         usernameColor = try container.decode(RgbColor.self, forKey: .usernameColor)
+        usernameColorColor = usernameColor.color()
         messageColor = try container.decode(RgbColor.self, forKey: .messageColor)
+        messageColorColor = messageColor.color()
         backgroundColor = try container.decode(RgbColor.self, forKey: .backgroundColor)
+        backgroundColorColor = backgroundColor.color()
         backgroundColorEnabled = try container.decode(Bool.self, forKey: .backgroundColorEnabled)
         shadowColor = try container.decode(RgbColor.self, forKey: .shadowColor)
+        shadowColorColor = shadowColor.color()
         shadowColorEnabled = try container.decode(Bool.self, forKey: .shadowColorEnabled)
         boldUsername = try container.decode(Bool.self, forKey: .boldUsername)
         boldMessage = try container.decode(Bool.self, forKey: .boldMessage)
         animatedEmotes = try container.decode(Bool.self, forKey: .animatedEmotes)
         timestampColor = try container.decode(RgbColor.self, forKey: .timestampColor)
+        timestampColorColor = timestampColor.color()
         timestampColorEnabled = try container.decode(Bool.self, forKey: .timestampColorEnabled)
         height = container.decode(.height, Double.self, 0.7)
         width = container.decode(.width, Double.self, 1.0)
@@ -5416,11 +5478,15 @@ private func addDefaultFrontZoomPresets(database: Database) {
 
 private func addDefaultBitratePresets(database: Database) {
     database.bitratePresets = [
-        SettingsBitratePreset(id: UUID(), bitrate: 11_000_000),
+        SettingsBitratePreset(id: UUID(), bitrate: 15_000_000),
+        SettingsBitratePreset(id: UUID(), bitrate: 12_000_000),
         SettingsBitratePreset(id: UUID(), bitrate: 9_000_000),
         SettingsBitratePreset(id: UUID(), bitrate: 7_000_000),
+        SettingsBitratePreset(id: UUID(), bitrate: 6_000_000),
         SettingsBitratePreset(id: UUID(), bitrate: 5_000_000),
+        SettingsBitratePreset(id: UUID(), bitrate: 4_000_000),
         SettingsBitratePreset(id: UUID(), bitrate: 3_000_000),
+        SettingsBitratePreset(id: UUID(), bitrate: 2_000_000),
         SettingsBitratePreset(id: UUID(), bitrate: 1_000_000),
     ]
 }
@@ -5830,7 +5896,7 @@ private func addMissingQuickButtons(database: Database) {
         if button.type == .workout, !isPhone() {
             return false
         }
-        if button.type == .portrait, ProcessInfo().isiOSAppOnMac {
+        if button.type == .portrait, isMac() {
             return false
         }
         return true
@@ -5909,7 +5975,7 @@ private func addScenesToGameController(database: Database) {
 }
 
 private func getDefaultMic() -> SettingsMic {
-    if ProcessInfo().isiOSAppOnMac {
+    if isMac() {
         return .bottom
     }
     let session = AVAudioSession.sharedInstance()
@@ -6067,12 +6133,6 @@ final class Settings {
             stream.srt.connectionPriorities = .init()
             store()
         }
-        for widget in realDatabase.widgets where widget.type == .browser {
-            if widget.browser.audioOnly == nil {
-                widget.browser.audioOnly = false
-                store()
-            }
-        }
         for stream in realDatabase.streams where stream.srt.overheadBandwidth == nil {
             stream.srt.overheadBandwidth = realDatabase.debug.srtOverheadBandwidth
             store()
@@ -6087,14 +6147,6 @@ final class Settings {
         }
         if realDatabase.remoteControl.password == nil {
             realDatabase.remoteControl.password = randomGoodPassword()
-            store()
-        }
-        for widget in realDatabase.widgets where widget.browser.scaleToFitVideo == nil {
-            widget.browser.scaleToFitVideo = false
-            store()
-        }
-        for widget in realDatabase.widgets where widget.browser.fps == nil {
-            widget.browser.fps = 5.0
             store()
         }
         for stream in realDatabase.streams {
@@ -6367,10 +6419,6 @@ final class Settings {
         }
         for widget in database.widgets where widget.alerts.twitch!.cheers == nil {
             widget.alerts.twitch!.cheers = .init()
-            store()
-        }
-        for widget in realDatabase.widgets where widget.browser.styleSheet == nil {
-            widget.browser.styleSheet = ""
             store()
         }
         for widget in realDatabase.widgets where widget.videoSource.cropX > 1.0 {

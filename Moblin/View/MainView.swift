@@ -259,19 +259,16 @@ struct MainView: View {
     @EnvironmentObject var model: Model
     @ObservedObject var webBrowserController: WebBrowserController
     var streamView: StreamView
-    var webBrowserView: WebBrowserView
     @State var showAreYouReallySure = false
     @FocusState private var focused: Bool
     @ObservedObject var replay: ReplayProvider
 
     init(webBrowserController: WebBrowserController,
          streamView: StreamView,
-         webBrowserView: WebBrowserView,
          replay: ReplayProvider)
     {
         self.webBrowserController = webBrowserController
         self.streamView = streamView
-        self.webBrowserView = webBrowserView
         self.replay = replay
         UITextField.appearance().clearButtonMode = .always
     }
@@ -287,10 +284,6 @@ struct MainView: View {
             with: .color(.yellow),
             lineWidth: 1
         )
-    }
-
-    private var debug: SettingsDebug {
-        model.database.debug
     }
 
     private func handleTapToFocus(metrics: GeometryProxy, location: CGPoint) {
@@ -394,15 +387,13 @@ struct MainView: View {
                     face()
                 }
                 if model.showBrowser {
-                    webBrowserView
+                    WebBrowserView()
                 }
                 if model.showingRemoteControl {
-                    ZStack {
-                        NavigationStack {
-                            ControlBarRemoteControlAssistantView()
-                        }
-                        CloseButtonRemoteView()
+                    NavigationStack {
+                        ControlBarRemoteControlAssistantView()
                     }
+                    CloseButtonRemoteView()
                 }
                 if model.showingPanel != .none {
                     MenuView()
@@ -423,9 +414,6 @@ struct MainView: View {
                     }
             )
             ControlBarPortraitView()
-        }
-        .overlay(alignment: .topLeading) {
-            browserWidgets()
         }
     }
 
@@ -471,7 +459,7 @@ struct MainView: View {
                     face()
                 }
                 if model.showBrowser {
-                    webBrowserView
+                    WebBrowserView()
                 }
                 if model.showingRemoteControl {
                     ZStack {
@@ -507,9 +495,6 @@ struct MainView: View {
                 .frame(width: model.panelHidden ? 1 : settingsHalfWidth)
             }
             ControlBarLandscapeView()
-        }
-        .overlay(alignment: .topLeading) {
-            browserWidgets()
         }
     }
 
@@ -547,6 +532,9 @@ struct MainView: View {
             if replay.instantReplayCountdown != 0 {
                 InstantReplayCountdownView(replay: replay)
             }
+        }
+        .overlay(alignment: .topLeading) {
+            browserWidgets()
         }
         .onAppear {
             model.setup()

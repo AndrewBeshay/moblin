@@ -2,7 +2,7 @@ import SwiftUI
 
 struct StreamSnapshotSettingsView: View {
     @EnvironmentObject var model: Model
-    var stream: SettingsStream
+    @ObservedObject var stream: SettingsStream
 
     func submitSnapshotWebhookUrl(value: String) {
         let url = cleanUrl(url: value)
@@ -30,20 +30,16 @@ struct StreamSnapshotSettingsView: View {
                 TextEditNavigationView(
                     title: String(localized: "Webhook URL"),
                     value: stream.discordSnapshotWebhook,
-                    onSubmit: submitSnapshotWebhookUrl
+                    onSubmit: submitSnapshotWebhookUrl,
+                    placeholder: "https://discord.com/api/webhooks/foobar"
                 )
                 TextEditNavigationView(
                     title: String(localized: "Chat bot webhook URL"),
                     value: stream.discordChatBotSnapshotWebhook,
-                    onSubmit: submitSnapshotChatBotWebhookUrl
+                    onSubmit: submitSnapshotChatBotWebhookUrl,
+                    placeholder: "https://discord.com/api/webhooks/foobar"
                 )
-                Toggle(isOn: Binding(get: {
-                    stream.discordSnapshotWebhookOnlyWhenLive
-                }, set: { value in
-                    stream.discordSnapshotWebhookOnlyWhenLive = value
-                })) {
-                    Text("Only when live")
-                }
+                Toggle("Only when live", isOn: $stream.discordSnapshotWebhookOnlyWhenLive)
             } header: {
                 Text("Discord")
             } footer: {
