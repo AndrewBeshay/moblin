@@ -32,13 +32,14 @@ struct DisplaySettingsView: View {
                 } label: {
                     Text("Quick buttons")
                 }
+                Toggle("Big buttons", isOn: $database.bigButtons)
                 if database.showAllSettings {
                     NavigationLink {
                         StreamButtonsSettingsView(background: database.streamButtonColor.color())
                     } label: {
                         Text("Stream button")
                     }
-                    if !ProcessInfo().isiOSAppOnMac {
+                    if !isMac() {
                         Toggle("Battery percentage", isOn: Binding(get: {
                             database.batteryPercentage
                         }, set: { value in
@@ -90,7 +91,7 @@ struct DisplaySettingsView: View {
                 }
             }
             if model.database.showAllSettings {
-                if !ProcessInfo().isiOSAppOnMac {
+                if !isMac() {
                     Section {
                         Toggle(isOn: Binding(get: {
                             database.portrait

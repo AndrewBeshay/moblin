@@ -13,6 +13,7 @@ private struct CameraSettingButtonView: View {
     var value: String
     var locked: Bool
     var on: Bool
+    var height: Double
 
     var body: some View {
         VStack(spacing: 0) {
@@ -27,7 +28,7 @@ private struct CameraSettingButtonView: View {
             .font(.footnote)
             .padding([.trailing], 7)
         }
-        .frame(width: cameraButtonWidth, height: segmentHeight)
+        .frame(width: cameraButtonWidth, height: height)
         .background(pickerBackgroundColor)
         .foregroundColor(.white)
         .cornerRadius(7)
@@ -53,6 +54,7 @@ private struct NotSupportedForThisCameraView: View {
 
 private struct ExposureBiasView: View {
     @EnvironmentObject var model: Model
+    @ObservedObject var camera: CameraState
 
     var body: some View {
         Text("EXPOSURE BIAS")
@@ -60,19 +62,19 @@ private struct ExposureBiasView: View {
             .foregroundColor(.white)
             .padding([.trailing], 7)
         Slider(
-            value: $model.bias,
+            value: $camera.bias,
             in: -2 ... 2,
             step: 0.1,
             onEditingChanged: { begin in
                 guard !begin else {
                     return
                 }
-                model.setExposureBias(bias: model.bias)
+                model.setExposureBias(bias: camera.bias)
                 model.updateImageButtonState()
             }
         )
-        .onChange(of: model.bias) { _ in
-            model.setExposureBias(bias: model.bias)
+        .onChange(of: camera.bias) { _ in
+            model.setExposureBias(bias: camera.bias)
             model.updateImageButtonState()
         }
         .padding([.top, .bottom], 5)
@@ -86,6 +88,7 @@ private struct ExposureBiasView: View {
 
 private struct WhiteBalanceView: View {
     @EnvironmentObject var model: Model
+    @ObservedObject var camera: CameraState
 
     var body: some View {
         Text("WHITE BALANCE")
@@ -95,7 +98,7 @@ private struct WhiteBalanceView: View {
         if model.isCameraSupportingManualWhiteBalance() {
             HStack {
                 Slider(
-                    value: $model.manualWhiteBalance,
+                    value: $camera.manualWhiteBalance,
                     in: 0 ... 1,
                     step: 0.01,
                     onEditingChanged: { begin in
@@ -103,23 +106,23 @@ private struct WhiteBalanceView: View {
                         guard !begin else {
                             return
                         }
-                        model.setManualWhiteBalance(factor: model.manualWhiteBalance)
+                        model.setManualWhiteBalance(factor: camera.manualWhiteBalance)
                     }
                 )
-                .onChange(of: model.manualWhiteBalance) { _ in
+                .onChange(of: camera.manualWhiteBalance) { _ in
                     if model.editingManualWhiteBalance {
-                        model.setManualWhiteBalance(factor: model.manualWhiteBalance)
+                        model.setManualWhiteBalance(factor: camera.manualWhiteBalance)
                     }
                 }
                 Button {
-                    if model.manualWhiteBalanceEnabled {
+                    if camera.manualWhiteBalanceEnabled {
                         model.setAutoWhiteBalance()
                     } else {
-                        model.setManualWhiteBalance(factor: model.manualWhiteBalance)
+                        model.setManualWhiteBalance(factor: camera.manualWhiteBalance)
                     }
                     model.updateImageButtonState()
                 } label: {
-                    Image(systemName: lockImage(locked: model.manualWhiteBalanceEnabled))
+                    Image(systemName: lockImage(locked: camera.manualWhiteBalanceEnabled))
                         .font(.title2)
                         .foregroundColor(.white)
                 }
@@ -138,6 +141,7 @@ private struct WhiteBalanceView: View {
 
 private struct IsoView: View {
     @EnvironmentObject var model: Model
+    @ObservedObject var camera: CameraState
 
     var body: some View {
         Text("ISO")
@@ -147,7 +151,7 @@ private struct IsoView: View {
         if model.isCameraSupportingManualIso() {
             HStack {
                 Slider(
-                    value: $model.manualIso,
+                    value: $camera.manualIso,
                     in: 0 ... 1,
                     step: 0.01,
                     onEditingChanged: { begin in
@@ -155,23 +159,23 @@ private struct IsoView: View {
                         guard !begin else {
                             return
                         }
-                        model.setManualIso(factor: model.manualIso)
+                        model.setManualIso(factor: camera.manualIso)
                     }
                 )
-                .onChange(of: model.manualIso) { _ in
+                .onChange(of: camera.manualIso) { _ in
                     if model.editingManualIso {
-                        model.setManualIso(factor: model.manualIso)
+                        model.setManualIso(factor: camera.manualIso)
                     }
                 }
                 Button {
-                    if model.manualIsoEnabled {
+                    if camera.manualIsoEnabled {
                         model.setAutoIso()
                     } else {
-                        model.setManualIso(factor: model.manualIso)
+                        model.setManualIso(factor: camera.manualIso)
                     }
                     model.updateImageButtonState()
                 } label: {
-                    Image(systemName: lockImage(locked: model.manualIsoEnabled))
+                    Image(systemName: lockImage(locked: camera.manualIsoEnabled))
                         .font(.title2)
                         .foregroundColor(.white)
                 }
@@ -190,6 +194,7 @@ private struct IsoView: View {
 
 struct FocusView: View {
     @EnvironmentObject var model: Model
+    @ObservedObject var camera: CameraState
 
     var body: some View {
         Text("FOCUS")
@@ -199,7 +204,7 @@ struct FocusView: View {
         if model.isCameraSupportingManualFocus() {
             HStack {
                 Slider(
-                    value: $model.manualFocus,
+                    value: $camera.manualFocus,
                     in: 0 ... 1,
                     step: 0.01,
                     onEditingChanged: { begin in
@@ -207,23 +212,23 @@ struct FocusView: View {
                         guard !begin else {
                             return
                         }
-                        model.setManualFocus(lensPosition: model.manualFocus)
+                        model.setManualFocus(lensPosition: camera.manualFocus)
                     }
                 )
-                .onChange(of: model.manualFocus) { _ in
+                .onChange(of: camera.manualFocus) { _ in
                     if model.editingManualFocus {
-                        model.setManualFocus(lensPosition: model.manualFocus)
+                        model.setManualFocus(lensPosition: camera.manualFocus)
                     }
                 }
                 Button {
-                    if model.manualFocusEnabled {
+                    if camera.manualFocusEnabled {
                         model.setAutoFocus()
                     } else {
-                        model.setManualFocus(lensPosition: model.manualFocus)
+                        model.setManualFocus(lensPosition: camera.manualFocus)
                     }
                     model.updateImageButtonState()
                 } label: {
-                    Image(systemName: lockImage(locked: model.manualFocusEnabled))
+                    Image(systemName: lockImage(locked: camera.manualFocusEnabled))
                         .font(.title2)
                         .foregroundColor(.white)
                 }
@@ -242,10 +247,12 @@ struct FocusView: View {
 
 private struct ButtonsView: View {
     @EnvironmentObject var model: Model
+    @ObservedObject var database: Database
+    @ObservedObject var camera: CameraState
 
     private func formatExposureBias() -> String {
-        var value = formatOneDecimal(model.bias)
-        if model.bias >= 0 {
+        var value = formatOneDecimal(camera.bias)
+        if camera.bias >= 0 {
             value = "+\(value)"
         }
         return value
@@ -253,18 +260,26 @@ private struct ButtonsView: View {
 
     private func formatWhiteBalance() -> String {
         return String(Int(minimumWhiteBalanceTemperature +
-                (maximumWhiteBalanceTemperature - minimumWhiteBalanceTemperature) * model.manualWhiteBalance))
+                (maximumWhiteBalanceTemperature - minimumWhiteBalanceTemperature) * camera.manualWhiteBalance))
     }
 
     private func formatIso() -> String {
         guard let device = model.cameraDevice else {
             return ""
         }
-        return String(Int(factorToIso(device: device, factor: model.manualIso)))
+        return String(Int(factorToIso(device: device, factor: camera.manualIso)))
     }
 
     private func formatFocus() -> String {
-        return String(Int(model.manualFocus * 100))
+        return String(Int(camera.manualFocus * 100))
+    }
+
+    private func height() -> Double {
+        if database.bigButtons {
+            return segmentHeightBig
+        } else {
+            return segmentHeight
+        }
     }
 
     var body: some View {
@@ -281,7 +296,8 @@ private struct ButtonsView: View {
                     title: String(localized: "EXB"),
                     value: formatExposureBias(),
                     locked: true,
-                    on: model.showingCameraBias
+                    on: model.showingCameraBias,
+                    height: height()
                 )
             }
             Button {
@@ -295,8 +311,9 @@ private struct ButtonsView: View {
                 CameraSettingButtonView(
                     title: String(localized: "WB"),
                     value: formatWhiteBalance(),
-                    locked: model.manualWhiteBalanceEnabled,
-                    on: model.showingCameraWhiteBalance
+                    locked: camera.manualWhiteBalanceEnabled,
+                    on: model.showingCameraWhiteBalance,
+                    height: height()
                 )
             }
             Button {
@@ -310,8 +327,9 @@ private struct ButtonsView: View {
                 CameraSettingButtonView(
                     title: String(localized: "ISO"),
                     value: formatIso(),
-                    locked: model.manualIsoEnabled,
-                    on: model.showingCameraIso
+                    locked: camera.manualIsoEnabled,
+                    on: model.showingCameraIso,
+                    height: height()
                 )
             }
             Button {
@@ -325,8 +343,9 @@ private struct ButtonsView: View {
                 CameraSettingButtonView(
                     title: String(localized: "FOC"),
                     value: formatFocus(),
-                    locked: model.manualFocusEnabled,
-                    on: model.showingCameraFocus
+                    locked: camera.manualFocusEnabled,
+                    on: model.showingCameraFocus,
+                    height: height()
                 )
             }
         }
@@ -339,18 +358,18 @@ struct StreamOverlayRightCameraSettingsControlView: View {
     var body: some View {
         VStack(alignment: .trailing, spacing: 1) {
             if model.showingCameraBias {
-                ExposureBiasView()
+                ExposureBiasView(camera: model.camera)
             }
             if model.showingCameraWhiteBalance {
-                WhiteBalanceView()
+                WhiteBalanceView(camera: model.camera)
             }
             if model.showingCameraIso {
-                IsoView()
+                IsoView(camera: model.camera)
             }
             if model.showingCameraFocus {
-                FocusView()
+                FocusView(camera: model.camera)
             }
-            ButtonsView()
+            ButtonsView(database: model.database, camera: model.camera)
                 .onAppear {
                     model.startObservingFocus()
                     model.startObservingIso()

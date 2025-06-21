@@ -17,6 +17,7 @@ private let suggestionTime = "🕑 {shortTime}"
 private let suggestionDate = "📅 {date}"
 private let suggestionFullDate = "📅 {fullDate}"
 private let suggestionTimer = "⏳ {timer}"
+private let suggestionStopwatch = "⏱️ {stopwatch}"
 private let suggestionWeather = "{conditions} {temperature}"
 private let suggestionTravel =
     "\(suggestionWeather)\n\(suggestionTime)\n\(suggestionCity)\n\(suggestionMovement)"
@@ -35,43 +36,64 @@ private func createSuggestions() -> [Suggestion] {
         Suggestion(id: 3, name: String(localized: "Date"), text: suggestionDate),
         Suggestion(id: 4, name: String(localized: "Full date"), text: suggestionFullDate),
         Suggestion(id: 5, name: String(localized: "Timer"), text: suggestionTimer),
-        Suggestion(id: 6, name: String(localized: "City"), text: suggestionCity),
-        Suggestion(id: 7, name: String(localized: "Country"), text: suggestionCountry),
-        Suggestion(id: 8, name: String(localized: "Movement"), text: suggestionMovement),
+        Suggestion(id: 6, name: String(localized: "Stopwatch"), text: suggestionStopwatch),
+        Suggestion(id: 7, name: String(localized: "City"), text: suggestionCity),
+        Suggestion(id: 8, name: String(localized: "Country"), text: suggestionCountry),
+        Suggestion(id: 9, name: String(localized: "Movement"), text: suggestionMovement),
     ]
     if isPhone() {
         suggestions += [
-            Suggestion(id: 9, name: String(localized: "Heart rate"), text: suggestionHeartRate),
+            Suggestion(id: 10, name: String(localized: "Heart rate"), text: suggestionHeartRate),
         ]
     }
     suggestions += [
-        Suggestion(id: 10, name: String(localized: "Subtitles"), text: suggestionSubtitles),
-        Suggestion(id: 11, name: String(localized: "Muted"), text: suggestionMuted),
-        Suggestion(id: 12, name: String(localized: "Debug"), text: suggestionDebug),
-        Suggestion(id: 13, name: String(localized: "Workout test"), text: suggestionWorkoutTest),
-        Suggestion(id: 14, name: String(localized: "Tesla"), text: suggestionTesla),
-        Suggestion(id: 15, name: String(localized: "Racing"), text: suggestionRacing),
+        Suggestion(id: 11, name: String(localized: "Subtitles"), text: suggestionSubtitles),
+        Suggestion(id: 12, name: String(localized: "Muted"), text: suggestionMuted),
+        Suggestion(id: 13, name: String(localized: "Debug"), text: suggestionDebug),
+        Suggestion(id: 14, name: String(localized: "Workout test"), text: suggestionWorkoutTest),
+        Suggestion(id: 15, name: String(localized: "Tesla"), text: suggestionTesla),
+        Suggestion(id: 16, name: String(localized: "Racing"), text: suggestionRacing),
     ]
     return suggestions
 }
 
+private struct SuggestionView: View {
+    var suggestion: Suggestion
+    @Binding var text: String
+    var dismiss: () -> Void
+    @State var isPresentingConfirmation = false
+
+    var body: some View {
+        VStack(alignment: .leading) {
+            Button {
+                isPresentingConfirmation = true
+            } label: {
+                Text(suggestion.name)
+                    .font(.title3)
+            }
+            .confirmationDialog("", isPresented: $isPresentingConfirmation) {
+                Button("Yes", role: .destructive) {
+                    text = suggestion.text
+                    dismiss()
+                }
+            } message: {
+                Text("Are you sure you want to replace the current text widget content?")
+            }
+            Text(suggestion.text)
+        }
+    }
+}
+
 private struct SuggestionsView: View {
     @Environment(\.dismiss) var dismiss
-    @Binding var value: String
+    @Binding var text: String
 
     var body: some View {
         Form {
             Section {
                 ForEach(suggestions) { suggestion in
-                    VStack(alignment: .leading) {
-                        Button {
-                            value = suggestion.text
-                            dismiss()
-                        } label: {
-                            Text(suggestion.name)
-                                .font(.title3)
-                        }
-                        Text(suggestion.text)
+                    SuggestionView(suggestion: suggestion, text: $text) {
+                        dismiss()
                     }
                     .tag(suggestion.id)
                 }
@@ -126,6 +148,26 @@ private struct TextSelectionView: View {
         textEffect?.setTimersEndTime(endTimes: widget.text.timers.map {
             .now.advanced(by: .seconds(utcTimeDeltaFromNow(to: $0.endTime)))
         })
+    }
+
+    private func updateStopwatches(_: TextEffect?, _ parts: [TextFormatPart]) {
+        let numberOfStopwatches = parts.filter { value in
+            switch value {
+            case .stopwatch:
+                return true
+            default:
+                return false
+            }
+        }.count
+        for index in 0 ..< numberOfStopwatches where index >= widget.text.stopwatches.count {
+            widget.text.stopwatches.append(.init())
+        }
+        while widget.text.stopwatches.count > numberOfStopwatches {
+            widget.text.stopwatches.removeLast()
+        }
+        // textEffect?.setTimersEndTime(endTimes: widget.text.timers.map {
+        //     .now.advanced(by: .seconds(utcTimeDeltaFromNow(to: $0.endTime)))
+        // })
     }
 
     private func updateCheckboxes(_ textEffect: TextEffect?, _ parts: [TextFormatPart]) {
@@ -246,6 +288,7 @@ private struct TextSelectionView: View {
         textEffect?.setFormat(format: value)
         let parts = loadTextFormat(format: value)
         updateTimers(textEffect, parts)
+        updateStopwatches(textEffect, parts)
         updateCheckboxes(textEffect, parts)
         updateRatings(textEffect, parts)
         updateLapTimes(textEffect, parts)
@@ -259,14 +302,14 @@ private struct TextSelectionView: View {
     var body: some View {
         Form {
             Section {
-                MultiLineTextField(value: $value)
+                MultiLineTextFieldView(value: $value)
                     .keyboardType(.default)
                     .textInputAutocapitalization(.never)
                     .disableAutocorrection(true)
             }
             Section {
                 NavigationLink {
-                    SuggestionsView(value: $value)
+                    SuggestionsView(text: $value)
                 } label: {
                     Text("Suggestions")
                 }
@@ -280,6 +323,7 @@ private struct TextSelectionView: View {
                 FormatView(title: "{date}", description: String(localized: "Show date"), text: $value)
                 FormatView(title: "{fullDate}", description: String(localized: "Show full date"), text: $value)
                 FormatView(title: "{timer}", description: String(localized: "Show a timer"), text: $value)
+                FormatView(title: "{stopwatch}", description: String(localized: "Show a stopwatch"), text: $value)
                 FormatView(title: "{checkbox}", description: String(localized: "Show a checkbox"), text: $value)
                 FormatView(title: "{rating}", description: String(localized: "Show a 0-5 rating"), text: $value)
                 FormatView(title: "{subtitles}", description: String(localized: "Show subtitles"), text: $value)
@@ -413,6 +457,24 @@ struct WidgetTextSettingsView: View {
                     }
                 } header: {
                     Text("Timers")
+                }
+            }
+        }
+        if !text.stopwatches.isEmpty {
+            if let textEffect = model.getTextEffect(id: widget.id) {
+                Section {
+                    ForEach(text.stopwatches) { stopwatch in
+                        let index = widget.text.stopwatches.firstIndex(where: { $0 === stopwatch }) ?? 0
+                        StopwatchWidgetView(
+                            name: "Stopwatch \(index + 1)",
+                            stopwatch: stopwatch,
+                            index: index,
+                            textEffect: textEffect,
+                            indented: false
+                        )
+                    }
+                } header: {
+                    Text("Stopwatches")
                 }
             }
         }

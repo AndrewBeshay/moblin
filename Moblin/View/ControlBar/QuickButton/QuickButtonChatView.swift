@@ -26,6 +26,7 @@ private struct LineView: View {
     var post: ChatPost
     @ObservedObject var chat: SettingsChat
     var platform: Bool
+    @Binding var selectedPost: ChatPost?
 
     var body: some View {
         let usernameColor = post.userColor.color()
@@ -95,6 +96,9 @@ private struct LineView: View {
             }
         }
         .padding([.leading], 5)
+        .onTapGesture {
+            selectedPost = post
+        }
     }
 }
 
@@ -102,6 +106,7 @@ private struct MessagesView: View {
     var model: Model
     @ObservedObject var chatSettings: SettingsChat
     @ObservedObject var chat: ChatProvider
+    @Binding var selectedPost: ChatPost?
 
     var body: some View {
         let rotation = chatSettings.getRotation()
@@ -131,7 +136,8 @@ private struct MessagesView: View {
                                         )
                                         LineView(post: post,
                                                  chat: chatSettings,
-                                                 platform: chat.moreThanOneStreamingPlatform)
+                                                 platform: chat.moreThanOneStreamingPlatform,
+                                                 selectedPost: $selectedPost)
                                     }
                                 }
                                 .rotationEffect(Angle(degrees: rotation))
@@ -139,7 +145,8 @@ private struct MessagesView: View {
                             } else {
                                 LineView(post: post,
                                          chat: chatSettings,
-                                         platform: chat.moreThanOneStreamingPlatform)
+                                         platform: chat.moreThanOneStreamingPlatform,
+                                         selectedPost: $selectedPost)
                                     .padding([.leading], 3)
                                     .rotationEffect(Angle(degrees: rotation))
                                     .scaleEffect(x: scaleX, y: 1.0, anchor: .center)
@@ -228,10 +235,14 @@ private struct HypeTrainView: View {
 private struct ChatView: View {
     var model: Model
     @ObservedObject var chat: ChatProvider
+    @Binding var selectedPost: ChatPost?
 
     var body: some View {
         ZStack {
-            MessagesView(model: model, chatSettings: model.database.chat, chat: chat)
+            MessagesView(model: model,
+                         chatSettings: model.database.chat,
+                         chat: chat,
+                         selectedPost: $selectedPost)
             if chat.paused {
                 ChatInfo(
                     message: String(localized: "Chat paused: \(chat.pausedPostsCount) new messages")
@@ -247,6 +258,7 @@ private struct AlertsMessagesView: View {
     @EnvironmentObject var model: Model
     @ObservedObject var chatSettings: SettingsChat
     @ObservedObject var chat: ChatProvider
+    @Binding var selectedPost: ChatPost?
 
     private func shouldShowMessage(highlight: ChatHighlight) -> Bool {
         if highlight.kind == .firstMessage && !model.showFirstTimeChatterMessage {
@@ -290,7 +302,8 @@ private struct AlertsMessagesView: View {
                                             )
                                             LineView(post: post,
                                                      chat: chatSettings,
-                                                     platform: chat.moreThanOneStreamingPlatform)
+                                                     platform: chat.moreThanOneStreamingPlatform,
+                                                     selectedPost: $selectedPost)
                                         }
                                     }
                                     .rotationEffect(Angle(degrees: rotation))
@@ -299,7 +312,8 @@ private struct AlertsMessagesView: View {
                             } else {
                                 LineView(post: post,
                                          chat: chatSettings,
-                                         platform: chat.moreThanOneStreamingPlatform)
+                                         platform: chat.moreThanOneStreamingPlatform,
+                                         selectedPost: $selectedPost)
                                     .padding([.leading], 3)
                                     .rotationEffect(Angle(degrees: rotation))
                                     .scaleEffect(x: scaleX, y: 1.0, anchor: .center)
@@ -326,10 +340,13 @@ private struct AlertsMessagesView: View {
 
 private struct ChatAlertsView: View {
     @EnvironmentObject var model: Model
+    @Binding var selectedPost: ChatPost?
 
     var body: some View {
         ZStack {
-            AlertsMessagesView(chatSettings: model.database.chat, chat: model.chat)
+            AlertsMessagesView(chatSettings: model.database.chat,
+                               chat: model.chat,
+                               selectedPost: $selectedPost)
             if model.quickButtonChatAlertsPaused {
                 ChatInfo(
                     message: String(localized: "Chat paused: \(model.pausedQuickButtonChatAlertsPostsCount) new alerts")
@@ -405,27 +422,154 @@ private struct AlertsControlView: View {
     }
 }
 
+private struct ActionButtonView: View {
+    var image: String
+    var text: String
+    var foreground: Color = .blue
+    var action: () -> Void
+
+    var body: some View {
+        Button {
+            action()
+        } label: {
+            VStack {
+                Image(systemName: image)
+                    .foregroundColor(foreground)
+                    .font(.title)
+                Text(text)
+                    .foregroundColor(.white)
+            }
+        }
+    }
+}
+
+private struct ActionButtonsView: View {
+    @EnvironmentObject var model: Model
+    @Binding var selectedPost: ChatPost?
+    @State var isPresentingBanConfirm = false
+    @State var isPresentingTimeoutConfirm = false
+    @State var isPresentingDeleteConfirm = false
+
+    private func dismiss() {
+        selectedPost = nil
+    }
+
+    private func banButton(selectedPost: ChatPost) -> some View {
+        ActionButtonView(image: "nosign", text: "Ban", foreground: .red) {
+            isPresentingBanConfirm = true
+        }
+        .confirmationDialog("", isPresented: $isPresentingBanConfirm) {
+            Button("Ban", role: .destructive) {
+                model.banUser(post: selectedPost)
+                dismiss()
+            }
+        }
+    }
+
+    private func timeoutButton(selectedPost: ChatPost) -> some View {
+        ActionButtonView(image: "timer", text: "Timeout") {
+            isPresentingTimeoutConfirm = true
+        }
+        .confirmationDialog("", isPresented: $isPresentingTimeoutConfirm) {
+            Button("5 minutes timeout", role: .destructive) {
+                model.timeoutUser(post: selectedPost, duration: 5 * 60)
+                dismiss()
+            }
+            Button("1 hour timeout", role: .destructive) {
+                model.timeoutUser(post: selectedPost, duration: 3600)
+                dismiss()
+            }
+            Button("24 hours timeout", role: .destructive) {
+                model.timeoutUser(post: selectedPost, duration: 24 * 3600)
+                dismiss()
+            }
+        }
+    }
+
+    private func deleteButton(selectedPost: ChatPost) -> some View {
+        ActionButtonView(image: "trash", text: "Delete") {
+            isPresentingDeleteConfirm = true
+        }
+        .confirmationDialog("", isPresented: $isPresentingDeleteConfirm) {
+            Button("Delete message", role: .destructive) {
+                model.deleteMessage(post: selectedPost)
+                dismiss()
+            }
+        }
+    }
+
+    private func copyButton(selectedPost: ChatPost) -> some View {
+        ActionButtonView(image: "document.on.document", text: "Copy") {
+            model.copyMessage(post: selectedPost)
+            dismiss()
+        }
+    }
+
+    var body: some View {
+        if let selectedPost {
+            VStack {
+                Spacer()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        self.selectedPost = nil
+                    }
+                VStack(alignment: .leading) {
+                    ScrollView {
+                        LineView(post: selectedPost,
+                                 chat: model.database.chat,
+                                 platform: model.chat.moreThanOneStreamingPlatform,
+                                 selectedPost: $selectedPost)
+                            .foregroundColor(.white)
+                    }
+                    .frame(height: 100)
+                    .padding([.top, .bottom], 5)
+                    HStack {
+                        Spacer()
+                        banButton(selectedPost: selectedPost)
+                        Spacer()
+                        timeoutButton(selectedPost: selectedPost)
+                        Spacer()
+                        deleteButton(selectedPost: selectedPost)
+                        Spacer()
+                        copyButton(selectedPost: selectedPost)
+                        Spacer()
+                    }
+                    .padding([.bottom], 5)
+                }
+                .border(.gray)
+                .padding([.leading, .trailing], 5)
+                .background(.black)
+            }
+        }
+    }
+}
+
 struct QuickButtonChatView: View {
     @EnvironmentObject var model: Model
     @State var message: String = ""
+    @State var selectedPost: ChatPost?
 
     var body: some View {
-        VStack {
-            if model.showAllQuickButtonChatMessage {
-                ChatView(model: model, chat: model.quickButtonChat)
-            } else {
-                ChatAlertsView()
-            }
-            HStack {
+        ZStack {
+            VStack {
                 if model.showAllQuickButtonChatMessage {
-                    ControlView(message: $message)
+                    ChatView(model: model, chat: model.quickButtonChat, selectedPost: $selectedPost)
                 } else {
-                    AlertsControlView()
+                    ChatAlertsView(selectedPost: $selectedPost)
                 }
+                HStack {
+                    if model.showAllQuickButtonChatMessage {
+                        ControlView(message: $message)
+                    } else {
+                        AlertsControlView()
+                    }
+                }
+                .frame(height: 50)
+                .border(.gray)
+                .padding([.leading, .trailing], 5)
             }
-            .frame(height: 50)
-            .border(.gray)
-            .padding([.leading, .trailing], 5)
+            ActionButtonsView(selectedPost: $selectedPost)
         }
         .background(.black)
         .navigationTitle("Chat")

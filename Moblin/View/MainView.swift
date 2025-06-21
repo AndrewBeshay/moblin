@@ -1,5 +1,4 @@
 import AVFoundation
-import MediaPlayer
 import SwiftUI
 import UIKit
 import WebKit
@@ -142,10 +141,9 @@ private struct MenuView: View {
         case .quickButtonSettings:
             NavigationStack {
                 if let button = model.quickButtonSettingsButton {
-                    QuickButtonsButtonSettingsView(
-                        button: button,
-                        shortcut: true
-                    )
+                    QuickButtonsButtonSettingsView(quickButtons: model.database.quickButtonsGeneral,
+                                                   button: button,
+                                                   shortcut: true)
                 }
             }
         case .none:
@@ -255,23 +253,111 @@ private struct WebBrowserAlertsView: UIViewControllerRepresentable {
     func updateUIViewController(_: WebBrowserController, context _: Context) {}
 }
 
+private struct StealthModeView: View {
+    @EnvironmentObject var model: Model
+    @ObservedObject var quickButtons: SettingsQuickButtons
+    @ObservedObject var chat: ChatProvider
+
+    private func showButtons() {
+        model.stealthModeShowButtons = true
+        model.stealthModeHideButtonsTimer.startSingleShot(timeout: 3) {
+            model.stealthModeShowButtons = false
+        }
+    }
+
+    private func tryUnpause() {
+        guard chat.interactiveChat else {
+            return
+        }
+        if chat.paused {
+            model.endOfChatReachedWhenPaused()
+            chat.triggerScrollToBottom.toggle()
+        }
+    }
+
+    var body: some View {
+        ZStack {
+            if let image = model.stealthModeImage {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFit()
+            }
+            HStack {
+                Spacer()
+                VStack {
+                    Spacer()
+                    if model.stealthModeShowButtons {
+                        Image(systemName: quickButtons.blackScreenShowChat ? "message.fill" : "message")
+                            .font(.system(size: 20))
+                            .frame(width: controlBarQuickButtonSingleQuickButtonSize,
+                                   height: controlBarQuickButtonSingleQuickButtonSize)
+                            .foregroundColor(.white)
+                            .onTapGesture(count: 2) { _ in
+                                quickButtons.blackScreenShowChat.toggle()
+                                showButtons()
+                            }
+                    }
+                }
+                .padding([.bottom], 20)
+                .padding([.trailing], 50)
+            }
+        }
+        .ignoresSafeArea()
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.black)
+        .onTapGesture(count: 1) {
+            showButtons()
+        }
+        .onTapGesture(count: 2) { _ in
+            model.toggleStealthMode()
+        }
+        .onAppear {
+            showButtons()
+        }
+        .onDisappear {
+            // Trigger after tryPause() of bottom of chat detector.
+            DispatchQueue.main.async {
+                self.tryUnpause()
+            }
+        }
+        if quickButtons.blackScreenShowChat {
+            GeometryReader { metrics in
+                ChatOverlayView(chatSettings: model.database.chat,
+                                chat: model.chat,
+                                height: metrics.size.height)
+                    .allowsHitTesting(model.chat.interactiveChat)
+            }
+        }
+    }
+}
+
+private struct LockScreenView: View {
+    @EnvironmentObject var model: Model
+
+    var body: some View {
+        Text("")
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(.black.opacity(0.01))
+            .onTapGesture(count: 2) { _ in
+                model.toggleLockScreen()
+            }
+    }
+}
+
 struct MainView: View {
     @EnvironmentObject var model: Model
     @ObservedObject var webBrowserController: WebBrowserController
     var streamView: StreamView
-    var webBrowserView: WebBrowserView
     @State var showAreYouReallySure = false
     @FocusState private var focused: Bool
     @ObservedObject var replay: ReplayProvider
 
     init(webBrowserController: WebBrowserController,
          streamView: StreamView,
-         webBrowserView: WebBrowserView,
          replay: ReplayProvider)
     {
         self.webBrowserController = webBrowserController
         self.streamView = streamView
-        self.webBrowserView = webBrowserView
         self.replay = replay
         UITextField.appearance().clearButtonMode = .always
     }
@@ -287,10 +373,6 @@ struct MainView: View {
             with: .color(.yellow),
             lineWidth: 1
         )
-    }
-
-    private var debug: SettingsDebug {
-        model.database.debug
     }
 
     private func handleTapToFocus(metrics: GeometryProxy, location: CGPoint) {
@@ -332,7 +414,9 @@ struct MainView: View {
     }
 
     private func face() -> some View {
-        FaceView(debug: model.database.debug, settings: model.database.debug.beautyFilterSettings)
+        FaceView(database: model.database,
+                 debug: model.database.debug,
+                 settings: model.database.debug.beautyFilterSettings)
     }
 
     private func portraitAspectRatio() -> CGFloat {
@@ -394,15 +478,13 @@ struct MainView: View {
                     face()
                 }
                 if model.showBrowser {
-                    webBrowserView
+                    WebBrowserView()
                 }
                 if model.showingRemoteControl {
-                    ZStack {
-                        NavigationStack {
-                            ControlBarRemoteControlAssistantView()
-                        }
-                        CloseButtonRemoteView()
+                    NavigationStack {
+                        ControlBarRemoteControlAssistantView()
                     }
+                    CloseButtonRemoteView()
                 }
                 if model.showingPanel != .none {
                     MenuView()
@@ -423,9 +505,6 @@ struct MainView: View {
                     }
             )
             ControlBarPortraitView()
-        }
-        .overlay(alignment: .topLeading) {
-            browserWidgets()
         }
     }
 
@@ -471,7 +550,7 @@ struct MainView: View {
                     face()
                 }
                 if model.showBrowser {
-                    webBrowserView
+                    WebBrowserView()
                 }
                 if model.showingRemoteControl {
                     ZStack {
@@ -508,9 +587,6 @@ struct MainView: View {
             }
             ControlBarLandscapeView()
         }
-        .overlay(alignment: .topLeading) {
-            browserWidgets()
-        }
     }
 
     var body: some View {
@@ -522,21 +598,11 @@ struct MainView: View {
             }
             WebBrowserAlertsView()
                 .opacity(webBrowserController.showAlert ? 1 : 0)
-            if model.blackScreen {
-                Text("")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(.black)
-                    .onTapGesture(count: 2) { _ in
-                        model.toggleBlackScreen()
-                    }
+            if model.stealthMode {
+                StealthModeView(quickButtons: model.database.quickButtonsGeneral, chat: model.chat)
             }
             if model.lockScreen {
-                Text("")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(.black.opacity(0.01))
-                    .onTapGesture(count: 2) { _ in
-                        model.toggleLockScreen()
-                    }
+                LockScreenView()
             }
             if model.findFace {
                 FindFaceView()
@@ -547,6 +613,9 @@ struct MainView: View {
             if replay.instantReplayCountdown != 0 {
                 InstantReplayCountdownView(replay: replay)
             }
+        }
+        .overlay(alignment: .topLeading) {
+            browserWidgets()
         }
         .onAppear {
             model.setup()

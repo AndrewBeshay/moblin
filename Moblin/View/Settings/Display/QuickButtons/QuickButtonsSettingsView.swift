@@ -16,6 +16,10 @@ private struct AppearenceSettingsView: View {
                         model.updateQuickButtonStates()
                     }
             }
+            Toggle("Big buttons", isOn: $quickButtons.bigButtons)
+                .onChange(of: quickButtons.bigButtons) { _ in
+                    model.updateQuickButtonStates()
+                }
             Toggle("Show name", isOn: $quickButtons.showName)
                 .onChange(of: quickButtons.showName) { _ in
                     model.updateQuickButtonStates()
@@ -52,7 +56,9 @@ private struct ButtonSettingsView: View {
     var body: some View {
         if model.database.showAllSettings {
             NavigationLink {
-                QuickButtonsButtonSettingsView(button: button, shortcut: false)
+                QuickButtonsButtonSettingsView(quickButtons: model.database.quickButtonsGeneral,
+                                               button: button,
+                                               shortcut: false)
             } label: {
                 label()
             }

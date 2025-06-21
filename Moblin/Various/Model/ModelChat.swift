@@ -78,7 +78,9 @@ struct ChatPost: Identifiable, Equatable {
     }
 
     var id: Int
+    var messageId: String?
     var user: String?
+    var userId: String?
     var userColor: RgbColor
     var userBadges: [URL]
     var segments: [ChatPostSegment]
@@ -91,6 +93,10 @@ struct ChatPost: Identifiable, Equatable {
     var live: Bool
     var filter: SettingsChatFilter?
     var platform: Platform?
+
+    func text() -> String {
+        return segments.filter { $0.text != nil }.map { $0.text! }.joined(separator: "").trim()
+    }
 }
 
 class ChatProvider: ObservableObject {
@@ -102,6 +108,7 @@ class ChatProvider: ObservableObject {
     private let maximumNumberOfMessages: Int
     @Published var moreThanOneStreamingPlatform = false
     @Published var interactiveChat = false
+    @Published var triggerScrollToBottom = false
 
     init(maximumNumberOfMessages: Int) {
         self.maximumNumberOfMessages = maximumNumberOfMessages
@@ -158,6 +165,7 @@ extension Model {
         }
         return ChatPost(
             id: chatPostId,
+            messageId: nil,
             user: nil,
             userColor: .init(red: 0, green: 0, blue: 0),
             userBadges: [],
@@ -247,14 +255,14 @@ extension Model {
     }
 
     func removeOldChatMessages(now: ContinuousClock.Instant) {
-        if quickButtonChat.paused {
+        if chat.paused {
             return
         }
         guard database.chat.maximumAgeEnabled else {
             return
         }
         while let post = chat.posts.last {
-            if now > post.timestampTime + .seconds(database.chat.maximumAge) {
+            if post.timestampTime.duration(to: now) > .seconds(database.chat.maximumAge) {
                 chat.posts.removeLast()
             } else {
                 break
@@ -274,7 +282,7 @@ extension Model {
                 }
             }
             if isTextToSpeechEnabledForMessage(post: post), let user = post.user {
-                let message = post.segments.filter { $0.text != nil }.map { $0.text! }.joined(separator: "")
+                let message = post.text()
                 if !message.trimmingCharacters(in: .whitespaces).isEmpty {
                     chatTextToSpeech.say(user: user, message: message, isRedemption: post.isRedemption())
                 }
@@ -413,6 +421,7 @@ extension Model {
 
     func appendChatMessage(
         platform: Platform,
+        messageId: String?,
         user: String?,
         userId: String?,
         userColor: RgbColor?,
@@ -447,7 +456,9 @@ extension Model {
         }
         let post = ChatPost(
             id: chatPostId,
+            messageId: messageId,
             user: user,
+            userId: userId,
             userColor: userColor?.makeReadableOnDarkBackground() ?? database.chat.usernameColor,
             userBadges: userBadges,
             segments: segments,
@@ -582,5 +593,31 @@ extension Model {
                 catPrinter.print(image: ciImage, feedPaperDelay: 3)
             }
         }
+    }
+
+    func banUser(post: ChatPost) {
+        guard let user = post.user, let userId = post.userId else {
+            return
+        }
+        banUser(user: user, userId: userId, duration: nil)
+    }
+
+    func timeoutUser(post: ChatPost, duration: Int) {
+        guard let user = post.user, let userId = post.userId else {
+            return
+        }
+        banUser(user: user, userId: userId, duration: duration)
+    }
+
+    func deleteMessage(post: ChatPost) {
+        guard let messageId = post.messageId else {
+            return
+        }
+        deleteMessage(messageId: messageId)
+    }
+
+    func copyMessage(post: ChatPost) {
+        UIPasteboard.general.string = post.text()
+        makeToast(title: String(localized: "Message copied to clipboard"))
     }
 }

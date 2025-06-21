@@ -182,6 +182,7 @@ extension Model {
                 timersEndTime: widget.text.timers.map {
                     .now.advanced(by: .seconds(utcTimeDeltaFromNow(to: $0.endTime)))
                 },
+                stopwatches: widget.text.stopwatches.map { $0.clone() },
                 checkboxes: widget.text.checkboxes.map { $0.checked },
                 ratings: widget.text.ratings.map { $0.rating },
                 lapTimes: widget.text.lapTimes.map { $0.lapTimes }
@@ -199,11 +200,11 @@ extension Model {
             }
             let browserEffect = BrowserEffect(
                 url: url,
-                styleSheet: widget.browser.styleSheet!,
+                styleSheet: widget.browser.styleSheet,
                 widget: widget.browser,
                 videoSize: videoSize,
                 settingName: widget.name,
-                moblinAccess: widget.browser.moblinAccess!
+                moblinAccess: widget.browser.moblinAccess
             )
             browserEffect.effects = widget.getEffects()
             browserEffects[widget.id] = browserEffect

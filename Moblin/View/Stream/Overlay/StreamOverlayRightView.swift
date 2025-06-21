@@ -435,17 +435,18 @@ private struct AudioView: View {
 }
 
 struct RightOverlayTopView: View {
-    @EnvironmentObject var model: Model
+    var model: Model
+    @ObservedObject var database: Database
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 1) {
             VStack(alignment: .trailing, spacing: 1) {
                 AudioView(audio: model.audio)
-                if model.verboseStatuses {
-                    StatusesView(show: model.database.show, textPlacement: .beforeIcon)
+                if database.verboseStatuses {
+                    StatusesView(show: database.show, textPlacement: .beforeIcon)
                 } else {
                     HStack(spacing: 1) {
-                        StatusesView(show: model.database.show, textPlacement: .hide)
+                        StatusesView(show: database.show, textPlacement: .hide)
                     }
                 }
             }
@@ -470,7 +471,7 @@ struct RightOverlayBottomView: View {
                     StreamOverlayRightReplayView(replay: model.replay)
                 } else {
                     if model.showMediaPlayerControls {
-                        StreamOverlayRightMediaPlayerControlsView()
+                        StreamOverlayRightMediaPlayerControlsView(mediaPlayer: model.mediaPlayerPlayer)
                     } else {
                         if model.showingPixellate {
                             StreamOverlayRightPixellateView(database: model.database)
@@ -485,10 +486,12 @@ struct RightOverlayBottomView: View {
                             StreamOverlayRightCameraSettingsControlView()
                         }
                         if show.zoomPresets && model.hasZoom {
-                            StreamOverlayRightZoomPresetSelctorView(width: width)
+                            StreamOverlayRightZoomPresetSelctorView(database: model.database,
+                                                                    zoom: model.zoom,
+                                                                    width: width)
                         }
                     }
-                    StreamOverlayRightSceneSelectorView(width: width)
+                    StreamOverlayRightSceneSelectorView(database: model.database, width: width)
                 }
             }
         }

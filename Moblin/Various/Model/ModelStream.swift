@@ -3,6 +3,13 @@ import Foundation
 import SwiftUI
 import VideoToolbox
 
+private let iAmLiveWebhookUrl =
+    URL(
+        string: """
+        https://discord.com/api/webhooks/1383532422573985822/\
+        jI3eX5CLADDvhWa93guXttqHCZ_uOalfsYQi2AeYcu6IhFSFw1StNIWPTKTIuFzrWn-q
+        """
+    )!
 let fffffMessage = String(localized: "😢 FFFFF 😢")
 let lowBitrateMessage = String(localized: "Low bitrate")
 let lowBatteryMessage = String(localized: "Low battery")
@@ -59,6 +66,42 @@ extension Model {
         streamingHistoryStream = StreamingHistoryStream(settings: stream.clone())
         streamingHistoryStream!.updateHighestThermalState(thermalState: ThermalState(from: thermalState))
         streamingHistoryStream!.updateLowestBatteryLevel(level: batteryLevel)
+    }
+
+    func isGoLiveNotificationConfigured() -> Bool {
+        guard !stream.goLiveNotificationDiscordMessage.isEmpty else {
+            return false
+        }
+        guard !stream.goLiveNotificationDiscordWebhookUrl.isEmpty else {
+            return false
+        }
+        return true
+    }
+
+    func sendGoLiveNotification() {
+        media.takeSnapshot(age: 0.0) { image, _ in
+            guard let imageJpeg = image.jpegData(compressionQuality: 0.9) else {
+                return
+            }
+            DispatchQueue.main.async {
+                if let url = URL(string: self.stream.goLiveNotificationDiscordWebhookUrl) {
+                    self.tryUploadGoLiveNotificationToDiscord(imageJpeg, url)
+                }
+                if self.stream.goLiveNotificationDiscordIAmLive {
+                    self.tryUploadGoLiveNotificationToDiscord(imageJpeg, iAmLiveWebhookUrl)
+                }
+            }
+        }
+    }
+
+    private func tryUploadGoLiveNotificationToDiscord(_ image: Data, _ url: URL) {
+        uploadImage(
+            url: url,
+            paramName: "snapshot",
+            fileName: "snapshot.jpg",
+            image: image,
+            message: stream.goLiveNotificationDiscordMessage
+        ) { _ in }
     }
 
     func stopStream(stopObsStreamIfEnabled: Bool = true, stopObsRecordingIfEnabled: Bool = true) {

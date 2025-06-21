@@ -46,7 +46,7 @@ private struct ChatPausedView: View {
     }
 }
 
-private struct ChatOverlayView: View {
+struct ChatOverlayView: View {
     @EnvironmentObject var model: Model
     @ObservedObject var chatSettings: SettingsChat
     @ObservedObject var chat: ChatProvider
@@ -157,13 +157,13 @@ struct StreamOverlayView: View {
                     RightOverlayBottomView(show: model.database.show, width: width)
                 }
                 HStack {
-                    LeftOverlayView()
+                    LeftOverlayView(model: model, database: model.database)
                         .padding([.leading], leadingPadding())
                     Spacer()
                 }
                 HStack {
                     Spacer()
-                    RightOverlayTopView()
+                    RightOverlayTopView(model: model, database: model.database)
                 }
                 HStack {
                     StreamOverlayDebugView(debugOverlay: model.debugOverlay)
