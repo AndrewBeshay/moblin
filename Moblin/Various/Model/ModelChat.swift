@@ -6,99 +6,6 @@ import WrappingHStack
 let maximumNumberOfChatMessages = 50
 let maximumNumberOfInteractiveChatMessages = 100
 
-struct ChatMessageEmote: Identifiable {
-    var id = UUID()
-    var url: URL
-    var range: ClosedRange<Int>
-}
-
-struct ChatPostSegment: Identifiable, Codable {
-    var id: Int
-    var text: String?
-    var url: URL?
-}
-
-func makeChatPostTextSegments(text: String, id: inout Int) -> [ChatPostSegment] {
-    var segments: [ChatPostSegment] = []
-    for word in text.split(separator: " ") {
-        segments.append(ChatPostSegment(
-            id: id,
-            text: "\(word) "
-        ))
-        id += 1
-    }
-    return segments
-}
-
-enum ChatHighlightKind: Codable {
-    case redemption
-    case other
-    case firstMessage
-    case newFollower
-    case reply
-}
-
-struct ChatHighlight {
-    let kind: ChatHighlightKind
-    let color: Color
-    let image: String
-    let title: String
-
-    func toWatchProtocol() -> WatchProtocolChatHighlight {
-        let watchProtocolKind: WatchProtocolChatHighlightKind
-        switch kind {
-        case .redemption:
-            watchProtocolKind = .redemption
-        case .other:
-            watchProtocolKind = .other
-        case .newFollower:
-            watchProtocolKind = .redemption
-        case .firstMessage:
-            watchProtocolKind = .other
-        case .reply:
-            watchProtocolKind = .other
-        }
-        let color = color.toRgb() ?? .init(red: 0, green: 255, blue: 0)
-        return WatchProtocolChatHighlight(
-            kind: watchProtocolKind,
-            color: .init(red: color.red, green: color.green, blue: color.blue),
-            image: image,
-            title: title
-        )
-    }
-}
-
-struct ChatPost: Identifiable, Equatable {
-    static func == (lhs: ChatPost, rhs: ChatPost) -> Bool {
-        return lhs.id == rhs.id
-    }
-
-    func isRedemption() -> Bool {
-        return highlight?.kind == .redemption || highlight?.kind == .newFollower
-    }
-
-    var id: Int
-    var messageId: String?
-    var user: String?
-    var userId: String?
-    var userColor: RgbColor
-    var userBadges: [URL]
-    var segments: [ChatPostSegment]
-    var timestamp: String
-    var timestampTime: ContinuousClock.Instant
-    var isAction: Bool
-    var isSubscriber: Bool
-    var bits: String?
-    var highlight: ChatHighlight?
-    var live: Bool
-    var filter: SettingsChatFilter?
-    var platform: Platform?
-
-    func text() -> String {
-        return segments.filter { $0.text != nil }.map { $0.text! }.joined(separator: "").trim()
-    }
-}
-
 class ChatProvider: ObservableObject {
     var newPosts: Deque<ChatPost> = []
     var pausedPosts: Deque<ChatPost> = []
@@ -127,6 +34,30 @@ class ChatProvider: ObservableObject {
             }
         } else {
             newPosts.append(post)
+        }
+    }
+
+    func deleteMessage(messageId: String) {
+        for post in newPosts where post.messageId == messageId {
+            post.state.deleted = true
+        }
+        for post in pausedPosts where post.messageId == messageId {
+            post.state.deleted = true
+        }
+        for post in posts where post.messageId == messageId {
+            post.state.deleted = true
+        }
+    }
+
+    func deleteUser(userId: String) {
+        for post in newPosts where post.userId == userId {
+            post.state.deleted = true
+        }
+        for post in pausedPosts where post.userId == userId {
+            post.state.deleted = true
+        }
+        for post in posts where post.userId == userId {
+            post.state.deleted = true
         }
     }
 
@@ -178,7 +109,8 @@ extension Model {
             highlight: nil,
             live: true,
             filter: nil,
-            platform: nil
+            platform: nil,
+            state: ChatPostState()
         )
     }
 
@@ -280,15 +212,6 @@ extension Model {
                 if isWatchLocal() {
                     sendChatMessageToWatch(post: post)
                 }
-            }
-            if isTextToSpeechEnabledForMessage(post: post), let user = post.user {
-                let message = post.text()
-                if !message.trimmingCharacters(in: .whitespaces).isEmpty {
-                    chatTextToSpeech.say(user: user, message: message, isRedemption: post.isRedemption())
-                }
-            }
-            if post.filter?.print != false, isAnyConnectedCatPrinterPrintingChat() {
-                printChatMessage(post: post)
             }
             streamTotalChatMessages += 1
         }
@@ -470,10 +393,26 @@ extension Model {
             highlight: highlight,
             live: live,
             filter: filter,
-            platform: platform
+            platform: platform,
+            state: ChatPostState()
         )
         chatPostId += 1
-        if filter?.showOnScreen != false || filter?.textToSpeech != false {
+        if isTextToSpeechEnabledForMessage(post: post), let user = post.user {
+            let message = post.text()
+            if !message.trimmingCharacters(in: .whitespaces).isEmpty {
+                chatTextToSpeech.say(
+                    messageId: post.messageId,
+                    user: user,
+                    userId: post.userId,
+                    message: message,
+                    isRedemption: post.isRedemption()
+                )
+            }
+        }
+        if filter?.print != false, isAnyConnectedCatPrinterPrintingChat() {
+            printChatMessage(post: post)
+        }
+        if filter?.showOnScreen != false {
             chat.appendMessage(post: post)
         }
         if filter?.showOnScreen != false {

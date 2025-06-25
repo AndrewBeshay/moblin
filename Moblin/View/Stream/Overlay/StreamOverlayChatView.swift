@@ -7,12 +7,7 @@ private let borderWidth = 1.5
 
 private struct HighlightMessageView: View {
     let chat: SettingsChat
-    let image: String
-    let name: String
-
-    private func messageColor() -> Color {
-        return chat.messageColor.color()
-    }
+    let highlight: ChatHighlight
 
     private func backgroundColor() -> Color {
         if chat.backgroundColorEnabled {
@@ -31,20 +26,18 @@ private struct HighlightMessageView: View {
     }
 
     var body: some View {
-        let messageColor = messageColor()
-        let shadowColor = shadowColor()
         WrappingHStack(
             alignment: .leading,
             horizontalSpacing: 0,
             verticalSpacing: 0,
             fitContentWidth: true
         ) {
-            Image(systemName: image)
+            Image(systemName: highlight.image)
             Text(" ")
-            Text(name)
+            Text(highlight.title)
         }
-        .foregroundColor(messageColor)
-        .stroke(color: shadowColor, width: chat.shadowColorEnabled ? borderWidth : 0)
+        .foregroundColor(highlight.messageColor(defaultColor: chat.messageColor.color()))
+        .stroke(color: shadowColor(), width: chat.shadowColorEnabled ? borderWidth : 0)
         .padding([.leading], 5)
         .font(.system(size: CGFloat(chat.fontSize)))
         .background(backgroundColor())
@@ -54,6 +47,7 @@ private struct HighlightMessageView: View {
 }
 
 private struct LineView: View {
+    @ObservedObject var postState: ChatPostState
     var post: ChatPost
     @ObservedObject var chat: SettingsChat
     var platform: Bool
@@ -86,11 +80,21 @@ private struct LineView: View {
         }
     }
 
+    private func frameHeightBadges() -> CGFloat {
+        return CGFloat(chat.fontSize * 1.4)
+    }
+
+    private func frameHeightEmotes() -> CGFloat {
+        return CGFloat(chat.fontSize * 1.7)
+    }
+
+    private func imageOpacity() -> Double {
+        return postState.deleted ? 0.25 : 1
+    }
+
     var body: some View {
-        let timestampColor = chat.timestampColor.color()
         let usernameColor = usernameColor()
         let messageColor = messageColor(usernameColor: usernameColor)
-        let shadowColor = shadowColor()
         WrappingHStack(
             alignment: .leading,
             horizontalSpacing: 0,
@@ -99,14 +103,15 @@ private struct LineView: View {
         ) {
             if chat.timestampColorEnabled {
                 Text("\(post.timestamp) ")
-                    .foregroundColor(timestampColor)
+                    .foregroundColor(chat.timestampColor.color())
             }
             if chat.platform, platform, let image = post.platform?.imageName() {
                 Image(image)
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .padding(2)
-                    .frame(height: CGFloat(chat.fontSize * 1.4))
+                    .frame(height: frameHeightBadges())
+                    .opacity(imageOpacity())
             }
             if chat.badges {
                 ForEach(post.userBadges, id: \.self) { url in
@@ -118,11 +123,13 @@ private struct LineView: View {
                         EmptyView()
                     }
                     .padding(2)
-                    .frame(height: CGFloat(chat.fontSize * 1.4))
+                    .frame(height: frameHeightBadges())
+                    .opacity(imageOpacity())
                 }
             }
             Text(post.user!)
-                .foregroundColor(usernameColor)
+                .foregroundColor(postState.deleted ? .gray : usernameColor)
+                .strikethrough(postState.deleted)
                 .lineLimit(1)
                 .padding([.trailing], 0)
                 .bold(chat.boldUsername)
@@ -134,7 +141,8 @@ private struct LineView: View {
             ForEach(post.segments, id: \.id) { segment in
                 if let text = segment.text {
                     Text(text)
-                        .foregroundColor(messageColor)
+                        .foregroundColor(postState.deleted ? .gray : messageColor)
+                        .strikethrough(postState.deleted)
                         .bold(chat.boldMessage)
                         .italic(post.isAction)
                 }
@@ -144,7 +152,8 @@ private struct LineView: View {
                             .resizable()
                             .aspectRatio(contentMode: .fit)
                             .padding([.top, .bottom], chat.shadowColorEnabled ? 1.5 : 0)
-                            .frame(height: CGFloat(chat.fontSize * 1.7))
+                            .frame(height: frameHeightEmotes())
+                            .opacity(imageOpacity())
                     } else {
                         CacheAsyncImage(url: url) { image in
                             image
@@ -154,13 +163,14 @@ private struct LineView: View {
                             EmptyView()
                         }
                         .padding([.top, .bottom], chat.shadowColorEnabled ? 1.5 : 0)
-                        .frame(height: CGFloat(chat.fontSize * 1.7))
+                        .frame(height: frameHeightEmotes())
+                        .opacity(imageOpacity())
                     }
                     Text(" ")
                 }
             }
         }
-        .stroke(color: shadowColor, width: chat.shadowColorEnabled ? borderWidth : 0)
+        .stroke(color: shadowColor(), width: chat.shadowColorEnabled ? borderWidth : 0)
         .padding([.leading], 5)
         .font(.system(size: CGFloat(chat.fontSize)))
         .background(backgroundColor())
@@ -171,10 +181,61 @@ private struct LineView: View {
 
 private let startId = UUID()
 
+private struct PostView: View {
+    var model: Model
+    @ObservedObject var chatSettings: SettingsChat
+    @ObservedObject var chat: ChatProvider
+    let fullSize: Bool
+    let post: ChatPost
+    @ObservedObject var state: ChatPostState
+    let rotation: Double
+    let scaleX: Double
+    let size: CGSize
+
+    var body: some View {
+        if post.user != nil {
+            if !state.deleted || chatSettings.showDeletedMessages {
+                if let highlight = post.highlight {
+                    HStack(spacing: 0) {
+                        Rectangle()
+                            .frame(width: 3)
+                            .foregroundColor(highlight.barColor)
+                        VStack(alignment: .leading, spacing: 1) {
+                            HighlightMessageView(chat: chatSettings, highlight: highlight)
+                            LineView(postState: post.state,
+                                     post: post,
+                                     chat: chatSettings,
+                                     platform: chat.moreThanOneStreamingPlatform)
+                        }
+                    }
+                    .rotationEffect(Angle(degrees: rotation))
+                    .scaleEffect(x: scaleX, y: 1.0, anchor: .center)
+                } else {
+                    LineView(postState: post.state,
+                             post: post,
+                             chat: chatSettings,
+                             platform: chat.moreThanOneStreamingPlatform)
+                        .padding([.leading], 3)
+                        .rotationEffect(Angle(degrees: rotation))
+                        .scaleEffect(x: scaleX, y: 1.0, anchor: .center)
+                }
+            }
+        } else {
+            Rectangle()
+                .fill(.red)
+                .frame(width: size.width, height: 1.5)
+                .padding(2)
+                .rotationEffect(Angle(degrees: rotation))
+                .scaleEffect(x: scaleX, y: 1.0, anchor: .center)
+        }
+    }
+}
+
 struct StreamOverlayChatView: View {
     var model: Model
     @ObservedObject var chatSettings: SettingsChat
     @ObservedObject var chat: ChatProvider
+    let fullSize: Bool
 
     private func tryPause() {
         guard chat.interactiveChat else {
@@ -193,6 +254,22 @@ struct StreamOverlayChatView: View {
         }
         if chat.paused {
             model.endOfChatReachedWhenPaused()
+        }
+    }
+
+    private func heightFactor() -> CGFloat {
+        if fullSize {
+            return 1
+        } else {
+            return chatSettings.height
+        }
+    }
+
+    private func widthFactor() -> CGFloat {
+        if fullSize {
+            return 1
+        } else {
+            return chatSettings.width
         }
     }
 
@@ -215,41 +292,15 @@ struct StreamOverlayChatView: View {
                                 .frame(height: 1)
                                 .id(startId)
                             ForEach(chat.posts) { post in
-                                if post.user != nil {
-                                    if let highlight = post.highlight {
-                                        HStack(spacing: 0) {
-                                            Rectangle()
-                                                .frame(width: 3)
-                                                .foregroundColor(highlight.color)
-                                            VStack(alignment: .leading, spacing: 1) {
-                                                HighlightMessageView(
-                                                    chat: chatSettings,
-                                                    image: highlight.image,
-                                                    name: highlight.title
-                                                )
-                                                LineView(post: post,
-                                                         chat: chatSettings,
-                                                         platform: chat.moreThanOneStreamingPlatform)
-                                            }
-                                        }
-                                        .rotationEffect(Angle(degrees: rotation))
-                                        .scaleEffect(x: scaleX, y: 1.0, anchor: .center)
-                                    } else {
-                                        LineView(post: post,
-                                                 chat: chatSettings,
-                                                 platform: chat.moreThanOneStreamingPlatform)
-                                            .padding([.leading], 3)
-                                            .rotationEffect(Angle(degrees: rotation))
-                                            .scaleEffect(x: scaleX, y: 1.0, anchor: .center)
-                                    }
-                                } else {
-                                    Rectangle()
-                                        .fill(.red)
-                                        .frame(width: metrics.size.width, height: 1.5)
-                                        .padding(2)
-                                        .rotationEffect(Angle(degrees: rotation))
-                                        .scaleEffect(x: scaleX, y: 1.0, anchor: .center)
-                                }
+                                PostView(model: model,
+                                         chatSettings: chatSettings,
+                                         chat: chat,
+                                         fullSize: fullSize,
+                                         post: post,
+                                         state: post.state,
+                                         rotation: rotation,
+                                         scaleX: scaleX,
+                                         size: metrics.size)
                             }
                             Spacer(minLength: 0)
                         }
@@ -257,13 +308,19 @@ struct StreamOverlayChatView: View {
                     .foregroundColor(.white)
                     .rotationEffect(Angle(degrees: rotation))
                     .scaleEffect(x: scaleX * chatSettings.isMirrored(), y: 1.0, anchor: .center)
-                    .frame(width: metrics.size.width * chatSettings.width,
-                           height: metrics.size.height * chatSettings.height)
+                    .frame(width: metrics.size.width * widthFactor(),
+                           height: metrics.size.height * heightFactor())
                     .onChange(of: chat.interactiveChat) { _ in
                         proxy.scrollTo(startId, anchor: .bottom)
                     }
                     .onChange(of: chat.triggerScrollToBottom) { _ in
                         proxy.scrollTo(startId, anchor: .bottom)
+                    }
+                    .onAppear {
+                        // Trigger after tryPause() of bottom of chat detector.
+                        DispatchQueue.main.async {
+                            tryUnpause()
+                        }
                     }
                 }
             }

@@ -251,6 +251,7 @@ private let subTypeChannelHypeTrainBegin = "channel.hype_train.begin"
 private let subTypeChannelHypeTrainProgress = "channel.hype_train.progress"
 private let subTypeChannelHypeTrainEnd = "channel.hype_train.end"
 private let subTypeChannelAdBreakBegin = "channel.ad_break.begin"
+private let subTypeChannelChatMessageDelete = "channel.chat.message_delete"
 
 final class TwitchEventSub: NSObject {
     private var webSocket: WebSocketClient

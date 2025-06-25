@@ -472,7 +472,7 @@ extension Model: TwitchEventSubDelegate {
                           bits: nil,
                           highlight: .init(
                               kind: kind ?? .redemption,
-                              color: color,
+                              barColor: color,
                               image: image ?? "medal",
                               title: title
                           ),
@@ -486,12 +486,12 @@ extension Model: TwitchEventSubDelegate {
     func twitchEventSubNotification(message _: String) {}
 }
 
-extension Model: TwitchChatMoblinDelegate {
-    func twitchChatMoblinMakeErrorToast(title: String, subTitle: String?) {
+extension Model: TwitchChatDelegate {
+    func twitchChatMakeErrorToast(title: String, subTitle: String?) {
         makeErrorToast(title: title, subTitle: subTitle)
     }
 
-    func twitchChatMoblinAppendMessage(
+    func twitchChatAppendMessage(
         messageId: String?,
         user: String?,
         userId: String?,
@@ -519,6 +519,20 @@ extension Model: TwitchChatMoblinDelegate {
                           bits: bits,
                           highlight: highlight,
                           live: true)
+    }
+
+    func twitchChatDeleteMessage(messageId: String) {
+        chat.deleteMessage(messageId: messageId)
+        quickButtonChat.deleteMessage(messageId: messageId)
+        externalDisplayChat.deleteMessage(messageId: messageId)
+        chatTextToSpeech.delete(messageId: messageId)
+    }
+
+    func twitchChatDeleteUser(userId: String) {
+        chat.deleteUser(userId: userId)
+        quickButtonChat.deleteUser(userId: userId)
+        externalDisplayChat.deleteUser(userId: userId)
+        chatTextToSpeech.delete(userId: userId)
     }
 }
 
