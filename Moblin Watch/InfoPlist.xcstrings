@@ -44,7 +44,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Yes"
+            "value" : "Moblin needs camera access to capture video for live streaming"
           }
         },
         "nl" : {
@@ -182,7 +182,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Yes"
+            "value" : "Moblin needs microphone access to capture audio for live streaming"
           }
         },
         "nl" : {
@@ -206,7 +206,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Yes"
+            "value" : "Moblin can save stream snapshots and recordings to your photo library"
           }
         },
         "nl" : {
@@ -230,7 +230,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Yes"
+            "value" : "Moblin can access your photo library to use images in overlays and stream scenes"
           }
         },
         "nl" : {
