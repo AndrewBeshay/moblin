@@ -4,6 +4,10 @@
 // IMPORTANT: Config.xcconfig should be added to your .gitignore
 // This keeps personal configuration out of version control
 
+// Version settings - change these to update all targets at once
+APP_VERSION = 26.4.0
+BUILD_NUMBER = 1
+
 // Your bundle identifier prefix (reverse domain notation)
 // Example: com.yourcompany.Moblin or com.yourname.Moblin
 BUNDLE_ID_PREFIX = com.yourcompany.Moblin
