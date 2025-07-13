@@ -1,0 +1,24 @@
+// Configuration file template for Moblin
+// Copy this file to Config.xcconfig and customize for your environment
+// 
+// IMPORTANT: Config.xcconfig should be added to your .gitignore
+// This keeps personal configuration out of version control
+
+// Your bundle identifier prefix (reverse domain notation)
+// Example: com.yourcompany.Moblin or com.yourname.Moblin
+BUNDLE_ID_PREFIX = com.yourcompany.Moblin
+
+// Reversed bundle ID for app groups (used in entitlements)
+// This should be your BUNDLE_ID_PREFIX with components reversed
+// Example: if BUNDLE_ID_PREFIX is com.yourcompany.Moblin, this should be Moblin.yourcompany.com
+BUNDLE_ID_PREFIX_REVERSED = Moblin.yourcompany.com
+
+// Your Apple Developer Team ID (optional)
+// Get this from developer.apple.com -> Account -> Membership
+// Leave empty if you don't have a paid developer account
+DEVELOPMENT_TEAM = 
+
+// Code signing style
+// Set to Manual if you want to manage provisioning profiles manually
+// Set to Automatic for Xcode to handle signing automatically
+CODE_SIGN_STYLE = Automatic

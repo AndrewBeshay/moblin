@@ -363,33 +363,39 @@ Roughly the steps to setup Moblin's developement environment.
 
 3. Clone Moblin.
 
-   `git clone https://github.com/eerimoq/moblin.git`
+   `git clone https://github.com/your-username/moblin.git`
 
 4. Enter Moblins repository.
 
    `cd moblin`
 
-5. Open the Moblin project in Xcode. Wait for the dependencies to load.
+5. Configure your build settings:
+
+   ```bash
+   cp Config.template.xcconfig Config.xcconfig
+   ```
+   
+   Edit `Config.xcconfig` and set:
+   - `BUNDLE_ID_PREFIX` to your reverse domain (e.g., `com.yourname.Moblin`)
+   - `BUNDLE_ID_PREFIX_REVERSED` to the reversed version (e.g., `Moblin.yourname.com`)
+   - `DEVELOPMENT_TEAM` to your Apple Developer Team ID (optional)
+
+6. Open the Moblin project in Xcode. Wait for the dependencies to load.
 
    `open Moblin.xcodeproj`
 
-6. Press `Command + B` to build Moblin.
+7. Press `Command + B` to build Moblin.
 
-7. Click on the code signing error and add your account. No Apple
-   developer account is needed.
-
-8. Change the `Bundle Identifier` to anything you want (i.e. `com.whoami.Moblin`).
-
-9. Remove `In-App Purchase` and `Access Wi-Fi Information` by clicking
+8. Remove `In-App Purchase` and `Access Wi-Fi Information` by clicking
    their trash cans.
 
-10. Build again. Hopefully successfully.
+9. Build again. Hopefully successfully.
 
-11. Enable developer mode in your iPhone/iPad.
+10. Enable developer mode in your iPhone/iPad.
 
-12. Select you iPhone/iPad as `Run Destination` in Xcode (at the top
+11. Select you iPhone/iPad as `Run Destination` in Xcode (at the top
     in the middle).
 
-13. Build and run by pressing `Command + R`.
+12. Build and run by pressing `Command + R`.
 
-14. Done!
+13. Done!

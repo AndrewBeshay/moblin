@@ -647,7 +647,7 @@ func sleep(milliSeconds: Int) async throws {
     try await Task.sleep(nanoseconds: UInt64(milliSeconds) * 1_000_000)
 }
 
-let moblinAppGroup = "group.com.eerimoq.Moblin"
+let moblinAppGroup = "group.\(Bundle.main.bundleIdentifier ?? "com.yourcompany.Moblin").group"
 
 extension Duration {
     var milliseconds: Int64 {
